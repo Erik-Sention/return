@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthForm from '@/components/ui/auth/AuthForm';
-import { Calculator, FileText, Settings, BarChart3, Users } from 'lucide-react';
+import { Calculator, FileText, BarChart3 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { currentUser, loading } = useAuth();
-  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
