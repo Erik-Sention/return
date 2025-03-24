@@ -5,37 +5,37 @@ import { Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 
-interface FormAData {
+interface FormBData {
   organizationName: string;
   contactPerson: string;
-  businessDefinition: string;
-  currentSituation: string;
-  stressLevel: number;
-  productionLoss: number;
-  sickLeaveCost: number;
-  causeAnalysis: string;
+  initiativeName: string;
+  initiativeDescription: string;
+  purpose: string;
+  supportForGoals: string;
+  alternativeApproaches: string;
   goals: string;
-  interventions: string[];
-  recommendation: string;
+  targetGroup: string;
+  expectedEffect: string;
+  implementationPlan: string[];
 }
 
-const STORAGE_KEY = 'roi-calculator-form-a';
-const FORM_TYPE = 'A';
+const STORAGE_KEY = 'roi-calculator-form-b';
+const FORM_TYPE = 'B';
 
-export default function FormA() {
+export default function FormB() {
   const { currentUser } = useAuth();
-  const [formData, setFormData] = useState<FormAData>({
+  const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
     contactPerson: '',
-    businessDefinition: '',
-    currentSituation: '',
-    stressLevel: 0,
-    productionLoss: 0,
-    sickLeaveCost: 0,
-    causeAnalysis: '',
+    initiativeName: '',
+    initiativeDescription: '',
+    purpose: '',
+    supportForGoals: '',
+    alternativeApproaches: '',
     goals: '',
-    interventions: [''],
-    recommendation: ''
+    targetGroup: '',
+    expectedEffect: '',
+    implementationPlan: ['']
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export default function FormA() {
       if (currentUser?.uid) {
         try {
           setError(null);
-          const data = await loadFormData<FormAData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
@@ -142,7 +142,7 @@ export default function FormA() {
     }
   };
 
-  const handleChange = (field: keyof FormAData, value: string | number | string[]) => {
+  const handleChange = (field: keyof FormBData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -150,7 +150,7 @@ export default function FormA() {
     <div className="space-y-8">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">A – Verksamhetsanalys</h2>
+          <h2 className="text-2xl font-bold">Formulär B – Verksamhetsanalys – insats</h2>
           <div className="flex items-center gap-2">
             {saveMessage && (
               <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
@@ -174,10 +174,10 @@ export default function FormA() {
           </div>
         )}
         
-        {/* A1 & A2 */}
-        <div className="grid gap-4 md:grid-cols-2">
+        {/* B1, B2, B3 */}
+        <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Organisationens namn</label>
+            <label className="text-sm font-medium">B1: Organisationens namn</label>
             <Input
               value={formData.organizationName}
               onChange={(e) => handleChange('organizationName', e.target.value)}
@@ -185,120 +185,132 @@ export default function FormA() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Kontaktperson</label>
+            <label className="text-sm font-medium">B2: Kontaktperson</label>
             <Input
               value={formData.contactPerson}
               onChange={(e) => handleChange('contactPerson', e.target.value)}
               placeholder="Ange kontaktperson"
             />
           </div>
-        </div>
-
-        {/* A3 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 1 – Definition av verksamheten</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.businessDefinition}
-            onChange={(e) => handleChange('businessDefinition', e.target.value)}
-            placeholder="Beskriv verksamheten..."
-          />
-        </div>
-
-        {/* A4 */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Steg 2 – Nulägesbeskrivning, psykisk hälsa</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.currentSituation}
-            onChange={(e) => handleChange('currentSituation', e.target.value)}
-            placeholder="Beskriv nuläget..."
-          />
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
-              <Input
-                type="number"
-                value={formData.stressLevel}
-                onChange={(e) => handleChange('stressLevel', parseFloat(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
-              <Input
-                type="number"
-                value={formData.productionLoss}
-                onChange={(e) => handleChange('productionLoss', parseFloat(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
-              <Input
-                type="number"
-                value={formData.sickLeaveCost}
-                onChange={(e) => handleChange('sickLeaveCost', parseFloat(e.target.value))}
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">B3: Insatsnamn</label>
+            <Input
+              value={formData.initiativeName}
+              onChange={(e) => handleChange('initiativeName', e.target.value)}
+              placeholder="Ange insatsens namn"
+            />
           </div>
         </div>
 
-        {/* A5 */}
+        {/* B4 */}
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 3 – Orsaksanalys och riskbedömning</h3>
+          <h3 className="text-lg font-semibold">Vilka insatser avses?</h3>
+          <p className="text-sm text-muted-foreground">Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt</p>
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.causeAnalysis}
-            onChange={(e) => handleChange('causeAnalysis', e.target.value)}
-            placeholder="Beskriv orsaker och risker..."
+            value={formData.initiativeDescription}
+            onChange={(e) => handleChange('initiativeDescription', e.target.value)}
+            placeholder="Beskriv insatserna..."
           />
         </div>
 
-        {/* A6 */}
+        {/* B5 */}
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 4 – Målformulering och Behovsanalys</h3>
+          <h3 className="text-lg font-semibold">Syfte med insatserna</h3>
+          <p className="text-sm text-muted-foreground">Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen</p>
+          <textarea
+            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
+            value={formData.purpose}
+            onChange={(e) => handleChange('purpose', e.target.value)}
+            placeholder="Beskriv syftet..."
+          />
+        </div>
+
+        {/* B6 */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Stöd för verksamhetens övergripande mål</h3>
+          <p className="text-sm text-muted-foreground">Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds</p>
+          <textarea
+            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
+            value={formData.supportForGoals}
+            onChange={(e) => handleChange('supportForGoals', e.target.value)}
+            placeholder="Beskriv vilka verksamhetsmål som stöds..."
+          />
+        </div>
+
+        {/* B7 */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Alternativa ansatser</h3>
+          <p className="text-sm text-muted-foreground">Beskriv de alternativ som analyserats, och motivera vald ansats</p>
+          <textarea
+            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
+            value={formData.alternativeApproaches}
+            onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
+            placeholder="Beskriv alternativa ansatser..."
+          />
+        </div>
+
+        {/* B8 */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Mål med insatserna</h3>
+          <p className="text-sm text-muted-foreground">Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen</p>
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.goals}
             onChange={(e) => handleChange('goals', e.target.value)}
-            placeholder="Beskriv mål och behov..."
+            placeholder="Beskriv målen..."
           />
         </div>
 
-        {/* A7 */}
+        {/* B9 */}
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 5 – Val av lämpliga insatser</h3>
-          {formData.interventions.map((intervention, index) => (
+          <h3 className="text-lg font-semibold">Målgrupp</h3>
+          <p className="text-sm text-muted-foreground">Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås</p>
+          <textarea
+            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
+            value={formData.targetGroup}
+            onChange={(e) => handleChange('targetGroup', e.target.value)}
+            placeholder="Beskriv målgruppen..."
+          />
+        </div>
+
+        {/* B10 */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">När nås förväntad effekt av insatsen?</h3>
+          <p className="text-sm text-muted-foreground">Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter</p>
+          <textarea
+            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
+            value={formData.expectedEffect}
+            onChange={(e) => handleChange('expectedEffect', e.target.value)}
+            placeholder="Beskriv tidshorisont för förväntad effekt..."
+          />
+        </div>
+
+        {/* B11 */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Genomförandeplan</h3>
+          <p className="text-sm text-muted-foreground">Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar</p>
+          {formData.implementationPlan.map((step, index) => (
             <div key={index} className="flex gap-2">
               <Input
-                value={intervention}
+                value={step}
                 onChange={(e) => {
-                  const newInterventions = [...formData.interventions];
-                  newInterventions[index] = e.target.value;
-                  handleChange('interventions', newInterventions);
+                  const newPlan = [...formData.implementationPlan];
+                  newPlan[index] = e.target.value;
+                  handleChange('implementationPlan', newPlan);
                 }}
-                placeholder={`Insats ${index + 1}`}
+                placeholder={`Steg ${index + 1}`}
               />
-              {index === formData.interventions.length - 1 && (
+              {index === formData.implementationPlan.length - 1 && (
                 <Button
                   type="button"
-                  onClick={() => handleChange('interventions', [...formData.interventions, ''])}
+                  onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
                 >
                   +
                 </Button>
               )}
             </div>
           ))}
-        </div>
-
-        {/* A9 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 7 – Rekommendation för beslut</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.recommendation}
-            onChange={(e) => handleChange('recommendation', e.target.value)}
-            placeholder="Ange rekommendation..."
-          />
         </div>
       </div>
     </div>

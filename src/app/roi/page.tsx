@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import FormA from '@/components/forms/FormA';
+import FormB from '@/components/forms/FormB';
 import FormTimeline from '@/components/forms/FormTimeline';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -10,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function ROIPage() {
-  const [currentForm] = useState('A');
-  const [completedForms] = useState<string[]>([]);
+  const [currentForm, setCurrentForm] = useState('A');
+  const [completedForms, setCompletedForms] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const { currentUser, loading } = useAuth();
   const router = useRouter();
@@ -24,6 +25,13 @@ export default function ROIPage() {
       router.push('/login');
     }
   }, [currentUser, loading, router]);
+
+  const handleFormChange = (form: string) => {
+    setCurrentForm(form);
+    if (!completedForms.includes(currentForm)) {
+      setCompletedForms([...completedForms, currentForm]);
+    }
+  };
 
   if (!mounted || loading) {
     return (
@@ -56,10 +64,38 @@ export default function ROIPage() {
         <FormTimeline 
           currentForm={currentForm}
           completedForms={completedForms}
+          onFormChange={handleFormChange}
         />
 
         <div className="bg-card rounded-lg shadow p-6">
-          <FormA />
+          {currentForm === 'A' && <FormA />}
+          {currentForm === 'B' && <FormB />}
+        </div>
+
+        <div className="flex justify-between">
+          {currentForm !== 'A' && (
+            <Button 
+              onClick={() => {
+                const forms = 'ABCDEFGHIJ'.split('');
+                const currentIndex = forms.indexOf(currentForm);
+                setCurrentForm(forms[currentIndex - 1]);
+              }}
+            >
+              Föregående
+            </Button>
+          )}
+          {currentForm !== 'J' && (
+            <Button 
+              onClick={() => {
+                const forms = 'ABCDEFGHIJ'.split('');
+                const currentIndex = forms.indexOf(currentForm);
+                setCurrentForm(forms[currentIndex + 1]);
+              }}
+              className={currentForm === 'A' ? 'ml-auto' : ''}
+            >
+              Nästa
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -3,16 +3,21 @@ import { CheckCircle2, Circle } from 'lucide-react';
 interface FormTimelineProps {
   currentForm: string;
   completedForms: string[];
+  onFormChange?: (form: string) => void;
 }
 
 const forms = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 
-export default function FormTimeline({ currentForm, completedForms }: FormTimelineProps) {
+export default function FormTimeline({ currentForm, completedForms, onFormChange }: FormTimelineProps) {
   return (
     <div className="w-full py-4">
       <div className="flex items-center justify-between">
         {forms.map((form, index) => (
-          <div key={form} className="flex flex-col items-center">
+          <div 
+            key={form} 
+            className="flex flex-col items-center cursor-pointer" 
+            onClick={() => onFormChange && onFormChange(form)}
+          >
             <div className="relative">
               {/* Line connector */}
               {index < forms.length - 1 && (
