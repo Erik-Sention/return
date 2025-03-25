@@ -52,27 +52,10 @@ export default function FormB() {
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
-          } else {
-            // Fall back to localStorage if no data in Firebase
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            if (savedData) {
-              console.log('Using localStorage data instead of Firebase');
-              setFormData(JSON.parse(savedData));
-            }
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
-          setError('Kunde inte ladda data från databasen. Försöker med lokalt sparad data.');
-          
-          // Fall back to localStorage
-          const savedData = localStorage.getItem(STORAGE_KEY);
-          if (savedData) {
-            try {
-              setFormData(JSON.parse(savedData));
-            } catch (e) {
-              console.error('Error parsing localStorage data:', e);
-            }
-          }
+          setError('Kunde inte ladda data från databasen.');
         }
       } else {
         console.log('No user logged in, cannot load data from Firebase');
@@ -121,22 +104,14 @@ export default function FormB() {
       
       console.log('Saving form data to Firebase:', formData);
       
-      // Save to both Firebase and localStorage for redundancy
+      // Save only to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, formData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Error saving form data:', error);
-      setError('Ett fel uppstod när formuläret skulle sparas till databasen. Data har sparats lokalt.');
-      
-      // Still try to save locally
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      } catch (e) {
-        console.error('Error saving to localStorage:', e);
-      }
+      setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
     } finally {
       setIsSaving(false);
     }
