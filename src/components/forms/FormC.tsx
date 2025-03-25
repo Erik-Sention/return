@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 
@@ -28,6 +28,25 @@ interface FormCData {
 
 
 const FORM_TYPE = 'C';
+
+// Lägg till InfoLabel-komponenten för att ge användaren information om automatiska fält
+const InfoLabel = ({ text }: { text: string }) => (
+  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+    <Info className="w-3 h-3" />
+    <span>{text}</span>
+  </div>
+);
+
+// Lägg till ReadOnlyField-komponenten för att visa beräknade fält
+const ReadOnlyField = ({ label, value, info }: { label: string; value: string; info: string }) => (
+  <div className="space-y-1">
+    <label className="text-sm font-medium">{label}</label>
+    <InfoLabel text={info} />
+    <div className="p-2 bg-background border rounded-md flex justify-end">
+      <span className="font-semibold">{value}</span>
+    </div>
+  </div>
+);
 
 export default function FormC() {
   const { currentUser } = useAuth();
@@ -237,7 +256,7 @@ export default function FormC() {
 
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa</h3>
-
+          
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">
@@ -256,180 +275,159 @@ export default function FormC() {
                 type="number"
                 value={formData.companyProfit ?? ''}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
-                placeholder="Ange vinst i kr"
+                placeholder="Ange summa i kr"
               />
             </div>
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C6: Summa, värde av arbete</label>
-              <span className="font-semibold">
-                {(formData.totalWorkValue ?? 0) > 0 ? `${formatNumber(formData.totalWorkValue)} kr` : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C6: Summa, värde av arbete"
+              value={`${formatNumber(formData.totalWorkValue)} kr`}
+              info="Beräknas automatiskt som summan av C4 + C5"
+            />
           </div>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-2 mt-4">
+        <div className="p-4 bg-muted rounded-md">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
               <Input
                 type="number"
                 value={formData.percentHighStress ?? ''}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
-                placeholder="Ange andel i %"
+                placeholder="Ange procent"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
+              <InfoLabel text="Standardvärde är 2,0% baserat på forskning" />
               <Input
                 type="number"
-                value={formData.productionLossHighStress ?? ''}
+                value={formData.productionLossHighStress}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
-                placeholder="t.ex. 2.0"
+                placeholder="Ange procent"
               />
             </div>
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C9: Totalt produktionsbortfall</label>
-              <span className="font-semibold">
-                {(formData.totalProductionLoss ?? 0) > 0 ? `${formData.totalProductionLoss}%` : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C9: Totalt produktionsbortfall"
+              value={`${formData.totalProductionLoss}%`}
+              info="Beräknas automatiskt baserat på värdet i C8"
+            />
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C10: Värde av produktionsbortfall (för över till ruta C18)</label>
-              <span className="font-semibold">
-                {(formData.valueProductionLoss ?? 0) > 0 ? `${formatNumber(formData.valueProductionLoss)} kr` : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C10: Värde av produktionsbortfall (för över till ruta C18)"
+              value={`${formatNumber(formData.valueProductionLoss)} kr`}
+              info="Beräknas automatiskt som (C6 × C9 ÷ 100)"
+            />
           </div>
         </div>
 
-
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Beräkning av kostnad för sjukfrånvaro pga psykisk ohälsa</h3>
-
+          
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år
-              </label>
+              <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
               <Input
                 type="number"
                 value={formData.costShortSickLeave ?? ''}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
-                placeholder="Ange total kostnad i kr"
+                placeholder="Ange summa i kr"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)
-              </label>
+              <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+              <InfoLabel text="Standardvärde är 6% baserat på forskning" />
               <Input
                 type="number"
-                value={formData.percentShortSickLeaveMentalHealth ?? ''}
+                value={formData.percentShortSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
-                placeholder="Ange andel i %"
+                placeholder="Ange procent"
               />
             </div>
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">
-                C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år
-              </label>
-              <span className="font-semibold">
-                {(formData.costShortSickLeaveMentalHealth ?? 0) > 0
-                  ? `${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`
-                  : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+              value={`${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`}
+              info="Beräknas automatiskt som (C11 × C12 ÷ 100)"
+            />
           </div>
         </div>
-
 
         <div className="p-4 bg-muted rounded-md">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år
-              </label>
+              <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
               <Input
                 type="number"
                 value={formData.costLongSickLeave ?? ''}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
-                placeholder="Ange total kostnad i kr"
+                placeholder="Ange summa i kr"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)
-              </label>
+              <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+              <InfoLabel text="Standardvärde är 40% baserat på forskning" />
               <Input
                 type="number"
-                value={formData.percentLongSickLeaveMentalHealth ?? ''}
+                value={formData.percentLongSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
-                placeholder="Ange andel i %"
+                placeholder="Ange procent"
               />
             </div>
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">
-                C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år
-              </label>
-              <span className="font-semibold">
-                {(formData.costLongSickLeaveMentalHealth ?? 0) > 0
-                  ? `${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`
-                  : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+              value={`${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`}
+              info="Beräknas automatiskt som (C14 × C15 ÷ 100)"
+            />
           </div>
-
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">
-                C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år
-              </label>
-              <span className="font-semibold">
-                {(formData.totalCostSickLeaveMentalHealth ?? 0) > 0
-                  ? `${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`
-                  : ''}
-              </span>
-            </div>
+          
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+              value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
+              info="Beräknas automatiskt som summan av C13 + C16"
+            />
           </div>
         </div>
-
 
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Summering av kostnad pga psykisk ohälsa</h3>
           
-          <div className="mt-2 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C18: Värde av produktionsbortfall, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.valueProductionLoss)} kr</span>
-            </div>
+          <div className="mt-2">
+            <ReadOnlyField 
+              label="C18: Värde av produktionsbortfall, kr per år"
+              value={`${formatNumber(formData.valueProductionLoss)} kr`}
+              info="Samma värde som C10, överförs automatiskt"
+            />
           </div>
           
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C19: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.totalCostSickLeaveMentalHealth)} kr</span>
-            </div>
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C19: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+              value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
+              info="Samma värde som C17, överförs automatiskt"
+            />
           </div>
           
-          <div className="mt-4 p-3 bg-background rounded-md">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">C20: Total kostnad för psykisk ohälsa, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.totalCostMentalHealth)} kr</span>
-            </div>
+          <div className="mt-4">
+            <ReadOnlyField 
+              label="C20: Total kostnad för psykisk ohälsa, kr per år"
+              value={`${formatNumber(formData.totalCostMentalHealth)} kr`}
+              info="Beräknas automatiskt som summan av C18 + C19"
+            />
           </div>
         </div>
       </div>
