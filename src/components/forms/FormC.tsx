@@ -237,141 +237,176 @@ export default function FormC() {
 
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa</h3>
-          
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år</label>
+              <label className="text-sm font-medium">
+                C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
+              </label>
               <Input
                 type="number"
-                value={formData.totalPersonnelCosts}
+                value={formData.totalPersonnelCosts ?? ''}
                 onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
-                placeholder="Ange totala personalkostnader"
+                placeholder="Ange summa i kr"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
               <Input
                 type="number"
-                value={formData.companyProfit}
+                value={formData.companyProfit ?? ''}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
-                placeholder="Ange vinst i företaget"
+                placeholder="Ange vinst i kr"
               />
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
               <label className="text-sm font-medium">C6: Summa, värde av arbete</label>
-              <span className="font-semibold">{formatNumber(formData.totalWorkValue)} kr</span>
+              <span className="font-semibold">
+                {(formData.totalWorkValue ?? 0) > 0 ? `${formatNumber(formData.totalWorkValue)} kr` : ''}
+              </span>
             </div>
           </div>
-        </div>
 
-        <div className="p-4 bg-muted rounded-md">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 mt-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
               <Input
                 type="number"
-                value={formData.percentHighStress}
+                value={formData.percentHighStress ?? ''}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
-                placeholder="Ange andelen av personalen med hög stressnivå"
+                placeholder="Ange andel i %"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
               <Input
                 type="number"
-                value={formData.productionLossHighStress}
+                value={formData.productionLossHighStress ?? ''}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
-                placeholder="Ange produktionsbortfall vid hög stressnivå"
+                placeholder="t.ex. 2.0"
               />
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
               <label className="text-sm font-medium">C9: Totalt produktionsbortfall</label>
-              <span className="font-semibold">{formData.totalProductionLoss}%</span>
+              <span className="font-semibold">
+                {(formData.totalProductionLoss ?? 0) > 0 ? `${formData.totalProductionLoss}%` : ''}
+              </span>
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
               <label className="text-sm font-medium">C10: Värde av produktionsbortfall (för över till ruta C18)</label>
-              <span className="font-semibold">{formatNumber(formData.valueProductionLoss)} kr</span>
+              <span className="font-semibold">
+                {(formData.valueProductionLoss ?? 0) > 0 ? `${formatNumber(formData.valueProductionLoss)} kr` : ''}
+              </span>
             </div>
           </div>
         </div>
+
 
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Beräkning av kostnad för sjukfrånvaro pga psykisk ohälsa</h3>
-          
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
+              <label className="text-sm font-medium">
+                C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år
+              </label>
               <Input
                 type="number"
-                value={formData.costShortSickLeave}
+                value={formData.costShortSickLeave ?? ''}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
-                placeholder="Ange total kostnad för kort sjukfrånvaro"
+                placeholder="Ange total kostnad i kr"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+              <label className="text-sm font-medium">
+                C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)
+              </label>
               <Input
                 type="number"
-                value={formData.percentShortSickLeaveMentalHealth}
+                value={formData.percentShortSickLeaveMentalHealth ?? ''}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
-                placeholder="Ange andelen av kort sjukfrånvaro som beror på psykisk ohälsa"
+                placeholder="Ange andel i %"
               />
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
-              <label className="text-sm font-medium">C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.costShortSickLeaveMentalHealth)} kr</span>
+              <label className="text-sm font-medium">
+                C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år
+              </label>
+              <span className="font-semibold">
+                {(formData.costShortSickLeaveMentalHealth ?? 0) > 0
+                  ? `${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`
+                  : ''}
+              </span>
             </div>
           </div>
         </div>
 
+
         <div className="p-4 bg-muted rounded-md">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
+              <label className="text-sm font-medium">
+                C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år
+              </label>
               <Input
                 type="number"
-                value={formData.costLongSickLeave}
+                value={formData.costLongSickLeave ?? ''}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
-                placeholder="Ange total kostnad för lång sjukfrånvaro"
+                placeholder="Ange total kostnad i kr"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+              <label className="text-sm font-medium">
+                C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)
+              </label>
               <Input
                 type="number"
-                value={formData.percentLongSickLeaveMentalHealth}
+                value={formData.percentLongSickLeaveMentalHealth ?? ''}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
-                placeholder="Ange andelen av lång sjukfrånvaro som beror på psykisk ohälsa"
+                placeholder="Ange andel i %"
               />
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
-              <label className="text-sm font-medium">C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.costLongSickLeaveMentalHealth)} kr</span>
+              <label className="text-sm font-medium">
+                C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år
+              </label>
+              <span className="font-semibold">
+                {(formData.costLongSickLeaveMentalHealth ?? 0) > 0
+                  ? `${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`
+                  : ''}
+              </span>
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-background rounded-md">
             <div className="flex justify-between">
-              <label className="text-sm font-medium">C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år</label>
-              <span className="font-semibold">{formatNumber(formData.totalCostSickLeaveMentalHealth)} kr</span>
+              <label className="text-sm font-medium">
+                C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år
+              </label>
+              <span className="font-semibold">
+                {(formData.totalCostSickLeaveMentalHealth ?? 0) > 0
+                  ? `${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`
+                  : ''}
+              </span>
             </div>
           </div>
         </div>
+
 
         <div className="p-4 bg-muted rounded-md">
           <h3 className="text-lg font-semibold mb-4">Summering av kostnad pga psykisk ohälsa</h3>
