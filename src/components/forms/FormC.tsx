@@ -245,7 +245,7 @@ export default function FormC() {
                 type="number"
                 value={formData.totalPersonnelCosts}
                 onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
-                placeholder="0"
+                placeholder="Ange totala personalkostnader"
               />
             </div>
             <div className="space-y-2">
@@ -254,7 +254,7 @@ export default function FormC() {
                 type="number"
                 value={formData.companyProfit}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
-                placeholder="0"
+                placeholder="Ange vinst i företaget"
               />
             </div>
           </div>
@@ -275,7 +275,7 @@ export default function FormC() {
                 type="number"
                 value={formData.percentHighStress}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
-                placeholder="0"
+                placeholder="Ange andelen av personalen med hög stressnivå"
               />
             </div>
             <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function FormC() {
                 type="number"
                 value={formData.productionLossHighStress}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
-                placeholder="0"
+                placeholder="Ange produktionsbortfall vid hög stressnivå"
               />
             </div>
           </div>
@@ -314,7 +314,7 @@ export default function FormC() {
                 type="number"
                 value={formData.costShortSickLeave}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
-                placeholder="0"
+                placeholder="Ange total kostnad för kort sjukfrånvaro"
               />
             </div>
             <div className="space-y-2">
@@ -323,7 +323,7 @@ export default function FormC() {
                 type="number"
                 value={formData.percentShortSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
-                placeholder="0"
+                placeholder="Ange andelen av kort sjukfrånvaro som beror på psykisk ohälsa"
               />
             </div>
           </div>
@@ -344,7 +344,7 @@ export default function FormC() {
                 type="number"
                 value={formData.costLongSickLeave}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
-                placeholder="0"
+                placeholder="Ange total kostnad för lång sjukfrånvaro"
               />
             </div>
             <div className="space-y-2">
@@ -353,7 +353,7 @@ export default function FormC() {
                 type="number"
                 value={formData.percentLongSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
-                placeholder="0"
+                placeholder="Ange andelen av lång sjukfrånvaro som beror på psykisk ohälsa"
               />
             </div>
           </div>
