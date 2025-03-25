@@ -19,7 +19,6 @@ interface FormBData {
   implementationPlan: string[];
 }
 
-const STORAGE_KEY = 'roi-calculator-form-b';
 const FORM_TYPE = 'B';
 
 export default function FormB() {

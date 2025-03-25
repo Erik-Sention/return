@@ -19,7 +19,6 @@ interface FormAData {
   recommendation: string;
 }
 
-const STORAGE_KEY = 'roi-calculator-form-a';
 const FORM_TYPE = 'A';
 
 export default function FormA() {
