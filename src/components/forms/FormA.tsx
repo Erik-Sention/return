@@ -50,8 +50,11 @@ const SectionHeader = ({
 
 const FORM_TYPE = 'A';
 
+// Definiera en typ för komponentens props
+type FormAProps = React.ComponentProps<'div'>;
+
 // Gör FormA till en forwardRef component
-const FormA = forwardRef<FormARef, {}>(function FormA(props, ref) {
+const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const { currentUser } = useAuth();
   const [formData, setFormData] = useState<FormAData>({
     organizationName: '',
@@ -168,21 +171,11 @@ const FormA = forwardRef<FormARef, {}>(function FormA(props, ref) {
             </div>
             <h2 className="text-2xl font-bold">A – Verksamhetsanalys</h2>
           </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
+          {saveMessage && (
+            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+              {saveMessage}
+            </span>
+          )}
         </div>
         
         {error && (
@@ -374,15 +367,7 @@ const FormA = forwardRef<FormARef, {}>(function FormA(props, ref) {
         </div>
         
         <div className="flex justify-between mt-8">
-          <div></div> {/* Tom div för att spara-knappen ska hamna till höger */}
-          <Button 
-            onClick={handleSave} 
-            className="gap-2"
-            disabled={isSaving}
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Sparar...' : 'Spara formulär'}
-          </Button>
+          <div></div> {/* Tom div för att behålla layoututrymmet */}
         </div>
       </div>
     </div>

@@ -79,8 +79,11 @@ export interface FormCRef {
   handleSave: () => Promise<void>;
 }
 
+// Definiera en typ för komponentens props
+type FormCProps = React.ComponentProps<'div'>;
+
 // Gör FormC till en forwardRef component
-const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
+const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const { currentUser } = useAuth();
   const [formData, setFormData] = useState<FormCData>({
     organizationName: '',
@@ -248,21 +251,11 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
             </div>
             <h2 className="text-2xl font-bold">C – Beräkningsmodell för ekonomiska konsekvenser av psykisk ohälsa</h2>
           </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
+          {saveMessage && (
+            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+              {saveMessage}
+            </span>
+          )}
         </div>
         
         {error && (
@@ -272,7 +265,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
         )}
         
         {/* C1-C3 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">C1: Organisationens namn</label>
@@ -304,7 +297,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa" 
             icon={<Calculator className="h-5 w-5 text-primary" />}
@@ -345,7 +338,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Stressnivå och produktionsbortfall" 
             icon={<ArrowRight className="h-5 w-5 text-primary" />}
@@ -393,7 +386,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Beräkning av kostnad för sjukfrånvaro pga psykisk ohälsa" 
             icon={<Calculator className="h-5 w-5 text-primary" />}
@@ -402,11 +395,12 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
+              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär E8" />
               <Input
                 type="number"
                 value={formData.costShortSickLeave ?? ''}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
-                placeholder="Ange summa i kr"
+                placeholder="Värdet kan hämtas från E8"
                 className="bg-background/50"
               />
             </div>
@@ -432,7 +426,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Kostnad för lång sjukfrånvaro" 
             icon={<ArrowRight className="h-5 w-5 text-primary" />}
@@ -441,11 +435,12 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
+              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär F8" />
               <Input
                 type="number"
                 value={formData.costLongSickLeave ?? ''}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
-                placeholder="Ange summa i kr"
+                placeholder="Värdet kan hämtas från F8"
                 className="bg-background/50"
               />
             </div>
@@ -480,7 +475,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Summering av kostnad pga psykisk ohälsa" 
             icon={<PieChart className="h-5 w-5 text-primary" />}
@@ -513,15 +508,7 @@ const FormC = forwardRef<FormCRef, {}>(function FormC(props, ref) {
         </div>
         
         <div className="flex justify-between mt-8">
-          <div></div> {/* Tom div för att spara-knappen ska hamna till höger */}
-          <Button 
-            onClick={handleSave} 
-            className="gap-2"
-            disabled={isSaving}
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Sparar...' : 'Spara formulär'}
-          </Button>
+          <div></div> {/* Tom div för att behålla layoututrymmet */}
         </div>
       </div>
     </div>

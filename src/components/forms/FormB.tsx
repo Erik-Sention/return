@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Info, Target, FileText, Calendar, Users, Lightbulb, ListChecks } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 
@@ -24,10 +24,37 @@ export interface FormBRef {
   handleSave: () => Promise<void>;
 }
 
+// Lägg till InfoLabel-komponenten för att ge användaren information
+const InfoLabel = ({ text }: { text: string }) => (
+  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+    <Info className="w-3 h-3" />
+    <span>{text}</span>
+  </div>
+);
+
+// Lägg till SectionHeader för tydligare struktur
+const SectionHeader = ({ 
+  title, 
+  icon 
+}: { 
+  title: string; 
+  icon: React.ReactNode 
+}) => (
+  <div className="flex items-center gap-2 mb-4">
+    <div className="bg-primary/10 p-2 rounded-full">
+      {icon}
+    </div>
+    <h3 className="text-lg font-semibold">{title}</h3>
+  </div>
+);
+
+// Definiera en typ för komponentens props
+type FormBProps = React.ComponentProps<'div'>;
+
 const FORM_TYPE = 'B';
 
 // Gör FormB till en forwardRef component
-const FormB = forwardRef<FormBRef, {}>(function FormB(props, ref) {
+const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const { currentUser } = useAuth();
   const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
@@ -136,169 +163,229 @@ const FormB = forwardRef<FormBRef, {}>(function FormB(props, ref) {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Formulär B – Verksamhetsanalys – insats</h2>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 p-2 rounded-full">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold">B – Verksamhetsanalys – insats</h2>
           </div>
+          {saveMessage && (
+            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+              {saveMessage}
+            </span>
+          )}
         </div>
         
         {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm">
+          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
             {error}
           </div>
         )}
         
         {/* B1, B2, B3 */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">B1: Organisationens namn</label>
-            <Input
-              value={formData.organizationName}
-              onChange={(e) => handleChange('organizationName', e.target.value)}
-              placeholder="Ange organisationens namn"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">B2: Kontaktperson</label>
-            <Input
-              value={formData.contactPerson}
-              onChange={(e) => handleChange('contactPerson', e.target.value)}
-              placeholder="Ange kontaktperson"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">B3: Insatsnamn</label>
-            <Input
-              value={formData.initiativeName}
-              onChange={(e) => handleChange('initiativeName', e.target.value)}
-              placeholder="Ange insatsens namn"
-            />
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Grundinformation" 
+            icon={<FileText className="h-5 w-5 text-primary" />}
+          />
+          
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">B1: Organisationens namn</label>
+              <Input
+                value={formData.organizationName}
+                onChange={(e) => handleChange('organizationName', e.target.value)}
+                placeholder="Ange organisationens namn"
+                className="bg-background/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">B2: Kontaktperson</label>
+              <Input
+                value={formData.contactPerson}
+                onChange={(e) => handleChange('contactPerson', e.target.value)}
+                placeholder="Ange kontaktperson"
+                className="bg-background/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">B3: Insatsnamn</label>
+              <Input
+                value={formData.initiativeName}
+                onChange={(e) => handleChange('initiativeName', e.target.value)}
+                placeholder="Ange insatsens namn"
+                className="bg-background/50"
+              />
+            </div>
           </div>
         </div>
 
         {/* B4 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Vilka insatser avses?</h3>
-          <p className="text-sm text-muted-foreground">Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.initiativeDescription}
-            onChange={(e) => handleChange('initiativeDescription', e.target.value)}
-            placeholder="Beskriv insatserna..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Vilka insatser avses?" 
+            icon={<Target className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.initiativeDescription}
+              onChange={(e) => handleChange('initiativeDescription', e.target.value)}
+              placeholder="Beskriv insatserna..."
+            />
+          </div>
         </div>
 
         {/* B5 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Syfte med insatserna</h3>
-          <p className="text-sm text-muted-foreground">Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.purpose}
-            onChange={(e) => handleChange('purpose', e.target.value)}
-            placeholder="Beskriv syftet..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Syfte med insatserna" 
+            icon={<Lightbulb className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.purpose}
+              onChange={(e) => handleChange('purpose', e.target.value)}
+              placeholder="Beskriv syftet..."
+            />
+          </div>
         </div>
 
         {/* B6 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Stöd för verksamhetens övergripande mål</h3>
-          <p className="text-sm text-muted-foreground">Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.supportForGoals}
-            onChange={(e) => handleChange('supportForGoals', e.target.value)}
-            placeholder="Beskriv vilka verksamhetsmål som stöds..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Stöd för verksamhetens övergripande mål" 
+            icon={<Target className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.supportForGoals}
+              onChange={(e) => handleChange('supportForGoals', e.target.value)}
+              placeholder="Beskriv vilka verksamhetsmål som stöds..."
+            />
+          </div>
         </div>
 
         {/* B7 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Alternativa ansatser</h3>
-          <p className="text-sm text-muted-foreground">Beskriv de alternativ som analyserats, och motivera vald ansats</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.alternativeApproaches}
-            onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
-            placeholder="Beskriv alternativa ansatser..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Alternativa ansatser" 
+            icon={<Lightbulb className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv de alternativ som analyserats, och motivera vald ansats" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.alternativeApproaches}
+              onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
+              placeholder="Beskriv alternativa ansatser..."
+            />
+          </div>
         </div>
 
         {/* B8 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Mål med insatserna</h3>
-          <p className="text-sm text-muted-foreground">Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.goals}
-            onChange={(e) => handleChange('goals', e.target.value)}
-            placeholder="Beskriv målen..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Mål med insatserna" 
+            icon={<Target className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.goals}
+              onChange={(e) => handleChange('goals', e.target.value)}
+              placeholder="Beskriv målen..."
+            />
+          </div>
         </div>
 
         {/* B9 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Målgrupp</h3>
-          <p className="text-sm text-muted-foreground">Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.targetGroup}
-            onChange={(e) => handleChange('targetGroup', e.target.value)}
-            placeholder="Beskriv målgruppen..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Målgrupp" 
+            icon={<Users className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.targetGroup}
+              onChange={(e) => handleChange('targetGroup', e.target.value)}
+              placeholder="Beskriv målgruppen..."
+            />
+          </div>
         </div>
 
         {/* B10 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">När nås förväntad effekt av insatsen?</h3>
-          <p className="text-sm text-muted-foreground">Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter</p>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.expectedEffect}
-            onChange={(e) => handleChange('expectedEffect', e.target.value)}
-            placeholder="Beskriv tidshorisont för förväntad effekt..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="När nås förväntad effekt av insatsen?" 
+            icon={<Calendar className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.expectedEffect}
+              onChange={(e) => handleChange('expectedEffect', e.target.value)}
+              placeholder="Beskriv tidshorisont för förväntad effekt..."
+            />
+          </div>
         </div>
 
         {/* B11 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Genomförandeplan</h3>
-          <p className="text-sm text-muted-foreground">Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar</p>
-          {formData.implementationPlan.map((step, index) => (
-            <div key={index} className="flex gap-2">
-              <Input
-                value={step}
-                onChange={(e) => {
-                  const newPlan = [...formData.implementationPlan];
-                  newPlan[index] = e.target.value;
-                  handleChange('implementationPlan', newPlan);
-                }}
-                placeholder={`Steg ${index + 1}`}
-              />
-              {index === formData.implementationPlan.length - 1 && (
-                <Button
-                  type="button"
-                  onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
-                >
-                  +
-                </Button>
-              )}
-            </div>
-          ))}
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Genomförandeplan" 
+            icon={<ListChecks className="h-5 w-5 text-primary" />}
+          />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
+            {formData.implementationPlan.map((step, index) => (
+              <div key={index} className="flex gap-2 mb-3">
+                <Input
+                  value={step}
+                  onChange={(e) => {
+                    const newPlan = [...formData.implementationPlan];
+                    newPlan[index] = e.target.value;
+                    handleChange('implementationPlan', newPlan);
+                  }}
+                  placeholder={`Steg ${index + 1}`}
+                  className="bg-background/50"
+                />
+                {index === formData.implementationPlan.length - 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
+                  >
+                    +
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex justify-between mt-8">
+          <div></div> {/* Tom div för att behålla layoututrymmet */}
         </div>
       </div>
     </div>

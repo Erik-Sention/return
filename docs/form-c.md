@@ -87,7 +87,7 @@ Total kostnad för psykisk ohälsa, kr per år: **22 212 432**
 - **C4** förs över från D9
 - **C10** förs över till C18
 - **C11** förs över från E8
-- **C14** förs över från E8
+- **C14** förs över från F8
 - **C17** förs över till C19
 
 --- 

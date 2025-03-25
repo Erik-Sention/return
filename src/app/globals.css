@@ -112,3 +112,43 @@
   background-image: linear-gradient(to bottom right, hsl(220 15% 16%), hsl(220 13% 18%), hsl(220 10% 14%));
   background-attachment: fixed;
 }
+
+/* Anpassade klasser för formulärkort */
+.form-card {
+  @apply p-6 rounded-lg shadow-lg border border-border;
+  background-color: hsl(var(--card));
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ljust läge gradient */
+:root .form-card::before {
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.8), rgba(221, 227, 239, 0.5));
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Mörkt läge gradient */
+.dark .form-card::before {
+  background: linear-gradient(to bottom right, rgba(40, 50, 80, 0.2), rgba(20, 30, 50, 0.1));
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Innehåll i kortet ska visas över gradientbakgrunden */
+.form-card > * {
+  position: relative;
+  z-index: 1;
+}

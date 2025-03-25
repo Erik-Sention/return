@@ -113,7 +113,7 @@ export default function ROIPage() {
           onFormChange={handleFormChange}
         />
 
-        <div className="bg-card rounded-lg shadow-md border border-border p-6">
+        <div className="form-card">
           {currentForm === 'A' && <FormA ref={formARef} />}
           {currentForm === 'B' && <FormB ref={formBRef} />}
           {currentForm === 'C' && <FormC ref={formCRef} />}
