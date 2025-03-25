@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import FormA from '@/components/forms/FormA';
 import FormB from '@/components/forms/FormB';
+import FormC from '@/components/forms/FormC';
 import FormTimeline from '@/components/forms/FormTimeline';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -70,6 +71,7 @@ export default function ROIPage() {
         <div className="bg-card rounded-lg shadow p-6">
           {currentForm === 'A' && <FormA />}
           {currentForm === 'B' && <FormB />}
+          {currentForm === 'C' && <FormC />}
         </div>
 
         <div className="flex justify-between">

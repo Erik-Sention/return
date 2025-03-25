@@ -46,7 +46,7 @@ export default function FormTimeline({ currentForm, completedForms, onFormChange
                 ? 'font-medium text-primary' 
                 : 'text-muted-foreground'
             }`}>
-              Form {form}
+              {form}
             </span>
           </div>
         ))}
