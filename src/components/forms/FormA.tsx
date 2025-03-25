@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveFormData, loadFormData, setupFormAutosave, setupFormDataListener } from '@/lib/firebase/formData';
+import { saveFormData, loadFormData, setupFormDataListener } from '@/lib/firebase/formData';
 
 interface FormAData {
   organizationName: string;
@@ -19,7 +19,6 @@ interface FormAData {
   recommendation: string;
 }
 
-const STORAGE_KEY = 'roi-calculator-form-a';
 const FORM_TYPE = 'formA' as const;
 
 export default function FormA() {
@@ -40,7 +39,7 @@ export default function FormA() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load data from Firebase on mount
   useEffect(() => {
@@ -48,8 +47,9 @@ export default function FormA() {
       if (!currentUser?.uid) return;
       
       try {
+        setIsLoading(true);
         setError(null);
-        const data = await loadFormData(currentUser.uid, FORM_TYPE);
+        const data = await loadFormData<FormAData>(currentUser.uid, FORM_TYPE);
         if (data) {
           console.log('Loaded form data:', data);
           setFormData(data);
@@ -57,6 +57,8 @@ export default function FormA() {
       } catch (error) {
         console.error('Fel vid laddning av data:', error);
         setError('Kunde inte ladda data från databasen');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -68,8 +70,8 @@ export default function FormA() {
     if (!currentUser?.uid) return;
 
     const unsubscribe = setupFormDataListener(currentUser.uid, FORM_TYPE, (data) => {
-      if (data) {
-        setFormData(data);
+      if (data && 'businessDefinition' in data) {
+        setFormData(data as FormAData);
       }
     });
 

@@ -3,13 +3,45 @@ import { app } from './config';
 
 const database = getDatabase(app);
 
+type FormType = 'formA' | 'formB';
+
+interface FormAData {
+  organizationName: string;
+  contactPerson: string;
+  businessDefinition: string;
+  currentSituation: string;
+  stressLevel: number;
+  productionLoss: number;
+  sickLeaveCost: number;
+  causeAnalysis: string;
+  goals: string;
+  interventions: string[];
+  recommendation: string;
+}
+
+interface FormBData {
+  organizationName: string;
+  contactPerson: string;
+  initiativeName: string;
+  initiativeDescription: string;
+  purpose: string;
+  supportForGoals: string;
+  alternativeApproaches: string;
+  goals: string;
+  targetGroup: string;
+  expectedEffect: string;
+  implementationPlan: string[];
+}
+
+type FormData = FormAData | FormBData;
+
 /**
  * Saves form data to Firebase Realtime Database
  * @param userId - The current user's ID
  * @param formType - The type of form (A, B, C, etc.)
  * @param data - The form data to save
  */
-export const saveFormData = async (userId: string, formType: 'formA' | 'formB', data: any) => {
+export const saveFormData = async (userId: string, formType: FormType, data: FormData) => {
   try {
     console.log('Försöker spara data till Firebase:', { userId, formType });
     
@@ -32,7 +64,7 @@ export const saveFormData = async (userId: string, formType: 'formA' | 'formB', 
  * @param formType - The type of form (A, B, C, etc.)
  * @returns The form data or null if not found
  */
-export const loadFormData = async (userId: string, formType: 'formA' | 'formB') => {
+export const loadFormData = async <T extends FormData>(userId: string, formType: FormType): Promise<T | null> => {
   try {
     console.log('Försöker ladda data från Firebase:', { userId, formType });
     
@@ -45,7 +77,7 @@ export const loadFormData = async (userId: string, formType: 'formA' | 'formB') 
     
     if (snapshot.exists()) {
       console.log('Data laddad framgångsrikt från Firebase');
-      return snapshot.val();
+      return snapshot.val() as T;
     }
     
     console.log('Ingen data hittades i Firebase');
@@ -81,7 +113,7 @@ export const setupFormAutosave = <T>(
     try {
       console.log(`Autosaving form ${formType}...`);
       setIsSaving(true);
-      await saveFormData(userId, formType as 'formA' | 'formB', data);
+      await saveFormData(userId, formType as FormType, data);
       console.log(`Autosave successful for form ${formType}`);
       setSaveMessage('Autosparat');
       setTimeout(() => setSaveMessage(null), 2000);
@@ -97,8 +129,8 @@ export const setupFormAutosave = <T>(
 
 export const setupFormDataListener = (
   userId: string,
-  formType: 'formA' | 'formB',
-  callback: (data: any) => void
+  formType: FormType,
+  callback: (data: FormData | null) => void
 ) => {
   try {
     console.log('Sätter upp lyssnare för Firebase:', { userId, formType });
@@ -119,10 +151,7 @@ export const setupFormDataListener = (
       }
     });
 
-    return () => {
-      console.log('Tar bort lyssnare för Firebase');
-      off(formRef);
-    };
+    return unsubscribe;
   } catch (error) {
     console.error('Fel vid uppsättning av Firebase-lyssnare:', error);
     throw new Error('Kunde inte sätta upp databaslyssnare');
