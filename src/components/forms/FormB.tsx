@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
@@ -19,9 +19,15 @@ interface FormBData {
   implementationPlan: string[];
 }
 
+// Definiera en typ för vad som ska exponeras via ref
+export interface FormBRef {
+  handleSave: () => Promise<void>;
+}
+
 const FORM_TYPE = 'B';
 
-export default function FormB() {
+// Gör FormB till en forwardRef component
+const FormB = forwardRef<FormBRef, {}>(function FormB(props, ref) {
   const { currentUser } = useAuth();
   const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
@@ -90,6 +96,13 @@ export default function FormB() {
     };
   }, [formData, currentUser]);
 
+  // Exponera handleSave till föräldrakomponenten via ref
+  useImperativeHandle(ref, () => ({
+    handleSave: async () => {
+      await handleSave();
+    }
+  }));
+
   const handleSave = async () => {
     if (!currentUser?.uid) {
       setError('Du måste vara inloggad för att spara data');
@@ -111,6 +124,7 @@ export default function FormB() {
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
+      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
     } finally {
       setIsSaving(false);
     }
@@ -289,4 +303,6 @@ export default function FormB() {
       </div>
     </div>
   );
-} 
+});
+
+export default FormB; 

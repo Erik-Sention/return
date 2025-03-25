@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 
@@ -19,9 +19,39 @@ interface FormAData {
   recommendation: string;
 }
 
+// Definiera en typ för vad som ska exponeras via ref
+export interface FormARef {
+  handleSave: () => Promise<void>;
+}
+
+// Lägg till InfoLabel-komponenten för att ge användaren information
+const InfoLabel = ({ text }: { text: string }) => (
+  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+    <Info className="w-3 h-3" />
+    <span>{text}</span>
+  </div>
+);
+
+// Lägg till SectionHeader för tydligare struktur
+const SectionHeader = ({ 
+  title, 
+  icon 
+}: { 
+  title: string; 
+  icon: React.ReactNode 
+}) => (
+  <div className="flex items-center gap-2 mb-4">
+    <div className="bg-primary/10 p-2 rounded-full">
+      {icon}
+    </div>
+    <h3 className="text-lg font-semibold">{title}</h3>
+  </div>
+);
+
 const FORM_TYPE = 'A';
 
-export default function FormA() {
+// Gör FormA till en forwardRef component
+const FormA = forwardRef<FormARef, {}>(function FormA(props, ref) {
   const { currentUser } = useAuth();
   const [formData, setFormData] = useState<FormAData>({
     organizationName: '',
@@ -90,6 +120,13 @@ export default function FormA() {
     };
   }, [formData, currentUser]);
 
+  // Exponera handleSave till föräldrakomponenten via ref
+  useImperativeHandle(ref, () => ({
+    handleSave: async () => {
+      await handleSave();
+    }
+  }));
+
   const handleSave = async () => {
     if (!currentUser?.uid) {
       setError('Du måste vara inloggad för att spara data');
@@ -111,6 +148,7 @@ export default function FormA() {
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
+      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
     } finally {
       setIsSaving(false);
     }
@@ -122,9 +160,14 @@ export default function FormA() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">A – Verksamhetsanalys</h2>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 p-2 rounded-full">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold">A – Verksamhetsanalys</h2>
+          </div>
           <div className="flex items-center gap-2">
             {saveMessage && (
               <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
@@ -143,106 +186,152 @@ export default function FormA() {
         </div>
         
         {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm">
+          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
             {error}
           </div>
         )}
         
         {/* A1 & A2 */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Organisationens namn</label>
-            <Input
-              value={formData.organizationName}
-              onChange={(e) => handleChange('organizationName', e.target.value)}
-              placeholder="Ange organisationens namn"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kontaktperson</label>
-            <Input
-              value={formData.contactPerson}
-              onChange={(e) => handleChange('contactPerson', e.target.value)}
-              placeholder="Ange kontaktperson"
-            />
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Organisationsinformation" 
+            icon={<Building className="h-5 w-5 text-primary" />}
+          />
+          
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Organisationens namn</label>
+              <Input
+                value={formData.organizationName}
+                onChange={(e) => handleChange('organizationName', e.target.value)}
+                placeholder="Ange organisationens namn"
+                className="bg-background/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Kontaktperson</label>
+              <Input
+                value={formData.contactPerson}
+                onChange={(e) => handleChange('contactPerson', e.target.value)}
+                placeholder="Ange kontaktperson"
+                className="bg-background/50"
+              />
+            </div>
           </div>
         </div>
 
         {/* A3 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 1 – Definition av verksamheten</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.businessDefinition}
-            onChange={(e) => handleChange('businessDefinition', e.target.value)}
-            placeholder="Beskriv verksamheten..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 1 – Definition av verksamheten" 
+            icon={<Building className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Beskriv verksamhetens huvudsakliga uppgifter och mål" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.businessDefinition}
+              onChange={(e) => handleChange('businessDefinition', e.target.value)}
+              placeholder="Beskriv verksamheten..."
+            />
+          </div>
         </div>
 
         {/* A4 */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Steg 2 – Nulägesbeskrivning, psykisk hälsa</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.currentSituation}
-            onChange={(e) => handleChange('currentSituation', e.target.value)}
-            placeholder="Beskriv nuläget..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 2 – Nulägesbeskrivning, psykisk hälsa" 
+            icon={<BrainCircuit className="h-5 w-5 text-primary" />}
           />
-          <div className="grid gap-4 md:grid-cols-3">
+
+          <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
-              <Input
-                type="number"
-                value={formData.stressLevel}
-                onChange={(e) => handleChange('stressLevel', parseFloat(e.target.value))}
+              <InfoLabel text="Beskriv nuläget gällande psykisk hälsa i verksamheten" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.currentSituation}
+                onChange={(e) => handleChange('currentSituation', e.target.value)}
+                placeholder="Beskriv nuläget..."
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
-              <Input
-                type="number"
-                value={formData.productionLoss}
-                onChange={(e) => handleChange('productionLoss', parseFloat(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
-              <Input
-                type="number"
-                value={formData.sickLeaveCost}
-                onChange={(e) => handleChange('sickLeaveCost', parseFloat(e.target.value))}
-              />
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
+                <Input
+                  type="number"
+                  value={formData.stressLevel}
+                  onChange={(e) => handleChange('stressLevel', parseFloat(e.target.value))}
+                  className="bg-background/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
+                <Input
+                  type="number"
+                  value={formData.productionLoss}
+                  onChange={(e) => handleChange('productionLoss', parseFloat(e.target.value))}
+                  className="bg-background/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
+                <Input
+                  type="number"
+                  value={formData.sickLeaveCost}
+                  onChange={(e) => handleChange('sickLeaveCost', parseFloat(e.target.value))}
+                  className="bg-background/50"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* A5 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 3 – Orsaksanalys och riskbedömning</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.causeAnalysis}
-            onChange={(e) => handleChange('causeAnalysis', e.target.value)}
-            placeholder="Beskriv orsaker och risker..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 3 – Orsaksanalys och riskbedömning" 
+            icon={<LineChart className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Identifiera orsaker till problem och bedöm risker" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.causeAnalysis}
+              onChange={(e) => handleChange('causeAnalysis', e.target.value)}
+              placeholder="Beskriv orsaker och risker..."
+            />
+          </div>
         </div>
 
         {/* A6 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 4 – Målformulering och Behovsanalys</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.goals}
-            onChange={(e) => handleChange('goals', e.target.value)}
-            placeholder="Beskriv mål och behov..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 4 – Målformulering och Behovsanalys" 
+            icon={<Target className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <InfoLabel text="Formulera tydliga mål baserade på identifierade behov" />
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.goals}
+              onChange={(e) => handleChange('goals', e.target.value)}
+              placeholder="Beskriv mål och behov..."
+            />
+          </div>
         </div>
 
         {/* A7 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 5 – Val av lämpliga insatser</h3>
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 5 – Val av lämpliga insatser" 
+            icon={<ClipboardList className="h-5 w-5 text-primary" />}
+          />
+          
           {formData.interventions.map((intervention, index) => (
-            <div key={index} className="flex gap-2">
+            <div key={index} className="flex gap-2 mb-3">
               <Input
                 value={intervention}
                 onChange={(e) => {
@@ -251,10 +340,13 @@ export default function FormA() {
                   handleChange('interventions', newInterventions);
                 }}
                 placeholder={`Insats ${index + 1}`}
+                className="bg-background/50"
               />
               {index === formData.interventions.length - 1 && (
                 <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   onClick={() => handleChange('interventions', [...formData.interventions, ''])}
                 >
                   +
@@ -265,16 +357,36 @@ export default function FormA() {
         </div>
 
         {/* A9 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Steg 7 – Rekommendation för beslut</h3>
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background"
-            value={formData.recommendation}
-            onChange={(e) => handleChange('recommendation', e.target.value)}
-            placeholder="Ange rekommendation..."
+        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+          <SectionHeader 
+            title="Steg 7 – Rekommendation för beslut" 
+            icon={<ClipboardList className="h-5 w-5 text-primary" />}
           />
+          
+          <div className="space-y-2">
+            <textarea
+              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              value={formData.recommendation}
+              onChange={(e) => handleChange('recommendation', e.target.value)}
+              placeholder="Ange rekommendation..."
+            />
+          </div>
+        </div>
+        
+        <div className="flex justify-between mt-8">
+          <div></div> {/* Tom div för att spara-knappen ska hamna till höger */}
+          <Button 
+            onClick={handleSave} 
+            className="gap-2"
+            disabled={isSaving}
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Sparar...' : 'Spara formulär'}
+          </Button>
         </div>
       </div>
     </div>
   );
-} 
+});
+
+export default FormA; 

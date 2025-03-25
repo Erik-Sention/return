@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import FormA from '@/components/forms/FormA';
-import FormB from '@/components/forms/FormB';
-import FormC from '@/components/forms/FormC';
+import FormA, { FormARef } from '@/components/forms/FormA';
+import FormB, { FormBRef } from '@/components/forms/FormB';
+import FormC, { FormCRef } from '@/components/forms/FormC';
 import FormTimeline from '@/components/forms/FormTimeline';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -15,8 +15,15 @@ export default function ROIPage() {
   const [currentForm, setCurrentForm] = useState('A');
   const [completedForms, setCompletedForms] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  
+  // Refs till formulären med korrekta typer
+  const formARef = useRef<FormARef>(null);
+  const formBRef = useRef<FormBRef>(null);
+  const formCRef = useRef<FormCRef>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -31,6 +38,38 @@ export default function ROIPage() {
     setCurrentForm(form);
     if (!completedForms.includes(currentForm)) {
       setCompletedForms([...completedForms, currentForm]);
+    }
+  };
+  
+  // Funktion för att spara aktuellt formulär via ref
+  const handleSaveCurrentForm = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+    
+    try {
+      if (currentForm === 'A' && formARef.current) {
+        await formARef.current.handleSave();
+        setSaveMessage('Formulär A har sparats!');
+      } else if (currentForm === 'B' && formBRef.current) {
+        await formBRef.current.handleSave();
+        setSaveMessage('Formulär B har sparats!');
+      } else if (currentForm === 'C' && formCRef.current) {
+        await formCRef.current.handleSave();
+        setSaveMessage('Formulär C har sparats!');
+      }
+      
+      // Lägg till formuläret i completedForms om det inte redan finns där
+      if (!completedForms.includes(currentForm)) {
+        setCompletedForms(prev => [...prev, currentForm]);
+      }
+      
+      // Dölj bekräftelsemeddelandet efter 3 sekunder
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (error) {
+      console.error('Error saving form:', error);
+      setSaveMessage('Ett fel uppstod när formuläret skulle sparas.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -59,6 +98,12 @@ export default function ROIPage() {
           </Link>
           <h1 className="text-3xl font-bold">ROI-kalkylator</h1>
         </div>
+        
+        {saveMessage && (
+          <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+            {saveMessage}
+          </span>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -68,10 +113,10 @@ export default function ROIPage() {
           onFormChange={handleFormChange}
         />
 
-        <div className="bg-card rounded-lg shadow p-6">
-          {currentForm === 'A' && <FormA />}
-          {currentForm === 'B' && <FormB />}
-          {currentForm === 'C' && <FormC />}
+        <div className="bg-card rounded-lg shadow-md border border-border p-6">
+          {currentForm === 'A' && <FormA ref={formARef} />}
+          {currentForm === 'B' && <FormB ref={formBRef} />}
+          {currentForm === 'C' && <FormC ref={formCRef} />}
         </div>
 
         <div className="flex justify-between">
@@ -86,18 +131,30 @@ export default function ROIPage() {
               Föregående
             </Button>
           )}
-          {currentForm !== 'J' && (
+          
+          <div className="flex gap-3">
             <Button 
-              onClick={() => {
-                const forms = 'ABCDEFGHIJ'.split('');
-                const currentIndex = forms.indexOf(currentForm);
-                setCurrentForm(forms[currentIndex + 1]);
-              }}
-              className={currentForm === 'A' ? 'ml-auto' : ''}
+              variant="outline"
+              className="gap-2"
+              onClick={handleSaveCurrentForm}
+              disabled={isSaving}
             >
-              Nästa
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Sparar...' : 'Spara formulär'}
             </Button>
-          )}
+            
+            {currentForm !== 'J' && (
+              <Button 
+                onClick={() => {
+                  const forms = 'ABCDEFGHIJ'.split('');
+                  const currentIndex = forms.indexOf(currentForm);
+                  setCurrentForm(forms[currentIndex + 1]);
+                }}
+              >
+                Nästa
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
