@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { saveFormData, loadFormData, setupFormAutosave, setupFormDataListener } from '@/lib/firebase/formData';
 
 interface FormAData {
   organizationName: string;
@@ -20,7 +20,7 @@ interface FormAData {
 }
 
 const STORAGE_KEY = 'roi-calculator-form-a';
-const FORM_TYPE = 'A';
+const FORM_TYPE = 'formA' as const;
 
 export default function FormA() {
   const { currentUser } = useAuth();
@@ -44,106 +44,61 @@ export default function FormA() {
 
   // Load data from Firebase on mount
   useEffect(() => {
-    const loadFromFirebase = async () => {
-      if (currentUser?.uid) {
-        try {
-          setError(null);
-          const data = await loadFormData<FormAData>(currentUser.uid, FORM_TYPE);
-          if (data) {
-            console.log('Loaded form data:', data);
-            setFormData(data);
-          } else {
-            // Fall back to localStorage if no data in Firebase
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            if (savedData) {
-              console.log('Using localStorage data instead of Firebase');
-              setFormData(JSON.parse(savedData));
-            }
-          }
-        } catch (error) {
-          console.error('Error loading data from Firebase:', error);
-          setError('Kunde inte ladda data från databasen. Försöker med lokalt sparad data.');
-          
-          // Fall back to localStorage
-          const savedData = localStorage.getItem(STORAGE_KEY);
-          if (savedData) {
-            try {
-              setFormData(JSON.parse(savedData));
-            } catch (e) {
-              console.error('Error parsing localStorage data:', e);
-            }
-          }
+    const loadData = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        setError(null);
+        const data = await loadFormData(currentUser.uid, FORM_TYPE);
+        if (data) {
+          console.log('Loaded form data:', data);
+          setFormData(data);
         }
-      } else {
-        console.log('No user logged in, cannot load data from Firebase');
+      } catch (error) {
+        console.error('Fel vid laddning av data:', error);
+        setError('Kunde inte ladda data från databasen');
       }
     };
 
-    loadFromFirebase();
+    loadData();
   }, [currentUser]);
 
-  // Setup autosave whenever formData changes
+  // Sätt upp lyssnare för realtidsuppdateringar
   useEffect(() => {
-    // Clear any existing timer
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
+    if (!currentUser?.uid) return;
 
-    // Only autosave if user is logged in and form has been interacted with
-    if (currentUser?.uid) {
-      autosaveTimerRef.current = setupFormAutosave(
-        currentUser.uid,
-        FORM_TYPE,
-        formData,
-        setIsSaving,
-        setSaveMessage
-      );
-    }
-
-    // Cleanup timer on unmount
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+    const unsubscribe = setupFormDataListener(currentUser.uid, FORM_TYPE, (data) => {
+      if (data) {
+        setFormData(data);
       }
-    };
-  }, [formData, currentUser]);
+    });
 
-  const handleSave = async () => {
-    if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att spara data');
-      return;
-    }
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.uid) return;
 
     try {
       setIsSaving(true);
-      setSaveMessage(null);
-      setError(null);
-      
-      console.log('Saving form data to Firebase:', formData);
-      
-      // Save to both Firebase and localStorage for redundancy
       await saveFormData(currentUser.uid, FORM_TYPE, formData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      
-      setSaveMessage('Formuläret har sparats!');
-      setTimeout(() => setSaveMessage(null), 3000);
+      setSaveMessage('Sparat');
+      setError(null);
     } catch (error) {
-      console.error('Error saving form data:', error);
-      setError('Ett fel uppstod när formuläret skulle sparas till databasen. Data har sparats lokalt.');
-      
-      // Still try to save locally
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      } catch (e) {
-        console.error('Error saving to localStorage:', e);
-      }
+      console.error('Fel vid sparande:', error);
+      setError('Kunde inte spara data');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleChange = (field: keyof FormAData, value: string | number | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -158,7 +113,7 @@ export default function FormA() {
               </span>
             )}
             <Button 
-              onClick={handleSave} 
+              onClick={handleSubmit} 
               className="gap-2"
               disabled={isSaving}
             >
@@ -180,7 +135,8 @@ export default function FormA() {
             <label className="text-sm font-medium">Organisationens namn</label>
             <Input
               value={formData.organizationName}
-              onChange={(e) => handleChange('organizationName', e.target.value)}
+              onChange={handleChange}
+              name="organizationName"
               placeholder="Ange organisationens namn"
             />
           </div>
@@ -188,7 +144,8 @@ export default function FormA() {
             <label className="text-sm font-medium">Kontaktperson</label>
             <Input
               value={formData.contactPerson}
-              onChange={(e) => handleChange('contactPerson', e.target.value)}
+              onChange={handleChange}
+              name="contactPerson"
               placeholder="Ange kontaktperson"
             />
           </div>
@@ -200,7 +157,8 @@ export default function FormA() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.businessDefinition}
-            onChange={(e) => handleChange('businessDefinition', e.target.value)}
+            onChange={handleChange}
+            name="businessDefinition"
             placeholder="Beskriv verksamheten..."
           />
         </div>
@@ -211,7 +169,8 @@ export default function FormA() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.currentSituation}
-            onChange={(e) => handleChange('currentSituation', e.target.value)}
+            onChange={handleChange}
+            name="currentSituation"
             placeholder="Beskriv nuläget..."
           />
           <div className="grid gap-4 md:grid-cols-3">
@@ -220,7 +179,8 @@ export default function FormA() {
               <Input
                 type="number"
                 value={formData.stressLevel}
-                onChange={(e) => handleChange('stressLevel', parseFloat(e.target.value))}
+                onChange={handleChange}
+                name="stressLevel"
               />
             </div>
             <div className="space-y-2">
@@ -228,7 +188,8 @@ export default function FormA() {
               <Input
                 type="number"
                 value={formData.productionLoss}
-                onChange={(e) => handleChange('productionLoss', parseFloat(e.target.value))}
+                onChange={handleChange}
+                name="productionLoss"
               />
             </div>
             <div className="space-y-2">
@@ -236,7 +197,8 @@ export default function FormA() {
               <Input
                 type="number"
                 value={formData.sickLeaveCost}
-                onChange={(e) => handleChange('sickLeaveCost', parseFloat(e.target.value))}
+                onChange={handleChange}
+                name="sickLeaveCost"
               />
             </div>
           </div>
@@ -248,7 +210,8 @@ export default function FormA() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.causeAnalysis}
-            onChange={(e) => handleChange('causeAnalysis', e.target.value)}
+            onChange={handleChange}
+            name="causeAnalysis"
             placeholder="Beskriv orsaker och risker..."
           />
         </div>
@@ -259,7 +222,8 @@ export default function FormA() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.goals}
-            onChange={(e) => handleChange('goals', e.target.value)}
+            onChange={handleChange}
+            name="goals"
             placeholder="Beskriv mål och behov..."
           />
         </div>
@@ -271,17 +235,20 @@ export default function FormA() {
             <div key={index} className="flex gap-2">
               <Input
                 value={intervention}
-                onChange={(e) => {
-                  const newInterventions = [...formData.interventions];
-                  newInterventions[index] = e.target.value;
-                  handleChange('interventions', newInterventions);
-                }}
+                onChange={handleChange}
+                name={`interventions.${index}`}
                 placeholder={`Insats ${index + 1}`}
               />
               {index === formData.interventions.length - 1 && (
                 <Button
                   type="button"
-                  onClick={() => handleChange('interventions', [...formData.interventions, ''])}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setFormData(prev => ({
+                      ...prev,
+                      interventions: [...prev.interventions, '']
+                    }));
+                  }}
                 >
                   +
                 </Button>
@@ -296,7 +263,8 @@ export default function FormA() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.recommendation}
-            onChange={(e) => handleChange('recommendation', e.target.value)}
+            onChange={handleChange}
+            name="recommendation"
             placeholder="Ange rekommendation..."
           />
         </div>

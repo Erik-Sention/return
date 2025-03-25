@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { saveFormData, loadFormData, setupFormAutosave, setupFormDataListener } from '@/lib/firebase/formData';
 
 interface FormBData {
   organizationName: string;
@@ -20,7 +20,7 @@ interface FormBData {
 }
 
 const STORAGE_KEY = 'roi-calculator-form-b';
-const FORM_TYPE = 'B';
+const FORM_TYPE = 'formB' as const;
 
 export default function FormB() {
   const { currentUser } = useAuth();
@@ -44,106 +44,61 @@ export default function FormB() {
 
   // Load data from Firebase on mount
   useEffect(() => {
-    const loadFromFirebase = async () => {
-      if (currentUser?.uid) {
-        try {
-          setError(null);
-          const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE);
-          if (data) {
-            console.log('Loaded form data:', data);
-            setFormData(data);
-          } else {
-            // Fall back to localStorage if no data in Firebase
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            if (savedData) {
-              console.log('Using localStorage data instead of Firebase');
-              setFormData(JSON.parse(savedData));
-            }
-          }
-        } catch (error) {
-          console.error('Error loading data from Firebase:', error);
-          setError('Kunde inte ladda data från databasen. Försöker med lokalt sparad data.');
-          
-          // Fall back to localStorage
-          const savedData = localStorage.getItem(STORAGE_KEY);
-          if (savedData) {
-            try {
-              setFormData(JSON.parse(savedData));
-            } catch (e) {
-              console.error('Error parsing localStorage data:', e);
-            }
-          }
+    const loadData = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        setError(null);
+        const data = await loadFormData(currentUser.uid, FORM_TYPE);
+        if (data) {
+          console.log('Loaded form data:', data);
+          setFormData(data);
         }
-      } else {
-        console.log('No user logged in, cannot load data from Firebase');
+      } catch (error) {
+        console.error('Fel vid laddning av data:', error);
+        setError('Kunde inte ladda data från databasen');
       }
     };
 
-    loadFromFirebase();
+    loadData();
   }, [currentUser]);
 
-  // Setup autosave whenever formData changes
+  // Sätt upp lyssnare för realtidsuppdateringar
   useEffect(() => {
-    // Clear any existing timer
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
+    if (!currentUser?.uid) return;
 
-    // Only autosave if user is logged in and form has been interacted with
-    if (currentUser?.uid) {
-      autosaveTimerRef.current = setupFormAutosave(
-        currentUser.uid,
-        FORM_TYPE,
-        formData,
-        setIsSaving,
-        setSaveMessage
-      );
-    }
-
-    // Cleanup timer on unmount
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
+    const unsubscribe = setupFormDataListener(currentUser.uid, FORM_TYPE, (data) => {
+      if (data) {
+        setFormData(data);
       }
-    };
-  }, [formData, currentUser]);
+    });
 
-  const handleSave = async () => {
-    if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att spara data');
-      return;
-    }
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.uid) return;
 
     try {
       setIsSaving(true);
-      setSaveMessage(null);
-      setError(null);
-      
-      console.log('Saving form data to Firebase:', formData);
-      
-      // Save to both Firebase and localStorage for redundancy
       await saveFormData(currentUser.uid, FORM_TYPE, formData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      
-      setSaveMessage('Formuläret har sparats!');
-      setTimeout(() => setSaveMessage(null), 3000);
+      setSaveMessage('Sparat');
+      setError(null);
     } catch (error) {
-      console.error('Error saving form data:', error);
-      setError('Ett fel uppstod när formuläret skulle sparas till databasen. Data har sparats lokalt.');
-      
-      // Still try to save locally
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      } catch (e) {
-        console.error('Error saving to localStorage:', e);
-      }
+      console.error('Fel vid sparande:', error);
+      setError('Kunde inte spara data');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleChange = (field: keyof FormBData, value: string | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -158,7 +113,7 @@ export default function FormB() {
               </span>
             )}
             <Button 
-              onClick={handleSave} 
+              onClick={handleSubmit} 
               className="gap-2"
               disabled={isSaving}
             >
@@ -180,7 +135,8 @@ export default function FormB() {
             <label className="text-sm font-medium">B1: Organisationens namn</label>
             <Input
               value={formData.organizationName}
-              onChange={(e) => handleChange('organizationName', e.target.value)}
+              onChange={handleChange}
+              name="organizationName"
               placeholder="Ange organisationens namn"
             />
           </div>
@@ -188,7 +144,8 @@ export default function FormB() {
             <label className="text-sm font-medium">B2: Kontaktperson</label>
             <Input
               value={formData.contactPerson}
-              onChange={(e) => handleChange('contactPerson', e.target.value)}
+              onChange={handleChange}
+              name="contactPerson"
               placeholder="Ange kontaktperson"
             />
           </div>
@@ -196,7 +153,8 @@ export default function FormB() {
             <label className="text-sm font-medium">B3: Insatsnamn</label>
             <Input
               value={formData.initiativeName}
-              onChange={(e) => handleChange('initiativeName', e.target.value)}
+              onChange={handleChange}
+              name="initiativeName"
               placeholder="Ange insatsens namn"
             />
           </div>
@@ -209,7 +167,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.initiativeDescription}
-            onChange={(e) => handleChange('initiativeDescription', e.target.value)}
+            onChange={handleChange}
+            name="initiativeDescription"
             placeholder="Beskriv insatserna..."
           />
         </div>
@@ -221,7 +180,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.purpose}
-            onChange={(e) => handleChange('purpose', e.target.value)}
+            onChange={handleChange}
+            name="purpose"
             placeholder="Beskriv syftet..."
           />
         </div>
@@ -233,7 +193,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.supportForGoals}
-            onChange={(e) => handleChange('supportForGoals', e.target.value)}
+            onChange={handleChange}
+            name="supportForGoals"
             placeholder="Beskriv vilka verksamhetsmål som stöds..."
           />
         </div>
@@ -245,7 +206,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.alternativeApproaches}
-            onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
+            onChange={handleChange}
+            name="alternativeApproaches"
             placeholder="Beskriv alternativa ansatser..."
           />
         </div>
@@ -257,7 +219,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.goals}
-            onChange={(e) => handleChange('goals', e.target.value)}
+            onChange={handleChange}
+            name="goals"
             placeholder="Beskriv målen..."
           />
         </div>
@@ -269,7 +232,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.targetGroup}
-            onChange={(e) => handleChange('targetGroup', e.target.value)}
+            onChange={handleChange}
+            name="targetGroup"
             placeholder="Beskriv målgruppen..."
           />
         </div>
@@ -281,7 +245,8 @@ export default function FormB() {
           <textarea
             className="w-full min-h-[100px] p-2 rounded-md border bg-background"
             value={formData.expectedEffect}
-            onChange={(e) => handleChange('expectedEffect', e.target.value)}
+            onChange={handleChange}
+            name="expectedEffect"
             placeholder="Beskriv tidshorisont för förväntad effekt..."
           />
         </div>
@@ -294,17 +259,20 @@ export default function FormB() {
             <div key={index} className="flex gap-2">
               <Input
                 value={step}
-                onChange={(e) => {
-                  const newPlan = [...formData.implementationPlan];
-                  newPlan[index] = e.target.value;
-                  handleChange('implementationPlan', newPlan);
-                }}
+                onChange={handleChange}
+                name={`implementationPlan.${index}`}
                 placeholder={`Steg ${index + 1}`}
               />
               {index === formData.implementationPlan.length - 1 && (
                 <Button
                   type="button"
-                  onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setFormData(prev => ({
+                      ...prev,
+                      implementationPlan: [...prev.implementationPlan, '']
+                    }));
+                  }}
                 >
                   +
                 </Button>
