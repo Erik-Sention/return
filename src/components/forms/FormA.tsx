@@ -171,11 +171,21 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
             </div>
             <h2 className="text-2xl font-bold">A – Verksamhetsanalys</h2>
           </div>
-          {saveMessage && (
-            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-              {saveMessage}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {saveMessage && (
+              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                {saveMessage}
+              </span>
+            )}
+            <Button 
+              onClick={handleSave} 
+              className="gap-2"
+              disabled={isSaving}
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Sparar...' : 'Spara formulär'}
+            </Button>
+          </div>
         </div>
         
         {error && (
@@ -185,7 +195,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         )}
         
         {/* A1 & A2 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Organisationsinformation" 
             icon={<Building className="h-5 w-5 text-primary" />}
@@ -214,7 +224,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A3 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 1 – Definition av verksamheten" 
             icon={<Building className="h-5 w-5 text-primary" />}
@@ -232,7 +242,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A4 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 2 – Nulägesbeskrivning, psykisk hälsa" 
             icon={<BrainCircuit className="h-5 w-5 text-primary" />}
@@ -281,7 +291,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A5 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 3 – Orsaksanalys och riskbedömning" 
             icon={<LineChart className="h-5 w-5 text-primary" />}
@@ -299,7 +309,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A6 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 4 – Målformulering och Behovsanalys" 
             icon={<Target className="h-5 w-5 text-primary" />}
@@ -317,7 +327,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A7 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 5 – Val av lämpliga insatser" 
             icon={<ClipboardList className="h-5 w-5 text-primary" />}
@@ -350,7 +360,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         </div>
 
         {/* A9 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Steg 7 – Rekommendation för beslut" 
             icon={<ClipboardList className="h-5 w-5 text-primary" />}

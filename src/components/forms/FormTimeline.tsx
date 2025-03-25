@@ -6,22 +6,57 @@ interface FormTimelineProps {
   onFormChange?: (form: string) => void;
 }
 
-interface FormInfo {
-  id: string;
-  description: string;
-}
-
-const formInfos: { id: string; description: string }[] = [
-  { id: 'A', description: 'Verksamhetsanalys' },
-  { id: 'B', description: 'Insatsanalys' },
-  { id: 'C', description: 'Ekonomiska konsekvenser' },
-  { id: 'D', description: 'Kostnadsberäkning' },
-  { id: 'E', description: 'Kort sjukfrånvaro' },
-  { id: 'F', description: 'Lång sjukfrånvaro' },
-  { id: 'G', description: 'Beräkningsmodell insatser' },
-  { id: 'H', description: 'Kostnadsberäkning insatser' },
-  { id: 'I', description: 'Vinstberäkning' },
-  { id: 'J', description: 'Sammanställning' }
+const formInfos: { id: string; title: string; description: string }[] = [
+  { 
+    id: 'A', 
+    title: 'Formulär A', 
+    description: 'Verksamhetsanalys' 
+  },
+  { 
+    id: 'B', 
+    title: 'Formulär B', 
+    description: 'Insatsanalys' 
+  },
+  { 
+    id: 'C', 
+    title: 'Formulär C', 
+    description: 'Ekonomiska konsekvenser' 
+  },
+  { 
+    id: 'D', 
+    title: 'Formulär D', 
+    description: 'Kostnadsberäkning' 
+  },
+  { 
+    id: 'E', 
+    title: 'Formulär E', 
+    description: 'Kort sjukfrånvaro' 
+  },
+  { 
+    id: 'F', 
+    title: 'Formulär F', 
+    description: 'Lång sjukfrånvaro' 
+  },
+  { 
+    id: 'G', 
+    title: 'Formulär G', 
+    description: 'Beräkningsmodell insatser' 
+  },
+  { 
+    id: 'H', 
+    title: 'Formulär H', 
+    description: 'Kostnadsberäkning insatser' 
+  },
+  { 
+    id: 'I', 
+    title: 'Formulär I', 
+    description: 'Vinstberäkning' 
+  },
+  { 
+    id: 'J', 
+    title: 'Formulär J', 
+    description: 'Sammanställning' 
+  }
 ];
 
 

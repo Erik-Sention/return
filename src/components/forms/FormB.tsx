@@ -171,11 +171,21 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             </div>
             <h2 className="text-2xl font-bold">B – Verksamhetsanalys – insats</h2>
           </div>
-          {saveMessage && (
-            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-              {saveMessage}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {saveMessage && (
+              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                {saveMessage}
+              </span>
+            )}
+            <Button 
+              onClick={handleSave} 
+              className="gap-2"
+              disabled={isSaving}
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Sparar...' : 'Spara formulär'}
+            </Button>
+          </div>
         </div>
         
         {error && (
@@ -185,7 +195,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         )}
         
         {/* B1, B2, B3 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Grundinformation" 
             icon={<FileText className="h-5 w-5 text-primary" />}
@@ -223,7 +233,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B4 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Vilka insatser avses?" 
             icon={<Target className="h-5 w-5 text-primary" />}
@@ -241,7 +251,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B5 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Syfte med insatserna" 
             icon={<Lightbulb className="h-5 w-5 text-primary" />}
@@ -259,7 +269,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B6 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Stöd för verksamhetens övergripande mål" 
             icon={<Target className="h-5 w-5 text-primary" />}
@@ -277,7 +287,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B7 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Alternativa ansatser" 
             icon={<Lightbulb className="h-5 w-5 text-primary" />}
@@ -295,7 +305,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B8 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Mål med insatserna" 
             icon={<Target className="h-5 w-5 text-primary" />}
@@ -313,7 +323,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B9 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Målgrupp" 
             icon={<Users className="h-5 w-5 text-primary" />}
@@ -331,7 +341,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B10 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="När nås förväntad effekt av insatsen?" 
             icon={<Calendar className="h-5 w-5 text-primary" />}
@@ -349,7 +359,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         </div>
 
         {/* B11 */}
-        <div className="p-6 bg-card rounded-lg shadow-md border border-border">
+        <div className="form-card">
           <SectionHeader 
             title="Genomförandeplan" 
             icon={<ListChecks className="h-5 w-5 text-primary" />}

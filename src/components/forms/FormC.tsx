@@ -251,11 +251,21 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <h2 className="text-2xl font-bold">C – Beräkningsmodell för ekonomiska konsekvenser av psykisk ohälsa</h2>
           </div>
-          {saveMessage && (
-            <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-              {saveMessage}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {saveMessage && (
+              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                {saveMessage}
+              </span>
+            )}
+            <Button 
+              onClick={handleSave} 
+              className="gap-2"
+              disabled={isSaving}
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? 'Sparar...' : 'Spara formulär'}
+            </Button>
+          </div>
         </div>
         
         {error && (
