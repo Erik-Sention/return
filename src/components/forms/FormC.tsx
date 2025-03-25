@@ -9,22 +9,23 @@ interface FormCData {
   organizationName: string;
   contactPerson: string;
   timePeriod: string;
-  totalPersonnelCosts: number;
-  companyProfit: number;
+  totalPersonnelCosts?: number;
+  companyProfit?: number;
   totalWorkValue: number;
-  percentHighStress: number;
+  percentHighStress?: number;
   productionLossHighStress: number;
   totalProductionLoss: number;
   valueProductionLoss: number;
-  costShortSickLeave: number;
+  costShortSickLeave?: number;
   percentShortSickLeaveMentalHealth: number;
   costShortSickLeaveMentalHealth: number;
-  costLongSickLeave: number;
+  costLongSickLeave?: number;
   percentLongSickLeaveMentalHealth: number;
   costLongSickLeaveMentalHealth: number;
   totalCostSickLeaveMentalHealth: number;
   totalCostMentalHealth: number;
 }
+
 
 const FORM_TYPE = 'C';
 
@@ -34,22 +35,23 @@ export default function FormC() {
     organizationName: '',
     contactPerson: '',
     timePeriod: '',
-    totalPersonnelCosts: 0,
-    companyProfit: 0,
+    totalPersonnelCosts: undefined,
+    companyProfit: undefined,
     totalWorkValue: 0,
-    percentHighStress: 0,
-    productionLossHighStress: 2.0, // Standard värde enligt form-c.md
+    percentHighStress: undefined,
+    productionLossHighStress: 2.0,
     totalProductionLoss: 0,
     valueProductionLoss: 0,
-    costShortSickLeave: 0,
-    percentShortSickLeaveMentalHealth: 6, // Standard värde enligt form-c.md
+    costShortSickLeave: undefined,
+    percentShortSickLeaveMentalHealth: 6,
     costShortSickLeaveMentalHealth: 0,
-    costLongSickLeave: 0,
-    percentLongSickLeaveMentalHealth: 40, // Standard värde enligt form-c.md
+    costLongSickLeave: undefined,
+    percentLongSickLeaveMentalHealth: 40,
     costLongSickLeaveMentalHealth: 0,
     totalCostSickLeaveMentalHealth: 0,
     totalCostMentalHealth: 0
   });
+  
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,27 +82,16 @@ export default function FormC() {
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
-    // C6: Summa, värde av arbete
-    const totalWorkValue = formData.totalPersonnelCosts + formData.companyProfit;
-    
-    // C9: Totalt produktionsbortfall
+    const totalWorkValue = (formData.totalPersonnelCosts ?? 0) + (formData.companyProfit ?? 0);
     const totalProductionLoss = formData.productionLossHighStress;
-    
-    // C10: Värde av produktionsbortfall
     const valueProductionLoss = (totalWorkValue * totalProductionLoss) / 100;
-    
-    // C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa
-    const costShortSickLeaveMentalHealth = (formData.costShortSickLeave * formData.percentShortSickLeaveMentalHealth) / 100;
-    
-    // C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa
-    const costLongSickLeaveMentalHealth = (formData.costLongSickLeave * formData.percentLongSickLeaveMentalHealth) / 100;
-    
-    // C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa
+  
+    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave ?? 0) * formData.percentShortSickLeaveMentalHealth) / 100;
+    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave ?? 0) * formData.percentLongSickLeaveMentalHealth) / 100;
+  
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
-    
-    // C20: Total kostnad för psykisk ohälsa
     const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
-    
+  
     setFormData(prev => ({
       ...prev,
       totalWorkValue,
@@ -120,6 +111,7 @@ export default function FormC() {
     formData.costLongSickLeave,
     formData.percentLongSickLeaveMentalHealth
   ]);
+  
 
   // Setup autosave whenever formData changes
   useEffect(() => {
