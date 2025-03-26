@@ -257,12 +257,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   };
 
   const handleChange = (field: keyof FormCData, value: string | number) => {
-    // Konvertera till nummer om det är ett numeriskt fält
+    // Om värdet är en sträng, konvertera till nummer om det är ett numeriskt fält
     if (typeof formData[field] === 'number' && typeof value === 'string') {
-      // Ta bort alla icke-numeriska tecken förutom decimalpunkt
-      const cleanValue = value.replace(/[^\d.,]/g, '').replace(',', '.');
-      const numValue = parseFloat(cleanValue) || 0;
-      setFormData(prev => ({ ...prev, [field]: numValue }));
+      // Konvertera kommatecken till decimalpunkt
+      const normalizedValue = value.replace(',', '.');
+      const numValue = parseFloat(normalizedValue);
+      setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? 0 : numValue }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
@@ -274,10 +274,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     return num.toLocaleString('sv-SE');
   };
 
-  // Hjälpfunktion för att formatera input-värden
-  const formatInputValue = (value: number | undefined): string => {
+  // Hjälpfunktion för att visa råa värden i input-fält
+  const getInputValue = (value: number | undefined): string => {
     if (value === undefined || value === null) return '';
-    return value.toLocaleString('sv-SE');
+    return value.toString();
   };
 
   return (
@@ -359,8 +359,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               </label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär D9" />
               <Input
-                type="text"
-                value={formatInputValue(formData.totalPersonnelCosts)}
+                type="number"
+                step="any"
+                value={formData.totalPersonnelCosts ?? ''}
                 onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
                 placeholder="Värdet kan hämtas från D9"
                 className="bg-background/50"
@@ -383,8 +384,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
               <Input
-                type="text"
-                value={formatInputValue(formData.companyProfit)}
+                type="number"
+                step="any"
+                value={formData.companyProfit ?? ''}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
                 placeholder="Ange summa i kr"
                 className="bg-background/50"
@@ -412,8 +414,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
               <InfoLabel text="Baserat på forskning varierar detta mellan branscher: Vård & Omsorg (25-35%), IT (20-30%), Finans (15-25%), Handel (10-20%). Standardvärde är 22% för genomsnittlig verksamhet. Mät detta genom medarbetarundersökningar eller screening." />
               <Input
-                type="text"
-                value={formatInputValue(formData.percentHighStress)}
+                type="number"
+                step="any"
+                value={formData.percentHighStress ?? ''}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -423,8 +426,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
               <InfoLabel text="Standardvärde är 2,0% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (2.5-3.0%), IT (1.5-2.0%), Finans (1.8-2.2%), Handel (1.5-2.0%). Produktionsbortfallet beror på sänkt koncentration, ökad risk för fel, och minskad effektivitet." />
               <Input
-                type="text"
-                value={formatInputValue(formData.productionLossHighStress)}
+                type="number"
+                step="any"
+                value={formData.productionLossHighStress ?? ''}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -435,7 +439,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="mt-6">
             <ReadOnlyField 
               label="C9: Totalt produktionsbortfall"
-              value={`${formData.totalProductionLoss}%`}
+              value={`${formatNumber(formData.totalProductionLoss)}%`}
               info="Beräknas automatiskt baserat på värdet i C8"
             />
           </div>
@@ -461,8 +465,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär E8" />
               <Input
-                type="text"
-                value={formatInputValue(formData.costShortSickLeave)}
+                type="number"
+                step="any"
+                value={formData.costShortSickLeave ?? ''}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från E8"
                 className="bg-background/50"
@@ -472,8 +477,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
               <Input
-                type="text"
-                value={formatInputValue(formData.percentShortSickLeaveMentalHealth)}
+                type="number"
+                step="any"
+                value={formData.percentShortSickLeaveMentalHealth ?? ''}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -501,8 +507,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär F8" />
               <Input
-                type="text"
-                value={formatInputValue(formData.costLongSickLeave)}
+                type="number"
+                step="any"
+                value={formData.costLongSickLeave ?? ''}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från F8"
                 className="bg-background/50"
@@ -512,8 +519,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
               <Input
-                type="text"
-                value={formatInputValue(formData.percentLongSickLeaveMentalHealth)}
+                type="number"
+                step="any"
+                value={formData.percentLongSickLeaveMentalHealth ?? ''}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"

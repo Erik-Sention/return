@@ -1,29 +1,26 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Users, Clock, Coins } from 'lucide-react';
+import { Save, Info, Calculator, Users, Calendar, Coins } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 
-interface FormDData {
+interface FormEData {
   organizationName: string;
   contactPerson: string;
   averageMonthlySalary: number;
-  socialFeesPercentage: number;
-  averageSocialFeesPerMonth: number;
+  sickLeaveCostPercentage: number;
+  sickLeaveCostPerDay: number;
   numberOfEmployees: number;
-  numberOfMonths: number;
-  totalSalaryCosts: number;
-  personnelOverheadPercentage: number;
-  totalPersonnelOverhead: number;
-  totalPersonnelCosts: number;
-  scheduledWorkHoursPerYear: number;
-  personnelCostPerHour: number;
+  scheduledWorkDaysPerYear: number;
+  shortSickLeavePercentage: number;
+  totalSickDays: number;
+  totalSickLeaveCosts: number;
 }
 
 // Definiera en typ för vad som ska exponeras via ref
-export interface FormDRef {
+export interface FormERef {
   handleSave: () => Promise<void>;
 }
 
@@ -72,28 +69,25 @@ const SectionHeader = ({
   </div>
 );
 
-const FORM_TYPE = 'D';
+const FORM_TYPE = 'E';
 
 // Definiera en typ för komponentens props
-type FormDProps = React.ComponentProps<'div'>;
+type FormEProps = React.ComponentProps<'div'>;
 
-// Gör FormD till en forwardRef component
-const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
+// Gör FormE till en forwardRef component
+const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
   const { currentUser } = useAuth();
-  const [formData, setFormData] = useState<FormDData>({
+  const [formData, setFormData] = useState<FormEData>({
     organizationName: '',
     contactPerson: '',
     averageMonthlySalary: 0,
-    socialFeesPercentage: 0,
-    averageSocialFeesPerMonth: 0,
+    sickLeaveCostPercentage: 0,
+    sickLeaveCostPerDay: 0,
     numberOfEmployees: 0,
-    numberOfMonths: 12,
-    totalSalaryCosts: 0,
-    personnelOverheadPercentage: 0,
-    totalPersonnelOverhead: 0,
-    totalPersonnelCosts: 0,
-    scheduledWorkHoursPerYear: 0,
-    personnelCostPerHour: 0
+    scheduledWorkDaysPerYear: 220,
+    shortSickLeavePercentage: 0,
+    totalSickDays: 0,
+    totalSickLeaveCosts: 0
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -107,7 +101,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
       if (currentUser?.uid) {
         try {
           setError(null);
-          const data = await loadFormData<FormDData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormEData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
@@ -126,40 +120,29 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
-    // D3: Genomsnittliga sociala avgifter per månad
-    const averageSocialFeesPerMonth = formData.averageMonthlySalary * (formData.socialFeesPercentage / 100);
+    // E3: Kostnad för kort sjukfrånvaro per sjukdag
+    const sickLeaveCostPerDay = (formData.averageMonthlySalary || 0) * ((formData.sickLeaveCostPercentage || 0) / 100);
     
-    // D6: Totala lönekostnader
-    const totalSalaryCosts = (formData.averageMonthlySalary + averageSocialFeesPerMonth) * 
-                            formData.numberOfEmployees * 
-                            formData.numberOfMonths;
+    // E7: Antal sjukdagar totalt
+    const totalSickDays = (formData.numberOfEmployees || 0) * 
+                         (formData.scheduledWorkDaysPerYear || 0) * 
+                         ((formData.shortSickLeavePercentage || 0) / 100);
     
-    // D8: Totala personalkringkostnader
-    const totalPersonnelOverhead = totalSalaryCosts * (formData.personnelOverheadPercentage / 100);
-    
-    // D9: Totala personalkostnader
-    const totalPersonnelCosts = totalSalaryCosts + totalPersonnelOverhead;
-    
-    // D11: Personalkostnad per arbetad timme
-    const personnelCostPerHour = formData.scheduledWorkHoursPerYear > 0 && formData.numberOfEmployees > 0
-      ? totalPersonnelCosts / formData.numberOfEmployees / formData.scheduledWorkHoursPerYear 
-      : 0;
+    // E8: Totala kostnader för kort sjukfrånvaro
+    const totalSickLeaveCosts = sickLeaveCostPerDay * totalSickDays;
 
     setFormData(prev => ({
       ...prev,
-      averageSocialFeesPerMonth,
-      totalSalaryCosts,
-      totalPersonnelOverhead,
-      totalPersonnelCosts,
-      personnelCostPerHour
+      sickLeaveCostPerDay,
+      totalSickDays,
+      totalSickLeaveCosts
     }));
   }, [
     formData.averageMonthlySalary,
-    formData.socialFeesPercentage,
+    formData.sickLeaveCostPercentage,
     formData.numberOfEmployees,
-    formData.numberOfMonths,
-    formData.personnelOverheadPercentage,
-    formData.scheduledWorkHoursPerYear
+    formData.scheduledWorkDaysPerYear,
+    formData.shortSickLeavePercentage
   ]);
 
   // Setup autosave whenever formData changes
@@ -218,7 +201,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     }
   };
 
-  const handleChange = (field: keyof FormDData, value: string | number) => {
+  const handleChange = (field: keyof FormEData, value: string | number) => {
     // Om värdet är en sträng, konvertera till nummer om det är ett numeriskt fält
     if (typeof formData[field] === 'number' && typeof value === 'string') {
       // Konvertera kommatecken till decimalpunkt
@@ -236,12 +219,6 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     return num.toLocaleString('sv-SE');
   };
 
-  // Hjälpfunktion för att visa råa värden i input-fält
-  const getInputValue = (value: number | undefined): string => {
-    if (value === undefined || value === null) return '';
-    return value.toString();
-  };
-
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -250,7 +227,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
             <div className="bg-primary/10 p-2 rounded-full">
               <Calculator className="h-5 w-5 text-primary" />
             </div>
-            <h2 className="text-2xl font-bold">D – Beräkning av personalkostnader</h2>
+            <h2 className="text-2xl font-bold">E – Beräkning av kostnader för kort sjukfrånvaro (dag 1–14)</h2>
           </div>
           <div className="flex items-center gap-2">
             {saveMessage && (
@@ -275,7 +252,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           </div>
         )}
         
-        {/* D1-D2 */}
+        {/* E1-E2 */}
         <div className="form-card">
           <SectionHeader 
             title="Grundläggande löneinformation" 
@@ -284,7 +261,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">D1: Genomsnittlig månadslön</label>
+              <label className="text-sm font-medium">E1: Genomsnittlig månadslön</label>
               <InfoLabel text="Inkludera alla lönekomponenter som grundlön, OB, övertidstillägg och andra fasta tillägg." />
               <Input
                 type="number"
@@ -296,13 +273,13 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">D2: Sociala avgifter (%)</label>
-              <InfoLabel text="Standardvärde är 42% för de flesta branscher. Detta inkluderar: Arbetsgivaravgift (31.42%), Tjänstepension (4.5%), Försäkringar (6%). Vård & Omsorg har ofta högre avgifter pga särskilda pensionsavtal. IT-branschen kan ha lägre avgifter pga högre pensionsnivåer." />
+              <label className="text-sm font-medium">E2: Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)</label>
+              <InfoLabel text="Standardvärde är 10% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (12-15% pga ersättningskostnader), IT (8-10%), Finans (8-10%), Handel (10-12%)." />
               <Input
                 type="number"
                 step="any"
-                value={formData.socialFeesPercentage ?? ''}
-                onChange={(e) => handleChange('socialFeesPercentage', e.target.value)}
+                value={formData.sickLeaveCostPercentage ?? ''}
+                onChange={(e) => handleChange('sickLeaveCostPercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -311,23 +288,23 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           
           <div className="mt-6">
             <ReadOnlyField 
-              label="D3: Genomsnittliga sociala avgifter per månad"
-              value={formatCurrency(formData.averageSocialFeesPerMonth)}
-              info="Beräknas automatiskt som D1 × D2"
+              label="E3: Kostnad för kort sjukfrånvaro per sjukdag"
+              value={formatCurrency(formData.sickLeaveCostPerDay || 0)}
+              info="Beräknas automatiskt som E1 × E2"
             />
           </div>
         </div>
 
-        {/* D4-D5 */}
+        {/* E4-E5 */}
         <div className="form-card">
           <SectionHeader 
-            title="Personalstorlek och tidsperiod" 
+            title="Personalstorlek och arbetstid" 
             icon={<Users className="h-5 w-5 text-primary" />}
           />
           
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">D4: Antal anställda (FTE)</label>
+              <label className="text-sm font-medium">E4: Antal anställda (FTE)</label>
               <InfoLabel text="Ange antal heltidsanställda. Om ni har deltidsanställda, konvertera till heltid. Exempel: 2 personer på 50% = 1 FTE." />
               <Input
                 type="number"
@@ -339,44 +316,36 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">D5: Antal månader</label>
-              <InfoLabel text="Standard är 12 månader" />
+              <label className="text-sm font-medium">E5: Antal schemalagda arbetsdagar per år, per anställd</label>
+              <InfoLabel text="Standard är 220 dagar. Detta varierar mellan branscher: Vård & Omsorg (210 dagar pga skiftarbete), IT (220 dagar), Finans (220 dagar), Handel (200-210 dagar pga öppettider)." />
               <Input
                 type="number"
                 step="any"
-                value={formData.numberOfMonths ?? ''}
-                onChange={(e) => handleChange('numberOfMonths', e.target.value)}
-                placeholder="Ange antal månader"
+                value={formData.scheduledWorkDaysPerYear ?? ''}
+                onChange={(e) => handleChange('scheduledWorkDaysPerYear', e.target.value)}
+                placeholder="Ange antal dagar"
                 className="bg-background/50"
               />
             </div>
           </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="D6: Totala lönekostnader"
-              value={formatCurrency(formData.totalSalaryCosts)}
-              info="Beräknas automatiskt som (D1 + D3) × D4 × D5"
-            />
-          </div>
         </div>
 
-        {/* D7-D8 */}
+        {/* E6 */}
         <div className="form-card">
           <SectionHeader 
-            title="Personalkringkostnader" 
-            icon={<Calculator className="h-5 w-5 text-primary" />}
+            title="Sjukfrånvaronivå" 
+            icon={<Calendar className="h-5 w-5 text-primary" />}
           />
           
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">D7: Personalkringkostnader (%)</label>
-              <InfoLabel text="Standardvärde är 30% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (35-40% pga utrustning, skyddskläder), IT (25-30% pga utvecklingsverktyg, licenser), Finans (20-25% pga kontorsutrustning), Handel (15-20% pga butiksinredning). Inkluderar utbildning, utrustning, lokaler, IT-system och andra resurser." />
+              <label className="text-sm font-medium">E6: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid</label>
+              <InfoLabel text="Standardvärde är 2.5% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (3-4% pga högre risk för smitta), IT (2-2.5%), Finans (2-2.5%), Handel (2.5-3% pga kundkontakt)." />
               <Input
                 type="number"
                 step="any"
-                value={formData.personnelOverheadPercentage ?? ''}
-                onChange={(e) => handleChange('personnelOverheadPercentage', e.target.value)}
+                value={formData.shortSickLeavePercentage ?? ''}
+                onChange={(e) => handleChange('shortSickLeavePercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -385,57 +354,26 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           
           <div className="mt-6">
             <ReadOnlyField 
-              label="D8: Totala personalkringkostnader"
-              value={formatCurrency(formData.totalPersonnelOverhead)}
-              info="Beräknas automatiskt som D6 × D7"
+              label="E7: Antal sjukdagar totalt (kort sjukfrånvaro)"
+              value={formatNumber(formData.totalSickDays)}
+              info="Beräknas automatiskt som E4 × E5 × E6"
             />
           </div>
         </div>
 
-        {/* D9 */}
+        {/* E8 */}
         <div className="form-card">
           <SectionHeader 
-            title="Totala personalkostnader" 
+            title="Totala kostnader för kort sjukfrånvaro" 
             icon={<Calculator className="h-5 w-5 text-primary" />}
           />
           
           <div className="mt-4">
             <ReadOnlyField 
-              label="D9: Totala personalkostnader"
-              value={formatCurrency(formData.totalPersonnelCosts)}
-              info="Beräknas automatiskt som D6 + D8. Överförs till C4"
+              label="E8: Totala kostnader, kort sjukfrånvaro"
+              value={formatCurrency(formData.totalSickLeaveCosts || 0)}
+              info="Beräknas automatiskt som E3 × E7. Överförs till C11"
               highlight={true}
-            />
-          </div>
-        </div>
-
-        {/* D10-D11 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Kostnad per arbetad timme" 
-            icon={<Clock className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D10: Schemalagd arbetstid (timmar/år)</label>
-              <InfoLabel text="Standard är 1760 timmar per år (220 dagar × 8 timmar). Detta varierar mellan branscher: Vård & Omsorg (1680 timmar pga skiftarbete), IT (1760-1840 timmar), Finans (1760 timmar), Handel (1600-1680 timmar pga öppettider). Inkludera endast schemalagd arbetstid, exkludera övertid." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.scheduledWorkHoursPerYear ?? ''}
-                onChange={(e) => handleChange('scheduledWorkHoursPerYear', e.target.value)}
-                placeholder="Ange antal timmar"
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="D11: Personalkostnad per arbetad timme"
-              value={formatCurrency(formData.personnelCostPerHour)}
-              info="Beräknas automatiskt som D9 ÷ D4 ÷ D10"
             />
           </div>
         </div>
@@ -448,4 +386,4 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   );
 });
 
-export default FormD; 
+export default FormE; 
