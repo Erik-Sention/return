@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Users, Clock, Coins } from 'lucide-react';
@@ -224,7 +223,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormDData;
       if (typeof preparedData[typedKey] === 'undefined') {
-        (preparedData as any)[typedKey] = null;
+        (preparedData as Record<keyof FormDData, string | number | null>)[typedKey] = null;
       }
     });
     

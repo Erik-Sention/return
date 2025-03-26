@@ -316,7 +316,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   };
 
   // Hjälpfunktion för att hämta värden från andra formulär
-  const fetchValueFromForm = async (formType: string, field: keyof FormCData, formField: string) => {
+  const fetchValueFromForm = async (formType: string) => {
     if (!currentUser?.uid) {
       setError('Du måste vara inloggad för att hämta data');
       return;
@@ -370,7 +370,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormCData;
       if (typeof preparedData[typedKey] === 'undefined') {
-        (preparedData as any)[typedKey] = null;
+        (preparedData as Record<keyof FormCData, string | number | undefined | null>)[typedKey] = null;
       }
     });
     
@@ -493,7 +493,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               />
               <FetchValueButton 
                 onClick={async () => {
-                  await fetchValueFromForm('D', 'totalPersonnelCosts', 'totalPersonnelCosts');
+                  await fetchValueFromForm('D');
                 }}
                 disabled={!currentUser?.uid}
                 formName="D"
@@ -585,7 +585,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               />
               <FetchValueButton 
                 onClick={async () => {
-                  await fetchValueFromForm('E', 'costShortSickLeave', 'costShortSickLeave');
+                  await fetchValueFromForm('E');
                 }}
                 disabled={!currentUser?.uid}
                 formName="E"
@@ -631,7 +631,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               />
               <FetchValueButton 
                 onClick={async () => {
-                  await fetchValueFromForm('F', 'costLongSickLeave', 'costLongSickLeave');
+                  await fetchValueFromForm('F');
                 }}
                 disabled={!currentUser?.uid}
                 formName="F"

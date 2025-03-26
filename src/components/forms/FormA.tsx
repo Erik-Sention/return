@@ -168,7 +168,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormAData;
       if (typeof preparedData[typedKey] === 'undefined') {
-        (preparedData as any)[typedKey] = null;
+        (preparedData as Record<keyof FormAData, string | number | string[] | null>)[typedKey] = null;
       }
     });
     

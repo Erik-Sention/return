@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Users, Calendar, Coins } from 'lucide-react';
+import { Save, Info, Calculator, Users, Clock, Coins, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -206,7 +205,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormEData;
       if (typeof preparedData[typedKey] === 'undefined') {
-        (preparedData as any)[typedKey] = null;
+        (preparedData as Record<keyof FormEData, string | number | null>)[typedKey] = null;
       }
     });
     
