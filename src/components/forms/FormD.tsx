@@ -292,6 +292,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">D1: Genomsnittlig månadslön</label>
+              <InfoLabel text="Inkludera alla lönekomponenter som grundlön, OB, övertidstillägg och andra fasta tillägg." />
               <Input
                 type="text"
                 value={formatInputValue(formData.averageMonthlySalary)}
@@ -302,7 +303,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">D2: Sociala avgifter (%)</label>
-              <InfoLabel text="Inklusive arbetsgivaravgift, tjänstepension och försäkringar" />
+              <InfoLabel text="Standardvärde är 42% för de flesta branscher. Detta inkluderar: Arbetsgivaravgift (31.42%), Tjänstepension (4.5%), Försäkringar (6%). Vård & Omsorg har ofta högre avgifter pga särskilda pensionsavtal. IT-branschen kan ha lägre avgifter pga högre pensionsnivåer." />
               <Input
                 type="text"
                 value={formatInputValue(formData.socialFeesPercentage)}
@@ -332,7 +333,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">D4: Antal anställda (FTE)</label>
-              <InfoLabel text="Antal heltidsanställda som beräkningen gäller för" />
+              <InfoLabel text="Ange antal heltidsanställda. Om ni har deltidsanställda, konvertera till heltid. Exempel: 2 personer på 50% = 1 FTE." />
               <Input
                 type="text"
                 value={formatInputValue(formData.numberOfEmployees)}
@@ -343,7 +344,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">D5: Antal månader</label>
-              <InfoLabel text="Vanligtvis 12 månader (ett år)" />
+              <InfoLabel text="Standard är 12 månader" />
               <Input
                 type="text"
                 value={formatInputValue(formData.numberOfMonths)}
@@ -373,7 +374,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">D7: Personalkringkostnader (%)</label>
-              <InfoLabel text="Övriga kostnader relaterade till personal (utbildning, utrustning, etc.)" />
+              <InfoLabel text="Standardvärde är 30% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (35-40% pga utrustning, skyddskläder), IT (25-30% pga utvecklingsverktyg, licenser), Finans (20-25% pga kontorsutrustning), Handel (15-20% pga butiksinredning). Inkluderar utbildning, utrustning, lokaler, IT-system och andra resurser." />
               <Input
                 type="text"
                 value={formatInputValue(formData.personnelOverheadPercentage)}
@@ -420,7 +421,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">D10: Schemalagd arbetstid (timmar/år)</label>
-              <InfoLabel text="Antal arbetstimmar per heltidsanställd per år" />
+              <InfoLabel text="Standard är 1760 timmar per år (220 dagar × 8 timmar). Detta varierar mellan branscher: Vård & Omsorg (1680 timmar pga skiftarbete), IT (1760-1840 timmar), Finans (1760 timmar), Handel (1600-1680 timmar pga öppettider). Inkludera endast schemalagd arbetstid, exkludera övertid." />
               <Input
                 type="text"
                 value={formatInputValue(formData.scheduledWorkHoursPerYear)}

@@ -161,7 +161,11 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
     const totalWorkValue = (formData.totalPersonnelCosts ?? 0) + (formData.companyProfit ?? 0);
-    const totalProductionLoss = formData.productionLossHighStress ?? 0;
+    
+    // C9 = C7 × C8 (percentage of staff with high stress × production loss at high stress)
+    const totalProductionLoss = ((formData.percentHighStress ?? 0) * (formData.productionLossHighStress ?? 0)) / 100;
+    
+    // C10 = C6 × C9 ÷ 100
     const valueProductionLoss = (totalWorkValue * totalProductionLoss) / 100;
   
     const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave ?? 0) * (formData.percentShortSickLeaveMentalHealth ?? 0)) / 100;
@@ -183,6 +187,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   }, [
     formData.totalPersonnelCosts,
     formData.companyProfit,
+    formData.percentHighStress,
     formData.productionLossHighStress,
     formData.costShortSickLeave,
     formData.percentShortSickLeaveMentalHealth,
@@ -405,6 +410,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
+              <InfoLabel text="Baserat på forskning varierar detta mellan branscher: Vård & Omsorg (25-35%), IT (20-30%), Finans (15-25%), Handel (10-20%). Standardvärde är 22% för genomsnittlig verksamhet. Mät detta genom medarbetarundersökningar eller screening." />
               <Input
                 type="text"
                 value={formatInputValue(formData.percentHighStress)}
@@ -415,7 +421,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
-              <InfoLabel text="Standardvärde är 2,0% baserat på forskning" />
+              <InfoLabel text="Standardvärde är 2,0% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (2.5-3.0%), IT (1.5-2.0%), Finans (1.8-2.2%), Handel (1.5-2.0%). Produktionsbortfallet beror på sänkt koncentration, ökad risk för fel, och minskad effektivitet." />
               <Input
                 type="text"
                 value={formatInputValue(formData.productionLossHighStress)}
@@ -464,7 +470,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
-              <InfoLabel text="Standardvärde är 6% baserat på forskning" />
+              <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
               <Input
                 type="text"
                 value={formatInputValue(formData.percentShortSickLeaveMentalHealth)}
@@ -504,7 +510,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
-              <InfoLabel text="Standardvärde är 40% baserat på forskning" />
+              <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
               <Input
                 type="text"
                 value={formatInputValue(formData.percentLongSickLeaveMentalHealth)}
