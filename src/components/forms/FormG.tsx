@@ -182,6 +182,9 @@ const InterventionCard = ({
   isFirst: boolean;
   isLast: boolean;
 }) => {
+  // Säkerställ att costs alltid finns tillgänglig
+  const costs = intervention.costs || [];
+  
   const addCost = () => {
     const newCost: InterventionCost = {
       id: generateId(),
@@ -191,12 +194,12 @@ const InterventionCard = ({
     };
     onChange({
       ...intervention,
-      costs: [...intervention.costs, newCost]
+      costs: [...costs, newCost]
     });
   };
 
   const updateCost = (updatedCost: InterventionCost) => {
-    const updatedCosts = intervention.costs.map(cost => 
+    const updatedCosts = costs.map(cost => 
       cost.id === updatedCost.id ? updatedCost : cost
     );
     onChange({
@@ -206,7 +209,7 @@ const InterventionCard = ({
   };
 
   const removeCost = (costId: string) => {
-    const updatedCosts = intervention.costs.filter(cost => cost.id !== costId);
+    const updatedCosts = costs.filter(cost => cost.id !== costId);
     onChange({
       ...intervention,
       costs: updatedCosts
@@ -293,13 +296,13 @@ const InterventionCard = ({
             </Button>
           </div>
           
-          {intervention.costs.length === 0 ? (
+          {costs.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 border border-dashed border-muted-foreground/20 rounded-md text-center">
               Lägg till en eller flera kostnadsposter för denna insats
             </div>
           ) : (
             <div className="space-y-1">
-              {intervention.costs.map((cost) => (
+              {costs.map((cost) => (
                 <CostRow
                   key={cost.id}
                   cost={cost}
@@ -394,7 +397,20 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           const data = await loadFormData<FormGData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
-            setFormData(data);
+            
+            // Säkerställ att all data har rätt struktur innan vi sätter den i state
+            const sanitizedData: FormGData = {
+              ...data,
+              interventions: (data.interventions || []).map(intervention => ({
+                ...intervention,
+                costs: intervention.costs || [],
+                totalExternalCost: intervention.totalExternalCost || 0,
+                totalInternalCost: intervention.totalInternalCost || 0,
+                totalCost: intervention.totalCost || 0
+              }))
+            };
+            
+            setFormData(sanitizedData);
           } else {
             // Skapa en tom insats som standard direkt i setFormData istället för att anropa addIntervention
             console.log('No data found, creating initial empty intervention');
