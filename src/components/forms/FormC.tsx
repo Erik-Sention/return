@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ArrowRight, Calculator, PieChart } from 'lucide-react';
+import { Save, Info, ArrowRight, Calculator, PieChart, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 
@@ -13,19 +13,22 @@ interface FormCData {
   companyProfit?: number;
   totalWorkValue: number;
   percentHighStress?: number;
-  productionLossHighStress: number;
+  productionLossHighStress?: number;
   totalProductionLoss: number;
   valueProductionLoss: number;
   costShortSickLeave?: number;
-  percentShortSickLeaveMentalHealth: number;
+  percentShortSickLeaveMentalHealth?: number;
   costShortSickLeaveMentalHealth: number;
   costLongSickLeave?: number;
-  percentLongSickLeaveMentalHealth: number;
+  percentLongSickLeaveMentalHealth?: number;
   costLongSickLeaveMentalHealth: number;
   totalCostSickLeaveMentalHealth: number;
   totalCostMentalHealth: number;
 }
 
+interface FormDData {
+  totalPersonnelCosts?: number;
+}
 
 const FORM_TYPE = 'C';
 
@@ -74,6 +77,27 @@ const SectionHeader = ({
   </div>
 );
 
+// Lägg till en ny komponent för att hämta värde från FormD
+const FetchValueButton = ({ 
+  onClick, 
+  disabled 
+}: { 
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    onClick={onClick}
+    disabled={disabled}
+    className="mt-1"
+  >
+    <ArrowDown className="h-4 w-4 mr-2" />
+    Hämta från Formulär D
+  </Button>
+);
+
 // Definiera en typ för vad som ska exponeras via ref
 export interface FormCRef {
   handleSave: () => Promise<void>;
@@ -93,14 +117,14 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     companyProfit: undefined,
     totalWorkValue: 0,
     percentHighStress: undefined,
-    productionLossHighStress: 2.0,
+    productionLossHighStress: undefined,
     totalProductionLoss: 0,
     valueProductionLoss: 0,
     costShortSickLeave: undefined,
-    percentShortSickLeaveMentalHealth: 6,
+    percentShortSickLeaveMentalHealth: undefined,
     costShortSickLeaveMentalHealth: 0,
     costLongSickLeave: undefined,
-    percentLongSickLeaveMentalHealth: 40,
+    percentLongSickLeaveMentalHealth: undefined,
     costLongSickLeaveMentalHealth: 0,
     totalCostSickLeaveMentalHealth: 0,
     totalCostMentalHealth: 0
@@ -137,11 +161,11 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
     const totalWorkValue = (formData.totalPersonnelCosts ?? 0) + (formData.companyProfit ?? 0);
-    const totalProductionLoss = formData.productionLossHighStress;
+    const totalProductionLoss = formData.productionLossHighStress ?? 0;
     const valueProductionLoss = (totalWorkValue * totalProductionLoss) / 100;
   
-    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave ?? 0) * formData.percentShortSickLeaveMentalHealth) / 100;
-    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave ?? 0) * formData.percentLongSickLeaveMentalHealth) / 100;
+    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave ?? 0) * (formData.percentShortSickLeaveMentalHealth ?? 0)) / 100;
+    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave ?? 0) * (formData.percentLongSickLeaveMentalHealth ?? 0)) / 100;
   
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
     const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
@@ -230,15 +254,25 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const handleChange = (field: keyof FormCData, value: string | number) => {
     // Konvertera till nummer om det är ett numeriskt fält
     if (typeof formData[field] === 'number' && typeof value === 'string') {
-      setFormData(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
+      // Ta bort alla icke-numeriska tecken förutom decimalpunkt
+      const cleanValue = value.replace(/[^\d.,]/g, '').replace(',', '.');
+      const numValue = parseFloat(cleanValue) || 0;
+      setFormData(prev => ({ ...prev, [field]: numValue }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
 
   // Hjälpfunktion för att formatera nummer med tusentalsavgränsare
-  const formatNumber = (num: number): string => {
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return '';
     return num.toLocaleString('sv-SE');
+  };
+
+  // Hjälpfunktion för att formatera input-värden
+  const formatInputValue = (value: number | undefined): string => {
+    if (value === undefined || value === null) return '';
+    return value.toLocaleString('sv-SE');
   };
 
   return (
@@ -320,18 +354,32 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               </label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär D9" />
               <Input
-                type="number"
-                value={formData.totalPersonnelCosts ?? ''}
+                type="text"
+                value={formatInputValue(formData.totalPersonnelCosts)}
                 onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
                 placeholder="Värdet kan hämtas från D9"
                 className="bg-background/50"
+              />
+              <FetchValueButton 
+                onClick={async () => {
+                  try {
+                    const data = await loadFormData<FormDData>(currentUser?.uid || '', 'D');
+                    if (data?.totalPersonnelCosts) {
+                      handleChange('totalPersonnelCosts', data.totalPersonnelCosts);
+                    }
+                  } catch (error) {
+                    console.error('Error fetching value from FormD:', error);
+                    setError('Kunde inte hämta värdet från Formulär D');
+                  }
+                }}
+                disabled={!currentUser?.uid}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
               <Input
-                type="number"
-                value={formData.companyProfit ?? ''}
+                type="text"
+                value={formatInputValue(formData.companyProfit)}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
                 placeholder="Ange summa i kr"
                 className="bg-background/50"
@@ -358,8 +406,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
               <Input
-                type="number"
-                value={formData.percentHighStress ?? ''}
+                type="text"
+                value={formatInputValue(formData.percentHighStress)}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -369,8 +417,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
               <InfoLabel text="Standardvärde är 2,0% baserat på forskning" />
               <Input
-                type="number"
-                value={formData.productionLossHighStress}
+                type="text"
+                value={formatInputValue(formData.productionLossHighStress)}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -407,8 +455,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär E8" />
               <Input
-                type="number"
-                value={formData.costShortSickLeave ?? ''}
+                type="text"
+                value={formatInputValue(formData.costShortSickLeave)}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från E8"
                 className="bg-background/50"
@@ -418,8 +466,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 6% baserat på forskning" />
               <Input
-                type="number"
-                value={formData.percentShortSickLeaveMentalHealth}
+                type="text"
+                value={formatInputValue(formData.percentShortSickLeaveMentalHealth)}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -447,8 +495,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär F8" />
               <Input
-                type="number"
-                value={formData.costLongSickLeave ?? ''}
+                type="text"
+                value={formatInputValue(formData.costLongSickLeave)}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från F8"
                 className="bg-background/50"
@@ -458,8 +506,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 40% baserat på forskning" />
               <Input
-                type="number"
-                value={formData.percentLongSickLeaveMentalHealth}
+                type="text"
+                value={formatInputValue(formData.percentLongSickLeaveMentalHealth)}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"

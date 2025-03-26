@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import FormA, { FormARef } from '@/components/forms/FormA';
 import FormB, { FormBRef } from '@/components/forms/FormB';
 import FormC, { FormCRef } from '@/components/forms/FormC';
+import FormD, { FormDRef } from '@/components/forms/FormD';
 import FormTimeline from '@/components/forms/FormTimeline';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
@@ -24,6 +25,7 @@ export default function ROIPage() {
   const formARef = useRef<FormARef>(null);
   const formBRef = useRef<FormBRef>(null);
   const formCRef = useRef<FormCRef>(null);
+  const formDRef = useRef<FormDRef>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -56,6 +58,9 @@ export default function ROIPage() {
       } else if (currentForm === 'C' && formCRef.current) {
         await formCRef.current.handleSave();
         setSaveMessage('Formulär C har sparats!');
+      } else if (currentForm === 'D' && formDRef.current) {
+        await formDRef.current.handleSave();
+        setSaveMessage('Formulär D har sparats!');
       }
       
       // Lägg till formuläret i completedForms om det inte redan finns där
@@ -117,6 +122,7 @@ export default function ROIPage() {
           {currentForm === 'A' && <FormA ref={formARef} />}
           {currentForm === 'B' && <FormB ref={formBRef} />}
           {currentForm === 'C' && <FormC ref={formCRef} />}
+          {currentForm === 'D' && <FormD ref={formDRef} />}
         </div>
 
         <div className="flex justify-between">

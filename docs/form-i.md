@@ -3,6 +3,8 @@
 ## Översikt
 Detta formulär är det nionde i serien A-J och används för att beräkna interna kostnader relaterade till insatser, uppdelat i tre huvudkategorier: personal, chefer och administration.
 
+Möjliggör även funktion att skapa flera formulär I då det kan förekomma flera olika insatser som är interna. 
+
 ## Steg för Steg Process
 1. **Organisationsuppgifter (I1-I3)**
    - Fyll i organisationens namn
