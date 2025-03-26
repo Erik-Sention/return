@@ -273,8 +273,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                 <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
                 <Input
                   type="number"
-                  value={formData.stressLevel}
-                  onChange={(e) => handleChange('stressLevel', parseFloat(e.target.value))}
+                  value={formData.stressLevel === undefined ? '' : formData.stressLevel}
+                  onChange={(e) => handleChange('stressLevel', e.target.value)}
+                  placeholder="Ange procent"
                   className="bg-background/50"
                 />
               </div>
@@ -282,8 +283,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                 <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
                 <Input
                   type="number"
-                  value={formData.productionLoss}
-                  onChange={(e) => handleChange('productionLoss', parseFloat(e.target.value))}
+                  value={formData.productionLoss === undefined ? '' : formData.productionLoss}
+                  onChange={(e) => handleChange('productionLoss', e.target.value)}
+                  placeholder="Ange summa i kr"
                   className="bg-background/50"
                 />
               </div>
@@ -291,8 +293,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                 <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
                 <Input
                   type="number"
-                  value={formData.sickLeaveCost}
-                  onChange={(e) => handleChange('sickLeaveCost', parseFloat(e.target.value))}
+                  value={formData.sickLeaveCost === undefined ? '' : formData.sickLeaveCost}
+                  onChange={(e) => handleChange('sickLeaveCost', e.target.value)}
+                  placeholder="Ange summa i kr"
                   className="bg-background/50"
                 />
               </div>

@@ -360,7 +360,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.totalPersonnelCosts ?? ''}
+                value={formData.totalPersonnelCosts === undefined ? '' : formData.totalPersonnelCosts}
                 onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
                 placeholder="Värdet kan hämtas från D9"
                 className="bg-background/50"
@@ -385,7 +385,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.companyProfit ?? ''}
+                value={formData.companyProfit === undefined ? '' : formData.companyProfit}
                 onChange={(e) => handleChange('companyProfit', e.target.value)}
                 placeholder="Ange summa i kr"
                 className="bg-background/50"
@@ -415,7 +415,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.percentHighStress ?? ''}
+                value={formData.percentHighStress === undefined ? '' : formData.percentHighStress}
                 onChange={(e) => handleChange('percentHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -427,7 +427,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.productionLossHighStress ?? ''}
+                value={formData.productionLossHighStress === undefined ? '' : formData.productionLossHighStress}
                 onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -466,7 +466,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.costShortSickLeave ?? ''}
+                value={formData.costShortSickLeave === undefined ? '' : formData.costShortSickLeave}
                 onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från E8"
                 className="bg-background/50"
@@ -478,7 +478,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.percentShortSickLeaveMentalHealth ?? ''}
+                value={formData.percentShortSickLeaveMentalHealth === undefined ? '' : formData.percentShortSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -508,7 +508,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.costLongSickLeave ?? ''}
+                value={formData.costLongSickLeave === undefined ? '' : formData.costLongSickLeave}
                 onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
                 placeholder="Värdet kan hämtas från F8"
                 className="bg-background/50"
@@ -520,7 +520,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.percentLongSickLeaveMentalHealth ?? ''}
+                value={formData.percentLongSickLeaveMentalHealth === undefined ? '' : formData.percentLongSickLeaveMentalHealth}
                 onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"

@@ -265,7 +265,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.averageMonthlySalary ?? ''}
+                value={formData.averageMonthlySalary === undefined ? '' : formData.averageMonthlySalary}
                 onChange={(e) => handleChange('averageMonthlySalary', e.target.value)}
                 placeholder="Ange genomsnittlig månadslön"
                 className="bg-background/50"
@@ -277,7 +277,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.sickLeaveCostPercentage ?? ''}
+                value={formData.sickLeaveCostPercentage === undefined ? '' : formData.sickLeaveCostPercentage}
                 onChange={(e) => handleChange('sickLeaveCostPercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -308,7 +308,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.numberOfEmployees ?? ''}
+                value={formData.numberOfEmployees === undefined ? '' : formData.numberOfEmployees}
                 onChange={(e) => handleChange('numberOfEmployees', e.target.value)}
                 placeholder="Ange antal anställda"
                 className="bg-background/50"
@@ -320,7 +320,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.scheduledWorkDaysPerYear ?? ''}
+                value={formData.scheduledWorkDaysPerYear === undefined ? '' : formData.scheduledWorkDaysPerYear}
                 onChange={(e) => handleChange('scheduledWorkDaysPerYear', e.target.value)}
                 placeholder="Ange antal dagar"
                 className="bg-background/50"
@@ -343,7 +343,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.shortSickLeavePercentage ?? ''}
+                value={formData.shortSickLeavePercentage === undefined ? '' : formData.shortSickLeavePercentage}
                 onChange={(e) => handleChange('shortSickLeavePercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"

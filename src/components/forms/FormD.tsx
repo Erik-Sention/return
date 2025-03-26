@@ -283,7 +283,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.averageMonthlySalary ?? ''}
+                value={formData.averageMonthlySalary === undefined ? '' : formData.averageMonthlySalary}
                 onChange={(e) => handleChange('averageMonthlySalary', e.target.value)}
                 placeholder="Ange genomsnittlig månadslön"
                 className="bg-background/50"
@@ -295,7 +295,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.socialFeesPercentage ?? ''}
+                value={formData.socialFeesPercentage === undefined ? '' : formData.socialFeesPercentage}
                 onChange={(e) => handleChange('socialFeesPercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -326,7 +326,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.numberOfEmployees ?? ''}
+                value={formData.numberOfEmployees === undefined ? '' : formData.numberOfEmployees}
                 onChange={(e) => handleChange('numberOfEmployees', e.target.value)}
                 placeholder="Ange antal anställda"
                 className="bg-background/50"
@@ -338,7 +338,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.numberOfMonths ?? ''}
+                value={formData.numberOfMonths === undefined ? '' : formData.numberOfMonths}
                 onChange={(e) => handleChange('numberOfMonths', e.target.value)}
                 placeholder="Ange antal månader"
                 className="bg-background/50"
@@ -369,7 +369,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.personnelOverheadPercentage ?? ''}
+                value={formData.personnelOverheadPercentage === undefined ? '' : formData.personnelOverheadPercentage}
                 onChange={(e) => handleChange('personnelOverheadPercentage', e.target.value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
@@ -417,7 +417,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <Input
                 type="number"
                 step="any"
-                value={formData.scheduledWorkHoursPerYear ?? ''}
+                value={formData.scheduledWorkHoursPerYear === undefined ? '' : formData.scheduledWorkHoursPerYear}
                 onChange={(e) => handleChange('scheduledWorkHoursPerYear', e.target.value)}
                 placeholder="Ange antal timmar"
                 className="bg-background/50"
