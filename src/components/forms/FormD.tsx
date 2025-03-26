@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Users, Clock, Coins } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
-import { formatNumber, formatCurrency, formatPercentage } from '@/lib/utils/format';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface FormDData {
   organizationName: string;
