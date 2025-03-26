@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Users, Coins, FileBarChart2, CheckIcon, PlusCircle, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -112,13 +112,11 @@ const generateId = (): string => {
 const CostRow = ({
   cost,
   onChange,
-  onRemove,
-  index
+  onRemove
 }: {
   cost: InterventionCost;
   onChange: (updatedCost: InterventionCost) => void;
   onRemove: () => void;
-  index: number;
 }) => {
   return (
     <div className="grid grid-cols-12 gap-3 items-start mb-2 bg-background/30 p-2 rounded-md">
@@ -301,13 +299,12 @@ const InterventionCard = ({
             </div>
           ) : (
             <div className="space-y-1">
-              {intervention.costs.map((cost, idx) => (
+              {intervention.costs.map((cost) => (
                 <CostRow
                   key={cost.id}
                   cost={cost}
                   onChange={updateCost}
                   onRemove={() => removeCost(cost.id)}
-                  index={idx}
                 />
               ))}
             </div>
@@ -509,7 +506,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       console.error('Error calculating costs:', error);
       // Vid fel, gör ingenting istället för att krascha
     }
-  }, [interventionCostDependency]);
+  }, [interventionCostDependency, safeFormData.interventions]);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -608,8 +605,8 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   };
 
   // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
-  const prepareDataForSave = (data: FormGData): Record<string, any> => {
-    const preparedData: Record<string, any> = {};
+  const prepareDataForSave = (data: FormGData): Record<string, unknown> => {
+    const preparedData: Record<string, unknown> = {};
     
     // Konvertera explicit alla undefineds till null eller defaultvärden
     Object.keys(data).forEach(key => {
