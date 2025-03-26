@@ -230,18 +230,6 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     }
   };
 
-  // Hjälpfunktion för att formatera nummer med tusentalsavgränsare
-  const formatNumber = (num: number | undefined): string => {
-    if (num === undefined || num === null) return '';
-    return num.toLocaleString('sv-SE');
-  };
-
-  // Hjälpfunktion för att visa råa värden i input-fält
-  const getInputValue = (value: number | undefined): string => {
-    if (value === undefined || value === null) return '';
-    return value.toString();
-  };
-
   return (
     <div className="space-y-8">
       <div className="space-y-6">

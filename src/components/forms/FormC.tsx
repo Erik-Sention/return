@@ -274,12 +274,6 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     return num.toLocaleString('sv-SE');
   };
 
-  // Hjälpfunktion för att visa råa värden i input-fält
-  const getInputValue = (value: number | undefined): string => {
-    if (value === undefined || value === null) return '';
-    return value.toString();
-  };
-
   return (
     <div className="space-y-8">
       <div className="space-y-6">

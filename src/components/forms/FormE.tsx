@@ -213,12 +213,6 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
     }
   };
 
-  // Hjälpfunktion för att formatera nummer med tusentalsavgränsare
-  const formatNumber = (num: number | undefined): string => {
-    if (num === undefined || num === null) return '';
-    return num.toLocaleString('sv-SE');
-  };
-
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -355,7 +349,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
           <div className="mt-6">
             <ReadOnlyField 
               label="E7: Antal sjukdagar totalt (kort sjukfrånvaro)"
-              value={formatNumber(formData.totalSickDays)}
+              value={formData.totalSickDays.toLocaleString('sv-SE')}
               info="Beräknas automatiskt som E4 × E5 × E6"
             />
           </div>
