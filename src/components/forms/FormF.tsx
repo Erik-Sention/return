@@ -201,8 +201,8 @@ const FormF = forwardRef<FormFRef, FormFProps>(function FormF(props, ref) {
   };
 
   // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
-  const prepareDataForSave = (data: FormFData): Record<string, any> => {
-    const preparedData: Record<string, any> = {};
+  const prepareDataForSave = (data: FormFData): Record<string, string | number | null> => {
+    const preparedData: Record<string, string | number | null> = {};
     
     // Konvertera explicit alla undefineds till null eller defaultvärden
     Object.keys(data).forEach(key => {
