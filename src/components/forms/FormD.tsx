@@ -9,16 +9,16 @@ import { formatCurrency } from '@/lib/utils/format';
 interface FormDData {
   organizationName: string;
   contactPerson: string;
-  averageMonthlySalary: number;
-  socialFeesPercentage: number;
+  averageMonthlySalary: number | undefined;
+  socialFeesPercentage: number | undefined;
   averageSocialFeesPerMonth: number;
-  numberOfEmployees: number;
-  numberOfMonths: number;
+  numberOfEmployees: number | undefined;
+  numberOfMonths: number | undefined;
   totalSalaryCosts: number;
-  personnelOverheadPercentage: number;
+  personnelOverheadPercentage: number | undefined;
   totalPersonnelOverhead: number;
   totalPersonnelCosts: number;
-  scheduledWorkHoursPerYear: number;
+  scheduledWorkHoursPerYear: number | undefined;
   personnelCostPerHour: number;
 }
 
@@ -83,16 +83,16 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const [formData, setFormData] = useState<FormDData>({
     organizationName: '',
     contactPerson: '',
-    averageMonthlySalary: 0,
-    socialFeesPercentage: 0,
+    averageMonthlySalary: undefined,
+    socialFeesPercentage: undefined,
     averageSocialFeesPerMonth: 0,
-    numberOfEmployees: 0,
-    numberOfMonths: 12,
+    numberOfEmployees: undefined,
+    numberOfMonths: undefined,
     totalSalaryCosts: 0,
-    personnelOverheadPercentage: 0,
+    personnelOverheadPercentage: undefined,
     totalPersonnelOverhead: 0,
     totalPersonnelCosts: 0,
-    scheduledWorkHoursPerYear: 0,
+    scheduledWorkHoursPerYear: undefined,
     personnelCostPerHour: 0
   });
   
@@ -127,22 +127,23 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
     // D3: Genomsnittliga sociala avgifter per månad
-    const averageSocialFeesPerMonth = formData.averageMonthlySalary * (formData.socialFeesPercentage / 100);
+    const averageSocialFeesPerMonth = 
+      (formData.averageMonthlySalary || 0) * ((formData.socialFeesPercentage || 0) / 100);
     
     // D6: Totala lönekostnader
-    const totalSalaryCosts = (formData.averageMonthlySalary + averageSocialFeesPerMonth) * 
-                            formData.numberOfEmployees * 
-                            formData.numberOfMonths;
+    const totalSalaryCosts = ((formData.averageMonthlySalary || 0) + averageSocialFeesPerMonth) * 
+                            (formData.numberOfEmployees || 0) * 
+                            (formData.numberOfMonths || 12);
     
     // D8: Totala personalkringkostnader
-    const totalPersonnelOverhead = totalSalaryCosts * (formData.personnelOverheadPercentage / 100);
+    const totalPersonnelOverhead = totalSalaryCosts * ((formData.personnelOverheadPercentage || 0) / 100);
     
     // D9: Totala personalkostnader
     const totalPersonnelCosts = totalSalaryCosts + totalPersonnelOverhead;
     
     // D11: Personalkostnad per arbetad timme
-    const personnelCostPerHour = formData.scheduledWorkHoursPerYear > 0 && formData.numberOfEmployees > 0
-      ? totalPersonnelCosts / formData.numberOfEmployees / formData.scheduledWorkHoursPerYear 
+    const personnelCostPerHour = (formData.scheduledWorkHoursPerYear || 0) > 0 && (formData.numberOfEmployees || 0) > 0
+      ? totalPersonnelCosts / (formData.numberOfEmployees || 1) / (formData.scheduledWorkHoursPerYear || 1) 
       : 0;
 
     setFormData(prev => ({
@@ -223,8 +224,13 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     if (typeof formData[field] === 'number' && typeof value === 'string') {
       // Konvertera kommatecken till decimalpunkt
       const normalizedValue = value.replace(',', '.');
-      const numValue = parseFloat(normalizedValue) || 0;
-      setFormData(prev => ({ ...prev, [field]: numValue }));
+      // Om värdet är tomt, sätt till undefined
+      if (normalizedValue === '') {
+        setFormData(prev => ({ ...prev, [field]: undefined }));
+      } else {
+        const numValue = parseFloat(normalizedValue);
+        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }

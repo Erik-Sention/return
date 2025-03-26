@@ -9,12 +9,12 @@ import { formatCurrency } from '@/lib/utils/format';
 interface FormEData {
   organizationName: string;
   contactPerson: string;
-  averageMonthlySalary: number;
-  sickLeaveCostPercentage: number;
+  averageMonthlySalary: number | undefined;
+  sickLeaveCostPercentage: number | undefined;
   sickLeaveCostPerDay: number;
-  numberOfEmployees: number;
-  scheduledWorkDaysPerYear: number;
-  shortSickLeavePercentage: number;
+  numberOfEmployees: number | undefined;
+  scheduledWorkDaysPerYear: number | undefined;
+  shortSickLeavePercentage: number | undefined;
   totalSickDays: number;
   totalSickLeaveCosts: number;
 }
@@ -80,12 +80,12 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
   const [formData, setFormData] = useState<FormEData>({
     organizationName: '',
     contactPerson: '',
-    averageMonthlySalary: 0,
-    sickLeaveCostPercentage: 0,
+    averageMonthlySalary: undefined,
+    sickLeaveCostPercentage: undefined,
     sickLeaveCostPerDay: 0,
-    numberOfEmployees: 0,
-    scheduledWorkDaysPerYear: 220,
-    shortSickLeavePercentage: 0,
+    numberOfEmployees: undefined,
+    scheduledWorkDaysPerYear: undefined,
+    shortSickLeavePercentage: undefined,
     totalSickDays: 0,
     totalSickLeaveCosts: 0
   });
@@ -125,7 +125,7 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
     
     // E7: Antal sjukdagar totalt
     const totalSickDays = (formData.numberOfEmployees || 0) * 
-                         (formData.scheduledWorkDaysPerYear || 0) * 
+                         (formData.scheduledWorkDaysPerYear || 220) * 
                          ((formData.shortSickLeavePercentage || 0) / 100);
     
     // E8: Totala kostnader för kort sjukfrånvaro
@@ -206,8 +206,13 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
     if (typeof formData[field] === 'number' && typeof value === 'string') {
       // Konvertera kommatecken till decimalpunkt
       const normalizedValue = value.replace(',', '.');
-      const numValue = parseFloat(normalizedValue) || 0;
-      setFormData(prev => ({ ...prev, [field]: numValue }));
+      // Om värdet är tomt, sätt till undefined
+      if (normalizedValue === '') {
+        setFormData(prev => ({ ...prev, [field]: undefined }));
+      } else {
+        const numValue = parseFloat(normalizedValue);
+        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }

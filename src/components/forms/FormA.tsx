@@ -10,9 +10,9 @@ interface FormAData {
   contactPerson: string;
   businessDefinition: string;
   currentSituation: string;
-  stressLevel: number;
-  productionLoss: number;
-  sickLeaveCost: number;
+  stressLevel: number | undefined;
+  productionLoss: number | undefined;
+  sickLeaveCost: number | undefined;
   causeAnalysis: string;
   goals: string;
   interventions: string[];
@@ -61,9 +61,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     contactPerson: '',
     businessDefinition: '',
     currentSituation: '',
-    stressLevel: 0,
-    productionLoss: 0,
-    sickLeaveCost: 0,
+    stressLevel: undefined,
+    productionLoss: undefined,
+    sickLeaveCost: undefined,
     causeAnalysis: '',
     goals: '',
     interventions: [''],
@@ -158,7 +158,17 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   };
 
   const handleChange = (field: keyof FormAData, value: string | number | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (typeof formData[field] === 'number' && typeof value === 'string') {
+      if (value === '') {
+        setFormData(prev => ({ ...prev, [field]: undefined }));
+      } else {
+        const normalizedValue = value.replace(',', '.');
+        const numValue = parseFloat(normalizedValue);
+        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   return (

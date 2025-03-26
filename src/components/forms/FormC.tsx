@@ -9,18 +9,18 @@ interface FormCData {
   organizationName: string;
   contactPerson: string;
   timePeriod: string;
-  totalPersonnelCosts?: number;
-  companyProfit?: number;
+  totalPersonnelCosts?: number | undefined;
+  companyProfit?: number | undefined;
   totalWorkValue: number;
-  percentHighStress?: number;
-  productionLossHighStress?: number;
+  percentHighStress?: number | undefined;
+  productionLossHighStress?: number | undefined;
   totalProductionLoss: number;
   valueProductionLoss: number;
-  costShortSickLeave?: number;
-  percentShortSickLeaveMentalHealth?: number;
+  costShortSickLeave?: number | undefined;
+  percentShortSickLeaveMentalHealth?: number | undefined;
   costShortSickLeaveMentalHealth: number;
-  costLongSickLeave?: number;
-  percentLongSickLeaveMentalHealth?: number;
+  costLongSickLeave?: number | undefined;
+  percentLongSickLeaveMentalHealth?: number | undefined;
   costLongSickLeaveMentalHealth: number;
   totalCostSickLeaveMentalHealth: number;
   totalCostMentalHealth: number;
@@ -160,16 +160,16 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
-    const totalWorkValue = (formData.totalPersonnelCosts ?? 0) + (formData.companyProfit ?? 0);
+    const totalWorkValue = (formData.totalPersonnelCosts || 0) + (formData.companyProfit || 0);
     
     // C9 = C7 × C8 (percentage of staff with high stress × production loss at high stress)
-    const totalProductionLoss = ((formData.percentHighStress ?? 0) * (formData.productionLossHighStress ?? 0)) / 100;
+    const totalProductionLoss = ((formData.percentHighStress || 0) * (formData.productionLossHighStress || 0)) / 100;
     
     // C10 = C6 × C9 ÷ 100
     const valueProductionLoss = (totalWorkValue * totalProductionLoss) / 100;
   
-    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave ?? 0) * (formData.percentShortSickLeaveMentalHealth ?? 0)) / 100;
-    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave ?? 0) * (formData.percentLongSickLeaveMentalHealth ?? 0)) / 100;
+    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave || 0) * (formData.percentShortSickLeaveMentalHealth || 0)) / 100;
+    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave || 0) * (formData.percentLongSickLeaveMentalHealth || 0)) / 100;
   
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
     const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
@@ -261,8 +261,13 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     if (typeof formData[field] === 'number' && typeof value === 'string') {
       // Konvertera kommatecken till decimalpunkt
       const normalizedValue = value.replace(',', '.');
-      const numValue = parseFloat(normalizedValue);
-      setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? 0 : numValue }));
+      // Om värdet är tomt, sätt till undefined
+      if (normalizedValue === '') {
+        setFormData(prev => ({ ...prev, [field]: undefined }));
+      } else {
+        const numValue = parseFloat(normalizedValue);
+        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
