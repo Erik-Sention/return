@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Users, Calendar, Coins } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -175,6 +176,43 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
     }
   }));
 
+  const handleChange = (field: keyof FormEData, value: string | number | undefined) => {
+    // Om värdet är ett nummer eller undefined, uppdatera direkt
+    if (typeof value === 'number' || value === undefined) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    } else {
+      // För strängar, konvertera till nummer om fältet är numeriskt
+      if (typeof formData[field] === 'number') {
+        // Om värdet är tomt, sätt till undefined
+        if (value === '') {
+          setFormData(prev => ({ ...prev, [field]: undefined }));
+        } else {
+          // Konvertera kommatecken till decimalpunkt
+          const normalizedValue = value.replace(',', '.');
+          const numValue = parseFloat(normalizedValue);
+          setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+        }
+      } else {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      }
+    }
+  };
+
+  // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
+  const prepareDataForSave = (data: FormEData): FormEData => {
+    const preparedData = { ...data };
+    
+    // Ersätt undefined med null för alla fält
+    Object.keys(preparedData).forEach(key => {
+      const typedKey = key as keyof FormEData;
+      if (typeof preparedData[typedKey] === 'undefined') {
+        (preparedData as any)[typedKey] = null;
+      }
+    });
+    
+    return preparedData;
+  };
+
   const handleSave = async () => {
     if (!currentUser?.uid) {
       setError('Du måste vara inloggad för att spara data');
@@ -186,9 +224,11 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
       setSaveMessage(null);
       setError(null);
       
-      console.log('Saving form data to Firebase:', formData);
+      // Förbereda data för att undvika Firebase-fel med undefined-värden
+      const dataToSave = prepareDataForSave(formData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
-      await saveFormData(currentUser.uid, FORM_TYPE, formData);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -198,23 +238,6 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
       throw error;
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleChange = (field: keyof FormEData, value: string | number) => {
-    // Om värdet är en sträng, konvertera till nummer om det är ett numeriskt fält
-    if (typeof formData[field] === 'number' && typeof value === 'string') {
-      // Konvertera kommatecken till decimalpunkt
-      const normalizedValue = value.replace(',', '.');
-      // Om värdet är tomt, sätt till undefined
-      if (normalizedValue === '') {
-        setFormData(prev => ({ ...prev, [field]: undefined }));
-      } else {
-        const numValue = parseFloat(normalizedValue);
-        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
-      }
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
 
@@ -262,11 +285,9 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">E1: Genomsnittlig månadslön</label>
               <InfoLabel text="Inkludera alla lönekomponenter som grundlön, OB, övertidstillägg och andra fasta tillägg." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.averageMonthlySalary === undefined ? '' : formData.averageMonthlySalary}
-                onChange={(e) => handleChange('averageMonthlySalary', e.target.value)}
+              <FormattedNumberInput
+                value={formData.averageMonthlySalary}
+                onChange={(value) => handleChange('averageMonthlySalary', value)}
                 placeholder="Ange genomsnittlig månadslön"
                 className="bg-background/50"
               />
@@ -274,11 +295,9 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">E2: Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)</label>
               <InfoLabel text="Standardvärde är 10% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (12-15% pga ersättningskostnader), IT (8-10%), Finans (8-10%), Handel (10-12%)." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.sickLeaveCostPercentage === undefined ? '' : formData.sickLeaveCostPercentage}
-                onChange={(e) => handleChange('sickLeaveCostPercentage', e.target.value)}
+              <FormattedNumberInput
+                value={formData.sickLeaveCostPercentage}
+                onChange={(value) => handleChange('sickLeaveCostPercentage', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -305,11 +324,9 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">E4: Antal anställda (FTE)</label>
               <InfoLabel text="Ange antal heltidsanställda. Om ni har deltidsanställda, konvertera till heltid. Exempel: 2 personer på 50% = 1 FTE." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.numberOfEmployees === undefined ? '' : formData.numberOfEmployees}
-                onChange={(e) => handleChange('numberOfEmployees', e.target.value)}
+              <FormattedNumberInput
+                value={formData.numberOfEmployees}
+                onChange={(value) => handleChange('numberOfEmployees', value)}
                 placeholder="Ange antal anställda"
                 className="bg-background/50"
               />
@@ -317,11 +334,9 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">E5: Antal schemalagda arbetsdagar per år, per anställd</label>
               <InfoLabel text="Standard är 220 dagar. Detta varierar mellan branscher: Vård & Omsorg (210 dagar pga skiftarbete), IT (220 dagar), Finans (220 dagar), Handel (200-210 dagar pga öppettider)." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.scheduledWorkDaysPerYear === undefined ? '' : formData.scheduledWorkDaysPerYear}
-                onChange={(e) => handleChange('scheduledWorkDaysPerYear', e.target.value)}
+              <FormattedNumberInput
+                value={formData.scheduledWorkDaysPerYear}
+                onChange={(value) => handleChange('scheduledWorkDaysPerYear', value)}
                 placeholder="Ange antal dagar"
                 className="bg-background/50"
               />
@@ -340,11 +355,9 @@ const FormE = forwardRef<FormERef, FormEProps>(function FormE(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">E6: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid</label>
               <InfoLabel text="Standardvärde är 2.5% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (3-4% pga högre risk för smitta), IT (2-2.5%), Finans (2-2.5%), Handel (2.5-3% pga kundkontakt)." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.shortSickLeavePercentage === undefined ? '' : formData.shortSickLeavePercentage}
-                onChange={(e) => handleChange('shortSickLeavePercentage', e.target.value)}
+              <FormattedNumberInput
+                value={formData.shortSickLeavePercentage}
+                onChange={(value) => handleChange('shortSickLeavePercentage', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />

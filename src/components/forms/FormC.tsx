@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, ArrowRight, Calculator, PieChart, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,16 @@ interface FormCData {
 
 interface FormDData {
   totalPersonnelCosts?: number;
+}
+
+interface FormEData {
+  costShortSickLeave?: number;
+  totalSickLeaveCosts?: number;
+}
+
+interface FormFData {
+  costLongSickLeave?: number;
+  totalLongSickLeaveCosts?: number;
 }
 
 const FORM_TYPE = 'C';
@@ -80,22 +91,33 @@ const SectionHeader = ({
 // Lägg till en ny komponent för att hämta värde från FormD
 const FetchValueButton = ({ 
   onClick, 
-  disabled 
+  disabled,
+  formName,
+  message 
 }: { 
   onClick: () => void;
   disabled?: boolean;
+  formName: string;
+  message?: string | null;
 }) => (
-  <Button
-    type="button"
-    variant="outline"
-    size="sm"
-    onClick={onClick}
-    disabled={disabled}
-    className="mt-1"
-  >
-    <ArrowDown className="h-4 w-4 mr-2" />
-    Hämta från Formulär D
-  </Button>
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className="mt-1"
+    >
+      <ArrowDown className="h-4 w-4 mr-2" />
+      Hämta från Formulär {formName}
+    </Button>
+    {message && (
+      <span className={`text-sm ${message.includes('Inget') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+        {message}
+      </span>
+    )}
+  </div>
 );
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -133,6 +155,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchMessageFormD, setFetchMessageFormD] = useState<string | null>(null);
+  const [fetchMessageFormE, setFetchMessageFormE] = useState<string | null>(null);
+  const [fetchMessageFormF, setFetchMessageFormF] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load data from Firebase on mount
@@ -160,7 +185,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
-    const totalWorkValue = (formData.totalPersonnelCosts || 0) + (formData.companyProfit || 0);
+    // Konvertera till nummer innan addition för att förhindra strängkonkatenering
+    const personnelCosts = Number(formData.totalPersonnelCosts || 0);
+    const profit = Number(formData.companyProfit || 0);
+    const totalWorkValue = personnelCosts + profit;
     
     // C9 = C7 × C8 (percentage of staff with high stress × production loss at high stress)
     const totalProductionLoss = ((formData.percentHighStress || 0) * (formData.productionLossHighStress || 0)) / 100;
@@ -195,6 +223,36 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     formData.percentLongSickLeaveMentalHealth
   ]);
   
+  // Rensa fetchMessage efter en viss tid - uppdatera för varje enskilt meddelande
+  useEffect(() => {
+    if (fetchMessageFormD) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormD(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormD]);
+
+  useEffect(() => {
+    if (fetchMessageFormE) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormE(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormE]);
+
+  useEffect(() => {
+    if (fetchMessageFormF) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormF(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormF]);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -229,6 +287,97 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     }
   }));
 
+  const handleChange = (field: keyof FormCData, value: string | number | undefined) => {
+    // Om värdet är ett nummer eller undefined, uppdatera direkt
+    if (typeof value === 'number' || value === undefined) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    } else {
+      // För strängar, konvertera till nummer om fältet är numeriskt
+      if (typeof formData[field] === 'number') {
+        // Om värdet är tomt, sätt till undefined
+        if (value === '') {
+          setFormData(prev => ({ ...prev, [field]: undefined }));
+        } else {
+          // Konvertera kommatecken till decimalpunkt
+          const normalizedValue = value.replace(',', '.');
+          const numValue = parseFloat(normalizedValue);
+          setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
+        }
+      } else {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      }
+    }
+  };
+
+  // Hjälpfunktion för att formatera nummer med tusentalsavgränsare
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return '';
+    return num.toLocaleString('sv-SE');
+  };
+
+  // Hjälpfunktion för att hämta värden från andra formulär
+  const fetchValueFromForm = async (formType: string, field: keyof FormCData, formField: string) => {
+    if (!currentUser?.uid) {
+      setError('Du måste vara inloggad för att hämta data');
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      if (formType === 'D') {
+        const data = await loadFormData<FormDData>(currentUser.uid, formType);
+        if (data && data.totalPersonnelCosts !== undefined) {
+          // Avrunda värdet till heltal för att undvika decimalproblem
+          const roundedValue = Math.round(data.totalPersonnelCosts);
+          handleChange('totalPersonnelCosts', roundedValue);
+          setFetchMessageFormD(`Värde hämtat från Formulär ${formType}!`);
+        } else {
+          setFetchMessageFormD(`Inget värde hittades i Formulär ${formType}.`);
+        }
+      } else if (formType === 'E') {
+        const data = await loadFormData<FormEData>(currentUser.uid, formType);
+        if (data && data.totalSickLeaveCosts !== undefined) {
+          // Avrunda värdet till heltal för att undvika decimalproblem
+          const roundedValue = Math.round(data.totalSickLeaveCosts);
+          handleChange('costShortSickLeave', roundedValue);
+          setFetchMessageFormE(`Värde hämtat från Formulär ${formType}!`);
+        } else {
+          setFetchMessageFormE(`Inget värde hittades i Formulär ${formType}.`);
+        }
+      } else if (formType === 'F') {
+        const data = await loadFormData<FormFData>(currentUser.uid, formType);
+        if (data && data.totalLongSickLeaveCosts !== undefined) {
+          // Avrunda värdet till heltal för att undvika decimalproblem
+          const roundedValue = Math.round(data.totalLongSickLeaveCosts);
+          handleChange('costLongSickLeave', roundedValue);
+          setFetchMessageFormF(`Värde hämtat från Formulär ${formType}!`);
+        } else {
+          setFetchMessageFormF(`Inget värde hittades i Formulär ${formType}.`);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching value from Form${formType}:`, error);
+      setError(`Kunde inte hämta värdet från Formulär ${formType}`);
+    }
+  };
+
+  // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
+  const prepareDataForSave = (data: FormCData): FormCData => {
+    const preparedData = { ...data };
+    
+    // Ersätt undefined med null för alla fält
+    Object.keys(preparedData).forEach(key => {
+      const typedKey = key as keyof FormCData;
+      if (typeof preparedData[typedKey] === 'undefined') {
+        (preparedData as any)[typedKey] = null;
+      }
+    });
+    
+    return preparedData;
+  };
+
+  // Uppdatera handleSave för att använda prepareDataForSave
   const handleSave = async () => {
     if (!currentUser?.uid) {
       setError('Du måste vara inloggad för att spara data');
@@ -240,10 +389,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
       setSaveMessage(null);
       setError(null);
       
-      console.log('Saving form data to Firebase:', formData);
+      // Förbereda data för att undvika Firebase-fel med undefined-värden
+      const dataToSave = prepareDataForSave(formData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
       // Save only to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, formData);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -254,29 +405,6 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleChange = (field: keyof FormCData, value: string | number) => {
-    // Om värdet är en sträng, konvertera till nummer om det är ett numeriskt fält
-    if (typeof formData[field] === 'number' && typeof value === 'string') {
-      // Konvertera kommatecken till decimalpunkt
-      const normalizedValue = value.replace(',', '.');
-      // Om värdet är tomt, sätt till undefined
-      if (normalizedValue === '') {
-        setFormData(prev => ({ ...prev, [field]: undefined }));
-      } else {
-        const numValue = parseFloat(normalizedValue);
-        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
-      }
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  // Hjälpfunktion för att formatera nummer med tusentalsavgränsare
-  const formatNumber = (num: number | undefined): string => {
-    if (num === undefined || num === null) return '';
-    return num.toLocaleString('sv-SE');
   };
 
   return (
@@ -357,36 +485,26 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                 C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
               </label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär D9" />
-              <Input
-                type="number"
-                step="any"
-                value={formData.totalPersonnelCosts === undefined ? '' : formData.totalPersonnelCosts}
-                onChange={(e) => handleChange('totalPersonnelCosts', e.target.value)}
+              <FormattedNumberInput
+                value={formData.totalPersonnelCosts}
+                onChange={(value) => handleChange('totalPersonnelCosts', value)}
                 placeholder="Värdet kan hämtas från D9"
                 className="bg-background/50"
               />
               <FetchValueButton 
                 onClick={async () => {
-                  try {
-                    const data = await loadFormData<FormDData>(currentUser?.uid || '', 'D');
-                    if (data?.totalPersonnelCosts) {
-                      handleChange('totalPersonnelCosts', data.totalPersonnelCosts);
-                    }
-                  } catch (error) {
-                    console.error('Error fetching value from FormD:', error);
-                    setError('Kunde inte hämta värdet från Formulär D');
-                  }
+                  await fetchValueFromForm('D', 'totalPersonnelCosts', 'totalPersonnelCosts');
                 }}
                 disabled={!currentUser?.uid}
+                formName="D"
+                message={fetchMessageFormD}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
-              <Input
-                type="number"
-                step="any"
-                value={formData.companyProfit === undefined ? '' : formData.companyProfit}
-                onChange={(e) => handleChange('companyProfit', e.target.value)}
+              <FormattedNumberInput
+                value={formData.companyProfit}
+                onChange={(value) => handleChange('companyProfit', value)}
                 placeholder="Ange summa i kr"
                 className="bg-background/50"
               />
@@ -412,11 +530,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
               <InfoLabel text="Baserat på forskning varierar detta mellan branscher: Vård & Omsorg (25-35%), IT (20-30%), Finans (15-25%), Handel (10-20%). Standardvärde är 22% för genomsnittlig verksamhet. Mät detta genom medarbetarundersökningar eller screening." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.percentHighStress === undefined ? '' : formData.percentHighStress}
-                onChange={(e) => handleChange('percentHighStress', e.target.value)}
+              <FormattedNumberInput
+                value={formData.percentHighStress}
+                onChange={(value) => handleChange('percentHighStress', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -424,11 +540,9 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
               <InfoLabel text="Standardvärde är 2,0% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (2.5-3.0%), IT (1.5-2.0%), Finans (1.8-2.2%), Handel (1.5-2.0%). Produktionsbortfallet beror på sänkt koncentration, ökad risk för fel, och minskad effektivitet." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.productionLossHighStress === undefined ? '' : formData.productionLossHighStress}
-                onChange={(e) => handleChange('productionLossHighStress', e.target.value)}
+              <FormattedNumberInput
+                value={formData.productionLossHighStress}
+                onChange={(value) => handleChange('productionLossHighStress', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -463,23 +577,27 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär E8" />
-              <Input
-                type="number"
-                step="any"
-                value={formData.costShortSickLeave === undefined ? '' : formData.costShortSickLeave}
-                onChange={(e) => handleChange('costShortSickLeave', e.target.value)}
+              <FormattedNumberInput
+                value={formData.costShortSickLeave}
+                onChange={(value) => handleChange('costShortSickLeave', value)}
                 placeholder="Värdet kan hämtas från E8"
                 className="bg-background/50"
+              />
+              <FetchValueButton 
+                onClick={async () => {
+                  await fetchValueFromForm('E', 'costShortSickLeave', 'costShortSickLeave');
+                }}
+                disabled={!currentUser?.uid}
+                formName="E"
+                message={fetchMessageFormE}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.percentShortSickLeaveMentalHealth === undefined ? '' : formData.percentShortSickLeaveMentalHealth}
-                onChange={(e) => handleChange('percentShortSickLeaveMentalHealth', e.target.value)}
+              <FormattedNumberInput
+                value={formData.percentShortSickLeaveMentalHealth}
+                onChange={(value) => handleChange('percentShortSickLeaveMentalHealth', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />
@@ -505,23 +623,27 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             <div className="space-y-2">
               <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
               <InfoLabel text="Detta fält kan hämtas automatiskt från formulär F8" />
-              <Input
-                type="number"
-                step="any"
-                value={formData.costLongSickLeave === undefined ? '' : formData.costLongSickLeave}
-                onChange={(e) => handleChange('costLongSickLeave', e.target.value)}
+              <FormattedNumberInput
+                value={formData.costLongSickLeave}
+                onChange={(value) => handleChange('costLongSickLeave', value)}
                 placeholder="Värdet kan hämtas från F8"
                 className="bg-background/50"
+              />
+              <FetchValueButton 
+                onClick={async () => {
+                  await fetchValueFromForm('F', 'costLongSickLeave', 'costLongSickLeave');
+                }}
+                disabled={!currentUser?.uid}
+                formName="F"
+                message={fetchMessageFormF}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
               <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
-              <Input
-                type="number"
-                step="any"
-                value={formData.percentLongSickLeaveMentalHealth === undefined ? '' : formData.percentLongSickLeaveMentalHealth}
-                onChange={(e) => handleChange('percentLongSickLeaveMentalHealth', e.target.value)}
+              <FormattedNumberInput
+                value={formData.percentLongSickLeaveMentalHealth}
+                onChange={(value) => handleChange('percentLongSickLeaveMentalHealth', value)}
                 placeholder="Ange procent"
                 className="bg-background/50"
               />

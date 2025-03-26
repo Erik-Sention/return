@@ -141,10 +141,12 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
       setSaveMessage(null);
       setError(null);
       
-      console.log('Saving form data to Firebase:', formData);
+      // Förbereda data för att undvika Firebase-fel med undefined-värden
+      const dataToSave = prepareDataForSave(formData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
       // Save only to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, formData);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -155,6 +157,21 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
+  const prepareDataForSave = (data: FormBData): FormBData => {
+    const preparedData = { ...data };
+    
+    // Ersätt undefined med null för alla fält
+    Object.keys(preparedData).forEach(key => {
+      const typedKey = key as keyof FormBData;
+      if (typeof preparedData[typedKey] === 'undefined') {
+        (preparedData as any)[typedKey] = null;
+      }
+    });
+    
+    return preparedData;
   };
 
   const handleChange = (field: keyof FormBData, value: string | string[]) => {

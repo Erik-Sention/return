@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -141,10 +142,12 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       setSaveMessage(null);
       setError(null);
       
-      console.log('Saving form data to Firebase:', formData);
+      // Förbereda data för att undvika Firebase-fel med undefined-värden
+      const dataToSave = prepareDataForSave(formData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
       // Save only to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, formData);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -157,8 +160,27 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   };
 
-  const handleChange = (field: keyof FormAData, value: string | number | string[]) => {
-    if (typeof formData[field] === 'number' && typeof value === 'string') {
+  // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
+  const prepareDataForSave = (data: FormAData): FormAData => {
+    const preparedData = { ...data };
+    
+    // Ersätt undefined med null för alla fält
+    Object.keys(preparedData).forEach(key => {
+      const typedKey = key as keyof FormAData;
+      if (typeof preparedData[typedKey] === 'undefined') {
+        (preparedData as any)[typedKey] = null;
+      }
+    });
+    
+    return preparedData;
+  };
+
+  const handleChange = (field: keyof FormAData, value: string | number | string[] | undefined) => {
+    if (typeof value === 'number' || value === undefined) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    } else if (Array.isArray(value)) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    } else if (typeof formData[field] === 'number') {
       if (value === '') {
         setFormData(prev => ({ ...prev, [field]: undefined }));
       } else {
@@ -271,30 +293,27 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
-                <Input
-                  type="number"
-                  value={formData.stressLevel === undefined ? '' : formData.stressLevel}
-                  onChange={(e) => handleChange('stressLevel', e.target.value)}
+                <FormattedNumberInput
+                  value={formData.stressLevel}
+                  onChange={(value) => handleChange('stressLevel', value)}
                   placeholder="Ange procent"
                   className="bg-background/50"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
-                <Input
-                  type="number"
-                  value={formData.productionLoss === undefined ? '' : formData.productionLoss}
-                  onChange={(e) => handleChange('productionLoss', e.target.value)}
+                <FormattedNumberInput
+                  value={formData.productionLoss}
+                  onChange={(value) => handleChange('productionLoss', value)}
                   placeholder="Ange summa i kr"
                   className="bg-background/50"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
-                <Input
-                  type="number"
-                  value={formData.sickLeaveCost === undefined ? '' : formData.sickLeaveCost}
-                  onChange={(e) => handleChange('sickLeaveCost', e.target.value)}
+                <FormattedNumberInput
+                  value={formData.sickLeaveCost}
+                  onChange={(value) => handleChange('sickLeaveCost', value)}
                   placeholder="Ange summa i kr"
                   className="bg-background/50"
                 />
