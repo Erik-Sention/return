@@ -150,8 +150,12 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       // Save to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
-      // Uppdatera även gemensamma fält
-      await updateSharedFieldsFromCurrentForm(currentUser.uid, dataToSave);
+      // Uppdatera även gemensamma fält - skicka endast nödvändiga fält
+      await updateSharedFieldsFromCurrentForm(currentUser.uid, {
+        organizationName: dataToSave.organizationName,
+        contactPerson: dataToSave.contactPerson,
+        timePeriod: '' // FormA har ingen timePeriod
+      });
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
