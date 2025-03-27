@@ -447,7 +447,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         totalExternalCosts: newTotalExternalCosts
       }));
     }
-  }, [costsDependency]);
+  }, [costsDependency, safeFormData.interventions]);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -629,7 +629,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         if (intervention.costs && intervention.costs.length > 0) {
           const delinsatser = intervention.costs.map(cost => ({
             name: cost.name,
-            externalCost: cost.externalCost
+            externalCost: cost.externalCost !== null ? Math.round(cost.externalCost) : null
           }));
           
           interventionGroups.set(intervention.name, {
