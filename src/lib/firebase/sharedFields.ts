@@ -116,14 +116,14 @@ export const saveSharedFields = async (userId: string, data: SharedFields): Prom
  * @param userId - Användarens ID
  * @param formData - Data från formuläret som innehåller gemensamma fält
  */
-export const updateSharedFieldsFromCurrentForm = async (userId: string, formData: Record<string, string | undefined>): Promise<void> => {
+export const updateSharedFieldsFromCurrentForm = async (userId: string, formData: Record<string, unknown>): Promise<void> => {
   if (!userId) return Promise.reject(new Error('No user ID provided'));
   
   try {
     const sharedFields: SharedFields = {
-      organizationName: formData.organizationName || '',
-      contactPerson: formData.contactPerson || '',
-      timePeriod: formData.timePeriod || '' // Ta bort standardvärdet
+      organizationName: typeof formData.organizationName === 'string' ? formData.organizationName : '',
+      contactPerson: typeof formData.contactPerson === 'string' ? formData.contactPerson : '',
+      timePeriod: typeof formData.timePeriod === 'string' ? formData.timePeriod : ''
     };
     
     await saveSharedFields(userId, sharedFields);
