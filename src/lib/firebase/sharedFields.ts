@@ -23,7 +23,7 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
     }
     
     const dbRef = ref(database);
-    let sharedFields: SharedFields = {
+    const sharedFields: SharedFields = {
       organizationName: '',
       contactPerson: '',
       timePeriod: ''
@@ -116,7 +116,7 @@ export const saveSharedFields = async (userId: string, data: SharedFields): Prom
  * @param userId - Användarens ID
  * @param formData - Data från formuläret som innehåller gemensamma fält
  */
-export const updateSharedFieldsFromCurrentForm = async (userId: string, formData: any): Promise<void> => {
+export const updateSharedFieldsFromCurrentForm = async (userId: string, formData: Record<string, string | undefined>): Promise<void> => {
   if (!userId) return Promise.reject(new Error('No user ID provided'));
   
   try {
