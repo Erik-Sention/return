@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Building, Wallet, CreditCard, PlusCircle, X, ArrowDown } from 'lucide-react';
+import { Save, Info, ClipboardList, Wallet, CreditCard, PlusCircle, X, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -422,31 +422,24 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     loadFromFirebase();
   }, [currentUser]);
 
-  // Beräkna totalsumma när kostnadsposter ändras
+  // Beräkna total kostnad när kostnaderna ändras
   useEffect(() => {
-    // Förhindra att onödiga uppdateringar triggar en oändlig loop
-    const costItemValues = safeFormData.interventions.map(intervention => 
-      intervention.costItems.map(item => item.amount || 0).reduce((a, b) => a + b, 0)
-    );
-    
-    const newTotalExternalCosts = costItemValues.reduce((a, b) => a + b, 0);
-    
-    // Endast uppdatera om det faktiskt är en ändring i totalsumman
-    if (newTotalExternalCosts !== safeFormData.totalExternalCosts) {
-      // Skapa uppdaterade interventions utan att ändra kostnadsposter
-      const updatedInterventions = safeFormData.interventions.map((intervention, index) => {
-        const totalCost = costItemValues[index];
+    if (safeFormData.interventions) {
+      const updatedInterventions = safeFormData.interventions.map(intervention => {
+        // Beräkna totalbeloppet för varje insats
+        const totalCost = (intervention.costItems || []).reduce(
+          (sum, item) => sum + (item.amount || 0), 
+          0
+        );
         
-        // Endast uppdatera totalCost om den faktiskt ändrats
-        if (totalCost !== intervention.totalCost) {
-          return {
-            ...intervention,
-            totalCost
-          };
-        }
-        
-        return intervention;
+        return { ...intervention, totalCost };
       });
+      
+      // Beräkna total extern kostnad
+      const newTotalExternalCosts = updatedInterventions.reduce(
+        (sum, intervention) => sum + intervention.totalCost, 
+        0
+      );
       
       setFormData(prev => ({
         ...prev,
@@ -454,7 +447,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         totalExternalCosts: newTotalExternalCosts
       }));
     }
-  }, [costsDependency]); // Ta bort safeFormData.interventions från dependency array
+  }, [costsDependency, safeFormData.interventions, safeFormData.totalExternalCosts]); // Lägg till dessa dependencies
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -647,11 +640,15 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       });
       
       // Samla information om befintliga insatser och kostnadsposter i H
-      const existingInterventions = new Map<string, Map<string, CostItem>>();
+      const existingInterventions = new Map<string, Map<string, { id: string; amount: number | null }>>();
+      
       safeFormData.interventions.forEach(intervention => {
-        const costItemMap = new Map<string, CostItem>();
+        const costItemMap = new Map<string, { id: string; amount: number | null }>();
         intervention.costItems.forEach(item => {
-          costItemMap.set(item.subInterventionName, item);
+          costItemMap.set(item.subInterventionName, {
+            id: item.id,
+            amount: item.amount
+          });
         });
         existingInterventions.set(intervention.name, costItemMap);
       });
@@ -662,11 +659,11 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       
       // Gå igenom alla insatser från G
       for (const [insatsName, insatsData] of interventionGroups) {
-        let targetIntervention = safeFormData.interventions.find(
+        const targetIntervention = safeFormData.interventions.find(
           intervention => intervention.name === insatsName
         );
         
-        const existingCostItems = existingInterventions.get(insatsName) || new Map<string, CostItem>();
+        const existingCostItems = existingInterventions.get(insatsName) || new Map<string, { id: string; amount: number | null }>();
         
         // Hitta delinsatser som behöver läggas till eller uppdateras
         const delinsatserToAdd: Array<{ name: string, externalCost: number | null }> = [];

@@ -811,13 +811,11 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       
       let added = 0;
       let updated = 0;
-      let insatsCounter = 0;
       const interventionsToUpdate: Intervention[] = [];
       
       // Gå igenom alla insatser från H som behöver hanteras
       for (const [insatsName, insatsData] of interventionGroups) {
-        insatsCounter++;
-        let targetIntervention = safeFormData.interventions.find(
+        const targetIntervention = safeFormData.interventions.find(
           intervention => intervention.name === insatsName
         );
         
