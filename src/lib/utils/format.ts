@@ -4,7 +4,10 @@
  * @param decimals - Antal decimaler (valfritt, standard är 0)
  * @returns Formaterat nummer som sträng
  */
-export const formatNumber = (num: number, decimals: number = 0): string => {
+export const formatNumber = (num: number | null | undefined, decimals: number = 0): string => {
+  if (num === null || num === undefined || isNaN(num)) {
+    return '0';
+  }
   return num.toLocaleString('sv-SE', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
@@ -16,7 +19,7 @@ export const formatNumber = (num: number, decimals: number = 0): string => {
  * @param amount - Beloppet som ska formateras
  * @returns Formaterat belopp med valuta
  */
-export const formatCurrency = (amount: number): string => {
+export const formatCurrency = (amount: number | null | undefined): string => {
   return `${formatNumber(amount)} kr`;
 };
 

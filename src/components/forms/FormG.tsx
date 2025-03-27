@@ -121,11 +121,11 @@ const CostRow = ({
   return (
     <div className="grid grid-cols-12 gap-3 items-start mb-2 bg-background/30 p-2 rounded-md">
       <div className="col-span-6 space-y-1">
-        <label className="text-xs font-medium">Kostnadspost</label>
+        <label className="text-xs font-medium">Delinsats</label>
         <Input
           value={cost.name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...cost, name: e.target.value })}
-          placeholder="Namnge kostnadspost"
+          placeholder="Namnge delinsats"
           className="text-sm"
         />
       </div>
@@ -292,13 +292,13 @@ const InterventionCard = ({
               className="gap-1 h-8"
             >
               <PlusCircle className="h-4 w-4" />
-              Lägg till kostnadspost
+              Lägg till delinsats
             </Button>
           </div>
           
           {costs.length === 0 ? (
             <div className="text-sm text-muted-foreground p-3 border border-dashed border-muted-foreground/20 rounded-md text-center">
-              Lägg till en eller flera kostnadsposter för denna insats
+              Lägg till en eller flera delinsatser för denna insats
             </div>
           ) : (
             <div className="space-y-1">
