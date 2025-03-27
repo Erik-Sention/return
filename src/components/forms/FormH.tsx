@@ -6,7 +6,7 @@ import { Save, Info, ClipboardList, Building, Wallet, CreditCard, PlusCircle, X 
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '../ui/textarea';
 
 // Typer för kostnadsposter
 interface CostItem {
@@ -428,7 +428,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser, safeFormData]);
+  }, [formData, currentUser, safeFormData, safeFormData.interventions, safeFormData.totalExternalCosts]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
