@@ -377,17 +377,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [fetchMessageFormG, setFetchMessageFormG] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Skapa en dependency för att uppdatera beräkningar när kostnaderna ändras
-  const costsDependency = useMemo(() => {
-    return safeFormData.interventions
-      .map(intervention => 
-        intervention.costItems
-          .map(item => `${item.id}:${item.amount}`)
-          .join('|')
-      )
-      .join('||');
-  }, [safeFormData.interventions]);
-
   // Load data from Firebase on mount
   useEffect(() => {
     const loadFromFirebase = async () => {
@@ -422,45 +411,64 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     loadFromFirebase();
   }, [currentUser]);
 
-  // Beräkna total kostnad när kostnaderna ändras
+  // Använd useEffect-hook för att beräkna totala kostnader
+  // Denna useEffect ersätter costsDependency som tidigare användes
   useEffect(() => {
+    // Beräkna totala kostnader för varje intervention
     if (safeFormData.interventions) {
+      // Kontrollera om kostnaderna faktiskt ändras innan vi uppdaterar state
+      let totalExternalCosts = 0;
       const updatedInterventions = safeFormData.interventions.map(intervention => {
-        // Beräkna totalbeloppet för varje insats
-        const totalCost = (intervention.costItems || []).reduce(
-          (sum, item) => sum + (item.amount || 0), 
-          0
-        );
+        // Beräkna summan av kostnadsposterna
+        const itemsTotal = intervention.costItems?.reduce((sum, item) => {
+          return sum + (item.amount || 0);
+        }, 0) || 0;
         
-        return { ...intervention, totalCost };
+        // Beräkna den totala kostnaden för denna intervention
+        const totalCost = itemsTotal;
+        
+        // Lägg till i totalsumman
+        totalExternalCosts += totalCost;
+        
+        return { 
+          ...intervention, 
+          totalCost 
+        };
       });
       
-      // Beräkna total extern kostnad
-      const newTotalExternalCosts = updatedInterventions.reduce(
-        (sum, intervention) => sum + intervention.totalCost, 
-        0
+      // Kontrollera om interventionernas kostnader har ändrats
+      const currentCosts = JSON.stringify(
+        safeFormData.interventions.map(i => ({ id: i.id, totalCost: i.totalCost }))
+      );
+      const newCosts = JSON.stringify(
+        updatedInterventions.map(i => ({ id: i.id, totalCost: i.totalCost }))
       );
       
-      setFormData(prev => ({
-        ...prev,
-        interventions: updatedInterventions,
-        totalExternalCosts: newTotalExternalCosts
-      }));
+      // Uppdatera endast när kostnader ändras för att undvika oändlig loop
+      if (currentCosts !== newCosts || safeFormData.totalExternalCosts !== totalExternalCosts) {
+        // Update formData with new intervention costs and total
+        setFormData(prevData => ({
+          ...prevData,
+          interventions: updatedInterventions,
+          totalExternalCosts
+        }));
+      }
     }
-  }, [costsDependency, safeFormData.interventions]);
+  }, [safeFormData.interventions, safeFormData.totalExternalCosts, setFormData]);
 
-  // Setup autosave whenever formData changes
+  // Fix för andra useEffect med saknade beroenden (autosave)
   useEffect(() => {
-    // Clear any existing timer
+    // Rensa befintliga timers
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
 
-    // Only autosave if user is logged in and form has been interacted with
+    // Autospara endast om användern är inloggad
     if (currentUser?.uid) {
-      // Förbereda data för att undvika Firebase-fel med undefined-värden
+      // Förbered data för Firebase (undvik undefined)
       const dataToSave = prepareDataForSave(safeFormData);
       
+      // Skapa autosave-timer
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
@@ -470,13 +478,13 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       );
     }
 
-    // Cleanup timer on unmount
+    // Rensa timer vid avmontering
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser, safeFormData, safeFormData.interventions, safeFormData.totalExternalCosts]);
+  }, [currentUser, safeFormData]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
