@@ -447,7 +447,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         totalExternalCosts: newTotalExternalCosts
       }));
     }
-  }, [costsDependency, safeFormData.interventions, safeFormData.totalExternalCosts]); // Lägg till dessa dependencies
+  }, [costsDependency]);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
