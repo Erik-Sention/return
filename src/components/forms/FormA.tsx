@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
 
 interface FormAData {
   organizationName: string;
@@ -146,15 +147,17 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       const dataToSave = prepareDataForSave(formData);
       console.log('Saving form data to Firebase:', dataToSave);
       
-      // Save only to Firebase
+      // Save to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      
+      // Uppdatera även gemensamma fält
+      await updateSharedFieldsFromCurrentForm(currentUser.uid, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
-      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
     } finally {
       setIsSaving(false);
     }
@@ -235,7 +238,8 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Organisationens namn</label>
+              <label className="text-sm font-medium">A1: Organisationens namn</label>
+              <InfoLabel text="Namnet på din organisation" />
               <Input
                 value={formData.organizationName}
                 onChange={(e) => handleChange('organizationName', e.target.value)}
@@ -244,7 +248,8 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Kontaktperson</label>
+              <label className="text-sm font-medium">A2: Kontaktperson</label>
+              <InfoLabel text="Namn på kontaktperson" />
               <Input
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}

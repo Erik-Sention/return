@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency, formatPercentage } from '@/lib/utils/format';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 // Interface för data från formulär C
 interface FormCData {
@@ -166,7 +169,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const [formData, setFormData] = useState<FormJData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '12 månader',
+    timePeriod: '',
     interventionDescription: '',
     
     totalCostMentalHealthAlt1: undefined,
@@ -378,7 +381,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">J3: Tidsperiod</label>
-            <InfoLabel text="Ange tidsperiod (standard är 12 månader)" />
+            <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
             <Input
               value={safeFormData.timePeriod}
               onChange={(e) => handleChange('timePeriod', e.target.value)}
@@ -386,6 +389,16 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               className="bg-background/50"
             />
           </div>
+        </div>
+        
+        <div className="mt-4">
+          <SharedFieldsButton 
+            userId={currentUser?.uid}
+            onFieldsLoaded={(fields: SharedFields) => {
+              setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+            }}
+            disabled={!currentUser?.uid}
+          />
         </div>
       </div>
       

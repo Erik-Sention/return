@@ -7,6 +7,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 // Typer för Form G data
 interface FormGInterventionCost {
@@ -512,7 +515,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const [formData, setFormData] = useState<FormIData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '12 månader',
+    timePeriod: '',
     internalCosts: [],
     totalInternalCost: 0
   });
@@ -577,8 +580,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
           setError(null);
           const data = await loadFormData<FormIData>(currentUser.uid, FORM_TYPE);
           if (data) {
-            console.log('Loaded form data:', data);
-            
             // Säkerställ att data har rätt struktur
             const sanitizedData: FormIData = {
               ...data,
@@ -598,8 +599,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
         }
-      } else {
-        console.log('No user logged in, cannot load data from Firebase');
       }
     };
 
@@ -733,7 +732,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
-      console.log('Saving form data to Firebase:', dataToSave);
       
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
@@ -985,15 +983,25 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">I3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod (standard är 12 månader)" />
+              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
               <Input
                 name="timePeriod"
-                value={safeFormData.timePeriod || '12 månader'}
+                value={safeFormData.timePeriod || ''}
                 onChange={handleInputChange}
                 placeholder="Ange tidsperiod"
                 className="bg-background/50"
               />
             </div>
+          </div>
+          
+          <div className="mt-4">
+            <SharedFieldsButton 
+              userId={currentUser?.uid}
+              onFieldsLoaded={(fields: SharedFields) => {
+                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+              }}
+              disabled={!currentUser?.uid}
+            />
           </div>
         </div>
         

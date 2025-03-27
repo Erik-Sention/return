@@ -6,6 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Input } from '@/components/ui/input';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 // Enkel Textarea-komponent
 const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
@@ -270,7 +273,7 @@ const InterventionCard = ({
           <div className="bg-primary/10 p-2 rounded-full w-8 h-8 flex items-center justify-center">
             <span className="text-primary font-bold">{index + 1}</span>
           </div>
-          <h4 className="text-md font-semibold">Insats {index + 1}</h4>
+          <h4 className="text-base font-semibold">Insats {index + 1}</h4>
         </div>
         <div className="flex items-center gap-1">
           <Button 
@@ -424,15 +427,16 @@ type FormGProps = React.ComponentProps<'div'>;
 // Gör FormG till en forwardRef component
 const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const { currentUser } = useAuth();
-  const [formData, setFormData] = useState<FormGData>({
+  const initialState: FormGData = {
     organizationName: '',
     contactPerson: '',
-    timePeriod: '12 månader',
+    timePeriod: '',
     interventions: [],
     totalInterventionCost: 0,
     totalExternalCost: 0,
     totalInternalCost: 0
-  });
+  };
+  const [formData, setFormData] = useState<FormGData>(initialState);
   
   // Skydda oss mot undefined interventions - säkerställ att de alltid finns
   const safeFormData = useMemo(() => {
@@ -477,8 +481,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           setError(null);
           const data = await loadFormData<FormGData>(currentUser.uid, FORM_TYPE);
           if (data) {
-            console.log('Loaded form data:', data);
-            
             // Säkerställ att all data har rätt struktur innan vi sätter den i state
             const sanitizedData: FormGData = {
               ...data,
@@ -494,7 +496,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
             setFormData(sanitizedData);
           } else {
             // Skapa en tom insats som standard direkt i setFormData istället för att anropa addIntervention
-            console.log('No data found, creating initial empty intervention');
             
             const initialIntervention: Intervention = {
               id: generateId(),
@@ -516,7 +517,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           setError('Kunde inte ladda data från databasen.');
         }
       } else {
-        console.log('No user logged in, cannot load data from Firebase');
+        // No user logged in
       }
     };
 
@@ -765,7 +766,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
-      console.log('Saving form data to Firebase:', dataToSave);
       
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
@@ -1219,7 +1219,8 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               <label className="text-sm font-medium">G1: Organisationens namn</label>
               <InfoLabel text="Namnet på din organisation" />
               <Input
-                value={safeFormData.organizationName}
+                name="organizationName"
+                value={safeFormData.organizationName || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('organizationName', e.target.value)}
                 placeholder="Ange organisationens namn"
                 className="bg-background/50"
@@ -1229,7 +1230,8 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               <label className="text-sm font-medium">G2: Kontaktperson</label>
               <InfoLabel text="Namn på kontaktperson" />
               <Input
-                value={safeFormData.contactPerson}
+                name="contactPerson"
+                value={safeFormData.contactPerson || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('contactPerson', e.target.value)}
                 placeholder="Ange kontaktperson"
                 className="bg-background/50"
@@ -1237,14 +1239,25 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">G3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod (standard är 12 månader)" />
+              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
               <Input
-                value={safeFormData.timePeriod}
+                name="timePeriod"
+                value={safeFormData.timePeriod || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('timePeriod', e.target.value)}
                 placeholder="Ange tidsperiod"
                 className="bg-background/50"
               />
             </div>
+          </div>
+          
+          <div className="mt-4">
+            <SharedFieldsButton 
+              userId={currentUser?.uid}
+              onFieldsLoaded={(fields: SharedFields) => {
+                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+              }}
+              disabled={!currentUser?.uid}
+            />
           </div>
         </div>
         

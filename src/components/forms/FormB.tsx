@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Save, Info, Target, FileText, Calendar, Users, Lightbulb, ListChecks } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 interface FormBData {
   organizationName: string;
@@ -221,6 +224,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">B1: Organisationens namn</label>
+              <InfoLabel text="Namnet på din organisation" />
               <Input
                 value={formData.organizationName}
                 onChange={(e) => handleChange('organizationName', e.target.value)}
@@ -230,6 +234,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">B2: Kontaktperson</label>
+              <InfoLabel text="Namn på kontaktperson" />
               <Input
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}
@@ -239,6 +244,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">B3: Insatsnamn</label>
+              <InfoLabel text="Ange namnet på den insats som ska analyseras" />
               <Input
                 value={formData.initiativeName}
                 onChange={(e) => handleChange('initiativeName', e.target.value)}
@@ -246,6 +252,16 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
                 className="bg-background/50"
               />
             </div>
+          </div>
+          
+          <div className="mt-4">
+            <SharedFieldsButton 
+              userId={currentUser?.uid}
+              onFieldsLoaded={(fields: SharedFields) => {
+                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+              }}
+              disabled={!currentUser?.uid}
+            />
           </div>
         </div>
 

@@ -7,6 +7,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Textarea } from '../ui/textarea';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 // Typer för Form G data
 interface FormGInterventionCost {
@@ -358,7 +361,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [formData, setFormData] = useState<FormHData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '12 månader',
+    timePeriod: '',
     interventions: [],
     totalExternalCosts: 0
   });
@@ -385,26 +388,14 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
           setError(null);
           const data = await loadFormData<FormHData>(currentUser.uid, FORM_TYPE);
           if (data) {
-            console.log('Loaded form data:', data);
-            
-            // Säkerställ att datan har rätt struktur
-            const sanitizedData: FormHData = {
-              ...data,
-              interventions: (data.interventions || []).map(intervention => ({
-                ...intervention,
-                costItems: intervention.costItems || [],
-                totalCost: intervention.totalCost || 0
-              }))
-            };
-            
-            setFormData(sanitizedData);
+            setFormData(data);
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
         }
       } else {
-        console.log('No user logged in, cannot load data from Firebase');
+        // No user logged in
       }
     };
 
@@ -533,9 +524,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
-      console.log('Saving form data to Firebase:', dataToSave);
       
-      // Save only to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
       setSaveMessage('Formuläret har sparats!');
@@ -838,38 +827,48 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
           
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">G1: Organisationens namn</label>
+              <label className="text-sm font-medium">H1: Organisationens namn</label>
               <InfoLabel text="Namnet på din organisation" />
               <Input
                 name="organizationName"
                 value={safeFormData.organizationName || ''}
-                onChange={handleInputChange}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange organisationens namn"
                 className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">G2: Kontaktperson</label>
+              <label className="text-sm font-medium">H2: Kontaktperson</label>
               <InfoLabel text="Namn på kontaktperson" />
               <Input
                 name="contactPerson"
                 value={safeFormData.contactPerson || ''}
-                onChange={handleInputChange}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange kontaktperson"
                 className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">G3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod (standard är 12 månader)" />
+              <label className="text-sm font-medium">H3: Tidsperiod</label>
+              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
               <Input
                 name="timePeriod"
-                value={safeFormData.timePeriod || '12 månader'}
-                onChange={handleInputChange}
+                value={safeFormData.timePeriod || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange tidsperiod"
                 className="bg-background/50"
               />
             </div>
+          </div>
+          
+          <div className="mt-4">
+            <SharedFieldsButton 
+              userId={currentUser?.uid}
+              onFieldsLoaded={(fields: SharedFields) => {
+                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+              }}
+              disabled={!currentUser?.uid}
+            />
           </div>
         </div>
         

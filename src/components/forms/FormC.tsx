@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Save, Info, ArrowRight, Calculator, PieChart, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 interface FormCData {
   organizationName: string;
@@ -442,9 +445,15 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         
         {/* C1-C3 */}
         <div className="form-card">
+          <SectionHeader 
+            title="Grundinformation" 
+            icon={<Info className="h-5 w-5 text-primary" />}
+          />
+          
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">C1: Organisationens namn</label>
+              <InfoLabel text="Namnet på din organisation" />
               <Input
                 value={formData.organizationName}
                 onChange={(e) => handleChange('organizationName', e.target.value)}
@@ -454,6 +463,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C2: Kontaktperson</label>
+              <InfoLabel text="Namn på kontaktperson" />
               <Input
                 value={formData.contactPerson}
                 onChange={(e) => handleChange('contactPerson', e.target.value)}
@@ -463,13 +473,24 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C3: Tidsperiod (12 månader)</label>
+              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
               <Input
                 value={formData.timePeriod}
                 onChange={(e) => handleChange('timePeriod', e.target.value)}
-                placeholder="t.ex. 2023-01-01 – 2023-12-31"
+                placeholder="Ange tidsperiod"
                 className="bg-background/50"
               />
             </div>
+          </div>
+          
+          <div className="mt-4">
+            <SharedFieldsButton 
+              userId={currentUser?.uid}
+              onFieldsLoaded={(fields: SharedFields) => {
+                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+              }}
+              disabled={!currentUser?.uid}
+            />
           </div>
         </div>
 
