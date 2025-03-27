@@ -2,11 +2,33 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Building, Wallet, CreditCard, PlusCircle, X } from 'lucide-react';
+import { Save, Info, ClipboardList, Building, Wallet, CreditCard, PlusCircle, X, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Textarea } from '../ui/textarea';
+
+// Typer för Form G data
+interface FormGInterventionCost {
+  id: string;
+  name: string;
+  externalCost: number | null;
+  internalCost: number | null;
+}
+
+interface FormGIntervention {
+  id: string;
+  name: string;
+  description: string;
+  costs: FormGInterventionCost[];
+  totalExternalCost: number;
+  totalInternalCost: number;
+  totalCost: number;
+}
+
+interface FormGData {
+  interventions: FormGIntervention[];
+}
 
 // Typer för kostnadsposter
 interface CostItem {
@@ -29,6 +51,7 @@ interface Intervention {
 interface FormHData {
   organizationName: string;
   contactPerson: string;
+  timePeriod: string;
   interventions: Intervention[];
   totalExternalCosts: number;
 }
@@ -294,6 +317,36 @@ const InterventionCard = ({
   );
 };
 
+// Lägg till FetchValueButton-komponenten för att hämta insatser från formulär G
+const FetchValueButton = ({ 
+  onClick, 
+  disabled,
+  message 
+}: { 
+  onClick: () => void;
+  disabled?: boolean;
+  message?: string | null;
+}) => (
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className="mt-1"
+    >
+      <ArrowDown className="h-4 w-4 mr-2" />
+      Hämta insats från Formulär G
+    </Button>
+    {message && (
+      <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+        {message}
+      </span>
+    )}
+  </div>
+);
+
 const FORM_TYPE = 'H';
 
 // Definiera en typ för komponentens props
@@ -305,6 +358,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [formData, setFormData] = useState<FormHData>({
     organizationName: '',
     contactPerson: '',
+    timePeriod: '12 månader',
     interventions: [],
     totalExternalCosts: 0
   });
@@ -320,6 +374,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchMessageFormG, setFetchMessageFormG] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Skapa en dependency för att uppdatera beräkningar när kostnaderna ändras
@@ -442,6 +497,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     const preparedData: Record<string, unknown> = {
       organizationName: data.organizationName || '',
       contactPerson: data.contactPerson || '',
+      timePeriod: data.timePeriod || '',
       totalExternalCosts: data.totalExternalCosts || 0
     };
     
@@ -542,6 +598,199 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     handleChange(name as keyof FormHData, value);
   };
 
+  // Rensa fetchMessage efter en viss tid
+  useEffect(() => {
+    if (fetchMessageFormG) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormG(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormG]);
+
+  // Funktion för att hämta insats från formulär G
+  const fetchInterventionFromFormG = async () => {
+    if (!currentUser?.uid) {
+      setError('Du måste vara inloggad för att hämta data');
+      return;
+    }
+
+    try {
+      setError(null);
+      const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+      
+      if (!formGData || !formGData.interventions || formGData.interventions.length === 0) {
+        setFetchMessageFormG('Inga insatser hittades i Formulär G.');
+        return;
+      }
+
+      // Samla alla insatser och delinsatser från G
+      const interventionGroups: Map<string, { 
+        insatsName: string, 
+        delinsatser: Array<{ name: string, externalCost: number | null }>
+      }> = new Map();
+      
+      // Gruppera delinsatser per insats
+      formGData.interventions.forEach(intervention => {
+        if (intervention.costs && intervention.costs.length > 0) {
+          const delinsatser = intervention.costs.map(cost => ({
+            name: cost.name,
+            externalCost: cost.externalCost
+          }));
+          
+          interventionGroups.set(intervention.name, {
+            insatsName: intervention.name,
+            delinsatser: delinsatser
+          });
+        }
+      });
+      
+      // Samla information om befintliga insatser och kostnadsposter i H
+      const existingInterventions = new Map<string, Map<string, CostItem>>();
+      safeFormData.interventions.forEach(intervention => {
+        const costItemMap = new Map<string, CostItem>();
+        intervention.costItems.forEach(item => {
+          costItemMap.set(item.subInterventionName, item);
+        });
+        existingInterventions.set(intervention.name, costItemMap);
+      });
+      
+      let added = 0;
+      let updated = 0;
+      const interventionsToUpdate: Intervention[] = [];
+      
+      // Gå igenom alla insatser från G
+      for (const [insatsName, insatsData] of interventionGroups) {
+        let targetIntervention = safeFormData.interventions.find(
+          intervention => intervention.name === insatsName
+        );
+        
+        const existingCostItems = existingInterventions.get(insatsName) || new Map<string, CostItem>();
+        
+        // Hitta delinsatser som behöver läggas till eller uppdateras
+        const delinsatserToAdd: Array<{ name: string, externalCost: number | null }> = [];
+        const delinsatserToUpdate: Array<{ name: string, externalCost: number | null, id: string }> = [];
+        
+        insatsData.delinsatser.forEach(delinsats => {
+          const existingCostItem = existingCostItems.get(delinsats.name);
+          if (!existingCostItem) {
+            // Delinsatsen finns inte, lägg till
+            delinsatserToAdd.push(delinsats);
+          } else if (existingCostItem.amount !== delinsats.externalCost) {
+            // Delinsatsen finns men beloppet har ändrats
+            delinsatserToUpdate.push({...delinsats, id: existingCostItem.id});
+          }
+        });
+        
+        if (delinsatserToAdd.length > 0 || delinsatserToUpdate.length > 0) {
+          if (!targetIntervention) {
+            // Skapa ny insats om den inte finns
+            const newIntervention: Intervention = {
+              id: generateId(),
+              name: insatsName,
+              comment: '',
+              costItems: [],
+              totalCost: 0
+            };
+            
+            // Lägg till alla nya kostnadsposter
+            const newCostItems = delinsatserToAdd.map(delinsats => ({
+              id: generateId(),
+              interventionName: insatsName,
+              subInterventionName: delinsats.name,
+              costType: "Fast avgift för insats/offert", // Standard kostnadtyp
+              amount: delinsats.externalCost
+            }));
+            
+            newIntervention.costItems = newCostItems;
+            interventionsToUpdate.push(newIntervention);
+            added += delinsatserToAdd.length;
+          } else {
+            // Uppdatera befintlig insats
+            const updatedCostItems = [...targetIntervention.costItems];
+            
+            // Lägg till nya kostnadsposter
+            if (delinsatserToAdd.length > 0) {
+              const newCostItems = delinsatserToAdd.map(delinsats => ({
+                id: generateId(),
+                interventionName: insatsName,
+                subInterventionName: delinsats.name,
+                costType: "Fast avgift för insats/offert", // Standard kostnadtyp
+                amount: delinsats.externalCost
+              }));
+              updatedCostItems.push(...newCostItems);
+              added += delinsatserToAdd.length;
+            }
+            
+            // Uppdatera befintliga kostnadsposter
+            if (delinsatserToUpdate.length > 0) {
+              delinsatserToUpdate.forEach(delinsats => {
+                const index = updatedCostItems.findIndex(item => item.id === delinsats.id);
+                if (index !== -1) {
+                  updatedCostItems[index] = {
+                    ...updatedCostItems[index],
+                    amount: delinsats.externalCost
+                  };
+                }
+              });
+              updated += delinsatserToUpdate.length;
+            }
+            
+            interventionsToUpdate.push({
+              ...targetIntervention,
+              costItems: updatedCostItems
+            });
+          }
+        }
+      }
+      
+      // Uppdatera alla insatser i ett svep
+      if (interventionsToUpdate.length > 0) {
+        const currentInterventions = [...safeFormData.interventions];
+        const updatedInterventions: Intervention[] = [];
+        
+        // Uppdatera befintliga insatser
+        currentInterventions.forEach(intervention => {
+          const updatedVersion = interventionsToUpdate.find(updated => updated.id === intervention.id);
+          if (updatedVersion) {
+            updatedInterventions.push(updatedVersion);
+          } else {
+            updatedInterventions.push(intervention);
+          }
+        });
+        
+        // Lägg till helt nya insatser
+        interventionsToUpdate.forEach(newIntervention => {
+          if (!currentInterventions.some(existing => existing.id === newIntervention.id)) {
+            updatedInterventions.push(newIntervention);
+          }
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          interventions: updatedInterventions
+        }));
+        
+        // Visa ett informativt meddelande
+        if (added > 0 && updated > 0) {
+          setFetchMessageFormG(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär G.`);
+        } else if (added > 0) {
+          setFetchMessageFormG(`${added} nya delinsatser tillagda från Formulär G.`);
+        } else if (updated > 0) {
+          setFetchMessageFormG(`${updated} befintliga delinsatser uppdaterade från Formulär G.`);
+        } else {
+          setFetchMessageFormG('Inga ändringar behövdes, allt är redan uppdaterat.');
+        }
+      } else {
+        setFetchMessageFormG('Alla insatser från Formulär G har redan hämtats.');
+      }
+    } catch (error) {
+      console.error('Error fetching data from Form G:', error);
+      setError('Kunde inte hämta data från Formulär G.');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -575,16 +824,17 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
           </div>
         )}
         
-        {/* Organisationsuppgifter */}
+        {/* Grundinformation */}
         <div className="form-card">
           <SectionHeader 
-            title="Organisationsuppgifter" 
-            icon={<Building className="h-5 w-5 text-primary" />}
+            title="Grundinformation" 
+            icon={<Info className="h-5 w-5 text-primary" />}
           />
           
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">H1 – Organisationens namn</label>
+              <label className="text-sm font-medium">G1: Organisationens namn</label>
+              <InfoLabel text="Namnet på din organisation" />
               <Input
                 name="organizationName"
                 value={safeFormData.organizationName || ''}
@@ -592,10 +842,10 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 placeholder="Ange organisationens namn"
                 className="bg-background/50"
               />
-              <InfoLabel text="Exempel: Demo Alltjänst AB" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">H2 – Kontaktperson</label>
+              <label className="text-sm font-medium">G2: Kontaktperson</label>
+              <InfoLabel text="Namn på kontaktperson" />
               <Input
                 name="contactPerson"
                 value={safeFormData.contactPerson || ''}
@@ -603,7 +853,17 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 placeholder="Ange kontaktperson"
                 className="bg-background/50"
               />
-              <InfoLabel text="Exempel: Anna Andersson" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">G3: Tidsperiod</label>
+              <InfoLabel text="Ange tidsperiod (standard är 12 månader)" />
+              <Input
+                name="timePeriod"
+                value={safeFormData.timePeriod || '12 månader'}
+                onChange={handleInputChange}
+                placeholder="Ange tidsperiod"
+                className="bg-background/50"
+              />
             </div>
           </div>
         </div>
@@ -615,31 +875,50 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
               title="Insatser och kostnader" 
               icon={<Wallet className="h-5 w-5 text-primary" />}
             />
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="gap-1"
-              onClick={addIntervention}
-            >
-              <PlusCircle className="h-4 w-4" />
-              Lägg till insats
-            </Button>
+            <div className="flex items-center gap-2">
+              <FetchValueButton 
+                onClick={fetchInterventionFromFormG}
+                disabled={!currentUser?.uid}
+                message={fetchMessageFormG}
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="gap-1"
+                onClick={addIntervention}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Lägg till insats
+              </Button>
+            </div>
           </div>
           
           {safeFormData.interventions.length === 0 ? (
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
               <p className="text-muted-foreground mb-4">
-                Det finns inga insatser att visa. Lägg till en insats för att komma igång.
+                Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär G.
               </p>
-              <Button 
-                type="button" 
-                variant="default" 
-                className="gap-1"
-                onClick={addIntervention}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Lägg till din första insats
-              </Button>
+              <div className="flex justify-center gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="gap-1"
+                  onClick={fetchInterventionFromFormG}
+                  disabled={!currentUser?.uid}
+                >
+                  <ArrowDown className="h-4 w-4" />
+                  Hämta från Formulär G
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="default" 
+                  className="gap-1"
+                  onClick={addIntervention}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Lägg till din första insats
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">

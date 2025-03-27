@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -46,6 +46,27 @@ interface FormGData {
   totalInterventionCost: number;
   totalExternalCost: number;
   totalInternalCost: number;
+}
+
+// Typer för Form H data
+interface FormHCostItem {
+  id: string;
+  interventionName: string;
+  subInterventionName: string;
+  costType: string;
+  amount: number | null;
+}
+
+interface FormHIntervention {
+  id: string;
+  name: string;
+  comment: string;
+  costItems: FormHCostItem[];
+  totalCost: number;
+}
+
+interface FormHData {
+  interventions: FormHIntervention[];
 }
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -337,6 +358,36 @@ const InterventionCard = ({
   );
 };
 
+// Lägg till FetchValueButton-komponenten för att hämta insatser från formulär H
+const FetchValueButton = ({ 
+  onClick, 
+  disabled,
+  message 
+}: { 
+  onClick: () => void;
+  disabled?: boolean;
+  message?: string | null;
+}) => (
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className="mt-1"
+    >
+      <ArrowDownIcon className="h-4 w-4 mr-2" />
+      Hämta insats från Formulär H
+    </Button>
+    {message && (
+      <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+        {message}
+      </span>
+    )}
+  </div>
+);
+
 const FORM_TYPE = 'G';
 
 // Definiera en typ för komponentens props
@@ -366,6 +417,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchMessageFormH, setFetchMessageFormH] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Skapa en memoized-dependency för att spåra kostnadsändringar
@@ -699,6 +751,201 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     }
   };
 
+  // Rensa fetchMessage efter en viss tid
+  useEffect(() => {
+    if (fetchMessageFormH) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormH(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormH]);
+
+  // Funktion för att hämta insats från formulär H
+  const fetchInterventionFromFormH = async () => {
+    if (!currentUser?.uid) {
+      setError('Du måste vara inloggad för att hämta data');
+      return;
+    }
+
+    try {
+      setError(null);
+      const formHData = await loadFormData<FormHData>(currentUser.uid, 'H');
+      
+      if (!formHData || !formHData.interventions || formHData.interventions.length === 0) {
+        setFetchMessageFormH('Inga insatser hittades i Formulär H.');
+        return;
+      }
+
+      // Gruppera delinsatser efter insatsnamn från H
+      const interventionGroups: Map<string, { 
+        insatsName: string, 
+        delinsatser: Array<{ name: string, externalCost: number | null }>
+      }> = new Map();
+      
+      // Samla alla delinsatser grupperade per insats
+      formHData.interventions.forEach(intervention => {
+        if (intervention.costItems && intervention.costItems.length > 0) {
+          const delinsatser = intervention.costItems.map(item => ({
+            name: item.subInterventionName,
+            externalCost: item.amount
+          }));
+          
+          interventionGroups.set(intervention.name, {
+            insatsName: intervention.name,
+            delinsatser: delinsatser
+          });
+        }
+      });
+      
+      // Samla information om insatser och delinsatser i G
+      const existingInterventions = new Map<string, Map<string, InterventionCost>>();
+      safeFormData.interventions.forEach(intervention => {
+        const costMap = new Map<string, InterventionCost>();
+        intervention.costs.forEach(cost => {
+          costMap.set(cost.name, cost);
+        });
+        existingInterventions.set(intervention.name, costMap);
+      });
+      
+      let added = 0;
+      let updated = 0;
+      let insatsCounter = 0;
+      const interventionsToUpdate: Intervention[] = [];
+      
+      // Gå igenom alla insatser från H som behöver hanteras
+      for (const [insatsName, insatsData] of interventionGroups) {
+        insatsCounter++;
+        let targetIntervention = safeFormData.interventions.find(
+          intervention => intervention.name === insatsName
+        );
+        
+        const existingCosts = existingInterventions.get(insatsName) || new Map<string, InterventionCost>();
+        
+        // Hitta delinsatser som behöver läggas till eller uppdateras
+        const delinsatserToAdd: Array<{ name: string, externalCost: number | null }> = [];
+        const delinsatserToUpdate: Array<{ name: string, externalCost: number | null, id: string }> = [];
+        
+        insatsData.delinsatser.forEach(delinsats => {
+          const existingCost = existingCosts.get(delinsats.name);
+          if (!existingCost) {
+            // Delinsatsen finns inte, lägg till
+            delinsatserToAdd.push(delinsats);
+          } else if (existingCost.externalCost !== delinsats.externalCost) {
+            // Delinsatsen finns men kostnaden har ändrats
+            delinsatserToUpdate.push({...delinsats, id: existingCost.id});
+          }
+        });
+        
+        if (delinsatserToAdd.length > 0 || delinsatserToUpdate.length > 0) {
+          if (!targetIntervention) {
+            // Skapa ny insats om den inte finns
+            const newIntervention: Intervention = {
+              id: generateId(),
+              name: insatsName,
+              description: '',
+              costs: [],
+              totalExternalCost: 0,
+              totalInternalCost: 0,
+              totalCost: 0
+            };
+            
+            // Lägg till alla nya delinsatser
+            const newCosts = delinsatserToAdd.map(delinsats => ({
+              id: generateId(),
+              name: delinsats.name,
+              externalCost: delinsats.externalCost,
+              internalCost: null
+            }));
+            
+            newIntervention.costs = newCosts;
+            interventionsToUpdate.push(newIntervention);
+            added += delinsatserToAdd.length;
+          } else {
+            // Uppdatera befintlig insats
+            const updatedCosts = [...targetIntervention.costs];
+            
+            // Lägg till nya delinsatser
+            if (delinsatserToAdd.length > 0) {
+              const newCosts = delinsatserToAdd.map(delinsats => ({
+                id: generateId(),
+                name: delinsats.name,
+                externalCost: delinsats.externalCost,
+                internalCost: null
+              }));
+              updatedCosts.push(...newCosts);
+              added += delinsatserToAdd.length;
+            }
+            
+            // Uppdatera befintliga delinsatser
+            if (delinsatserToUpdate.length > 0) {
+              delinsatserToUpdate.forEach(delinsats => {
+                const index = updatedCosts.findIndex(cost => cost.id === delinsats.id);
+                if (index !== -1) {
+                  updatedCosts[index] = {
+                    ...updatedCosts[index],
+                    externalCost: delinsats.externalCost
+                  };
+                }
+              });
+              updated += delinsatserToUpdate.length;
+            }
+            
+            interventionsToUpdate.push({
+              ...targetIntervention,
+              costs: updatedCosts
+            });
+          }
+        }
+      }
+      
+      // Uppdatera alla insatser i ett svep
+      if (interventionsToUpdate.length > 0) {
+        const currentInterventions = [...safeFormData.interventions];
+        const updatedInterventions: Intervention[] = [];
+        
+        // Gå igenom de befintliga insatserna
+        currentInterventions.forEach(intervention => {
+          const updatedVersion = interventionsToUpdate.find(updated => updated.id === intervention.id);
+          if (updatedVersion) {
+            updatedInterventions.push(updatedVersion);
+          } else {
+            updatedInterventions.push(intervention);
+          }
+        });
+        
+        // Lägg till helt nya insatser
+        interventionsToUpdate.forEach(newIntervention => {
+          if (!currentInterventions.some(existing => existing.id === newIntervention.id)) {
+            updatedInterventions.push(newIntervention);
+          }
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          interventions: updatedInterventions
+        }));
+        
+        // Visa ett informativt meddelande
+        if (added > 0 && updated > 0) {
+          setFetchMessageFormH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär H.`);
+        } else if (added > 0) {
+          setFetchMessageFormH(`${added} nya delinsatser tillagda från Formulär H.`);
+        } else if (updated > 0) {
+          setFetchMessageFormH(`${updated} befintliga delinsatser uppdaterade från Formulär H.`);
+        } else {
+          setFetchMessageFormH('Inga ändringar behövdes, allt är redan uppdaterat.');
+        }
+      } else {
+        setFetchMessageFormH('Alla insatser från Formulär H har redan hämtats.');
+      }
+    } catch (error) {
+      console.error('Error fetching data from Form H:', error);
+      setError('Kunde inte hämta data från Formulär H.');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -780,31 +1027,50 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               title="Insatser" 
               icon={<Coins className="h-5 w-5 text-primary" />}
             />
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="gap-1"
-              onClick={addIntervention}
-            >
-              <PlusCircle className="h-4 w-4" />
-              Lägg till insats
-            </Button>
+            <div className="flex items-center gap-2">
+              <FetchValueButton 
+                onClick={fetchInterventionFromFormH}
+                disabled={!currentUser?.uid}
+                message={fetchMessageFormH}
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="gap-1"
+                onClick={addIntervention}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Lägg till insats
+              </Button>
+            </div>
           </div>
           
           {(!safeFormData.interventions || safeFormData.interventions.length === 0) ? (
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
               <p className="text-muted-foreground mb-4">
-                Det finns inga insatser att visa. Lägg till en insats för att komma igång.
+                Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär H.
               </p>
-              <Button 
-                type="button" 
-                variant="default" 
-                className="gap-1"
-                onClick={addIntervention}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Lägg till din första insats
-              </Button>
+              <div className="flex justify-center gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="gap-1"
+                  onClick={fetchInterventionFromFormH}
+                  disabled={!currentUser?.uid}
+                >
+                  <ArrowDownIcon className="h-4 w-4" />
+                  Hämta från Formulär H
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="default" 
+                  className="gap-1"
+                  onClick={addIntervention}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Lägg till din första insats
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
