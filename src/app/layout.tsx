@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Rajdhani } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import RootLayout from "@/components/layout/RootLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-const geist = Geist({
+const rajdhani = Rajdhani({
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export default function Layout({
 }>) {
   return (
     <html lang="sv" suppressHydrationWarning>
-      <body className={geist.className}>
+      <body className={rajdhani.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
