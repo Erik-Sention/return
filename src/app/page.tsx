@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Calculator } from 'lucide-react';
+import Image from "next/image";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -23,8 +24,17 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
       <div className="max-w-3xl mx-auto text-center space-y-8">
+        <div className="flex justify-center mb-6">
+          <Image 
+            src="https://i.postimg.cc/FRwbMSBN/SENTION-logo-Black-Transparent-BG.png" 
+            alt="SENTION Logga" 
+            width={300}
+            height={100}
+            priority
+          />
+        </div>
         <h1 className="text-4xl font-bold sm:text-6xl">
-          Välkommen till ROI-kalkylatorn
+          Välkommen till SENTIONS ROI-Kalkylator
         </h1>
         <p className="text-xl text-muted-foreground">
           Beräkna avkastning på investering för hälsofrämjande insatser
