@@ -174,6 +174,12 @@ export default function ROIPage() {
             </Button>
           )}
           
+          <div className="flex-1 flex justify-center items-center">
+            <span className="text-sm font-medium text-muted-foreground">
+              Formulär {currentForm}
+            </span>
+          </div>
+          
           <div className="flex gap-3">
             <Button 
               variant="outline"
