@@ -69,7 +69,7 @@ export default function Home() {
         
         <div className="flex justify-center">
           <Link href="/dashboard">
-            <Button size="lg" className="gap-2 text-base">
+            <Button size="lg" className="gap-2 text-base shadow-md">
               <Calculator className="h-5 w-5" />
               Öppna ROI-kalkylatorn
             </Button>

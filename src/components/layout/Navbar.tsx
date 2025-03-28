@@ -22,13 +22,13 @@ export default function Navbar() {
           {currentUser ? (
             <>
               <Link href="/roi">
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2">
                   <Calculator className="h-4 w-4" />
                   ROI-kalkylator
                 </Button>
               </Link>
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
                 className="gap-2"
                 onClick={signOut}
@@ -39,7 +39,7 @@ export default function Navbar() {
             </>
           ) : (
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
                 <LogIn className="h-4 w-4" />
                 Logga in
               </Button>
