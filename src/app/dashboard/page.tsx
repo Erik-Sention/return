@@ -52,16 +52,16 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* ROI-kalkylator kort */}
         <Link href="/roi" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-primary/20">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <Calculator className="h-6 w-6 text-primary" />
+              <div className="bg-purple-500/10 p-3 rounded-lg">
+                <Calculator className="h-6 w-6 text-purple-500" />
               </div>
-              <span className="text-sm font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">
+              <span className="text-sm font-medium px-2 py-1 bg-purple-500/10 text-purple-500 rounded-full">
                 Verktyg
               </span>
             </div>
-            <h2 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-purple-500 transition-colors">
               ROI-kalkylator
             </h2>
             <p className="text-muted-foreground mb-4">
@@ -71,8 +71,29 @@ export default function DashboardPage() {
           </div>
         </Link>
 
+        {/* Förenklad ROI-kalkylator kort */}
+        <Link href="/roi/simple" className="group">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-primary/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-amber-500/10 p-3 rounded-lg">
+                <Calculator className="h-6 w-6 text-amber-500" />
+              </div>
+              <span className="text-sm font-medium px-2 py-1 bg-amber-500/10 text-amber-500 rounded-full">
+                Snabb
+              </span>
+            </div>
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-amber-500 transition-colors">
+              Förenklad ROI
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Snabb översikt av ROI med de viktigaste variablerna
+            </p>
+            <Button className="w-full" variant="outline">Öppna snabbkalkylator</Button>
+          </div>
+        </Link>
+
         {/* Mina rapporter kort */}
-        <div className="bg-card rounded-lg shadow-md p-6 border border-border">
+        <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-blue-500/20 group">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-blue-500/10 p-3 rounded-lg">
               <FileText className="h-6 w-6 text-blue-500" />
@@ -81,7 +102,7 @@ export default function DashboardPage() {
               Rapporter
             </span>
           </div>
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-500 transition-colors">
             Mina rapporter
           </h2>
           <p className="text-muted-foreground mb-4">
@@ -91,7 +112,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Statistik kort */}
-        <div className="bg-card rounded-lg shadow-md p-6 border border-border">
+        <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-green-500/20 group">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-green-500/10 p-3 rounded-lg">
               <BarChart3 className="h-6 w-6 text-green-500" />
@@ -100,7 +121,7 @@ export default function DashboardPage() {
               Statistik
             </span>
           </div>
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="text-xl font-semibold mb-2 group-hover:text-green-500 transition-colors">
             Översikt och trender
           </h2>
           <p className="text-muted-foreground mb-4">
