@@ -1,5 +1,4 @@
 import { useState, forwardRef, useImperativeHandle } from 'react';
-import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Calculator, ArrowRight, Info } from 'lucide-react';
@@ -72,8 +71,6 @@ const SectionHeader = ({
   </div>
 );
 
-const FORM_TYPE = 'SIMPLE_ROI';
-
 // Definiera en typ för komponentens props
 type SimpleROICalculatorProps = React.ComponentProps<'div'>;
 
@@ -93,7 +90,7 @@ const formatNumber = (value: number) => {
 };
 
 const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculatorProps>(function SimpleROICalculator(props, ref) {
-  const { currentUser } = useAuth();
+  const { } = useAuth();
   const [formData, setFormData] = useState<SimpleROIData>({
     // Inga förfyllda värden
     num_employees: undefined,
@@ -402,7 +399,7 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
             {!results ? (
               <div className="flex flex-col items-center justify-center h-full py-12 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
                 <Calculator className="h-16 w-16 text-gray-400 mb-4" />
-                <p className="text-center text-muted-foreground">Fyll i formuläret och klicka på "Beräkna ROI" för att se resultatet</p>
+                <p className="text-center text-muted-foreground">Fyll i formuläret och klicka på &quot;Beräkna ROI&quot; för att se resultatet</p>
               </div>
             ) : (
               <div className="space-y-6">
