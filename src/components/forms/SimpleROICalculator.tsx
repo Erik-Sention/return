@@ -279,8 +279,8 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-1">
-                  Stressnivå (%)
-                  <InfoLabel text="Uppskattad förekomst av stress på arbetsplatsen. Enligt Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%." />
+                Andel av personalen med hög stressnivå (%)
+                  <InfoLabel text="Uppskattad förekomst av stress på arbetsplatsen. Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%." />
                 </label>
                 <FormattedNumberInput
                   value={formData.stress_level}
@@ -291,8 +291,8 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
               
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-1">
-                  Produktionsbortfall (%)
-                  <InfoLabel text="Uppskattad produktion som förloras pga stress. Studier visar att produktivitetsbortfallet pga stress vanligtvis är 5-10% av arbetstiden. I kreativa yrken kan det vara upp till 15%, medan mer rutinbaserade yrken kan ha lägre påverkan runt 3-6%." />
+                Produktionsbortfall vid hög stressnivå (%)
+                  <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst 9%. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
                 </label>
                 <FormattedNumberInput
                   value={formData.production_loss}

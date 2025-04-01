@@ -550,7 +550,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
-              <InfoLabel text="Baserat på forskning varierar detta mellan branscher: Vård & Omsorg (25-35%), IT (20-30%), Finans (15-25%), Handel (10-20%). Standardvärde är 22% för genomsnittlig verksamhet. Mät detta genom medarbetarundersökningar eller screening." />
+              <InfoLabel text="Enligt Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%" />
               <FormattedNumberInput
                 value={formData.percentHighStress}
                 onChange={(value) => handleChange('percentHighStress', value)}
@@ -560,7 +560,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
-              <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst nio procent. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
+              <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst 9%. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
               <FormattedNumberInput
                 value={formData.productionLossHighStress}
                 onChange={(value) => handleChange('productionLossHighStress', value)}

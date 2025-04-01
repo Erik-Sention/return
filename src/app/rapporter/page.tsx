@@ -78,23 +78,25 @@ export default function RapportPage() {
         </Link>
 
         {/* Detaljerade resultat kort */}
-        <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20 group">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-purple-500/10 p-3 rounded-lg">
-              <PieChart className="h-6 w-6 text-purple-500" />
+        <Link href="/rapporter/detaljerad" className="group">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-purple-500/10 p-3 rounded-lg">
+                <PieChart className="h-6 w-6 text-purple-500" />
+              </div>
+              <span className="text-sm font-medium px-2 py-1 bg-purple-500/10 text-purple-500 rounded-full">
+                Detaljerad
+              </span>
             </div>
-            <span className="text-sm font-medium px-2 py-1 bg-purple-500/10 text-purple-500 rounded-full">
-              Detaljerad
-            </span>
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-purple-500 transition-colors">
+              Detaljerade resultat
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Djupgående analys med detaljerade diagram och tabeller
+            </p>
+            <Button className="w-full">Visa rapport</Button>
           </div>
-          <h2 className="text-xl font-semibold mb-2 group-hover:text-purple-500 transition-colors">
-            Detaljerade resultat
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Djupgående analys med detaljerade diagram och tabeller
-          </p>
-          <Button variant="outline" className="w-full" disabled>Kommer snart</Button>
-        </div>
+        </Link>
 
         {/* Trendanalys kort */}
         <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-green-500/20 group">
