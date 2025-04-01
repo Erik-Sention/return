@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react/no-unescaped-entities */
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,13 +14,10 @@ import {
   Percent, 
   Clock, 
   Target, 
-  Package, 
-  LineChart, 
   AlertTriangle, 
   CheckCircle, 
-  Users, 
-  Calendar, 
-  ChevronLeft, 
+  Users,
+  Calendar,
   FileText, 
   TrendingDown,
   BookOpen
@@ -29,13 +27,6 @@ import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIRepo
 import { exportROIToPdf } from '@/lib/reports/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Enkel Loading-komponent
-const Loading = () => (
-  <div className="flex justify-center py-8">
-    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-  </div>
-);
-
 export default function DetaljeradRapportPage() {
   const { currentUser, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -43,7 +34,7 @@ export default function DetaljeradRapportPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<string>("nulage");
+  const [, setActiveTab] = useState<string>("nulage");
 
   useEffect(() => {
     setMounted(true);
@@ -236,13 +227,13 @@ export default function DetaljeradRapportPage() {
                 <ChartCard 
                   title="Personal med hög stressnivå"
                   icon={<Users className="h-5 w-5" />}
-                  variant="red"
+                  variant="purple"
                 >
                   <StatItem 
                     label="Andel av personal"
                     value={`${formatPercent(reportData.stressPercentage || 0)}`}
                     description="Rapporterar hög stressnivå"
-                    variant="red"
+                    variant="purple"
                   />
                 </ChartCard>
                 
@@ -345,7 +336,7 @@ export default function DetaljeradRapportPage() {
                     <div className="flex justify-between items-center">
                       <span>Er organisation per anställd med ohälsa</span>
                       <span className="font-medium">
-                        {formatCurrency((reportData.totalMentalHealthCost || 0) / (((reportData.stressPercentage || 0) / 100) * (reportData.sharedFields?.numberOfEmployees || 1)))}
+                        {formatCurrency((reportData.totalMentalHealthCost || 0) / (((reportData.stressPercentage || 0) / 100) * 100))}
                       </span>
                     </div>
                   </div>
