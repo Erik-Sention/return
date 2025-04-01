@@ -93,23 +93,25 @@ export default function DashboardPage() {
         </Link>
 
         {/* Mina rapporter kort */}
-        <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-blue-500/20 group">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-blue-500/10 p-3 rounded-lg">
-              <FileText className="h-6 w-6 text-blue-500" />
+        <Link href="/rapporter" className="group">
+          <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-blue-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-blue-500/10 p-3 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <span className="text-sm font-medium px-2 py-1 bg-blue-500/10 text-blue-500 rounded-full">
+                Rapporter
+              </span>
             </div>
-            <span className="text-sm font-medium px-2 py-1 bg-blue-500/10 text-blue-500 rounded-full">
-              Rapporter
-            </span>
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-500 transition-colors">
+              Mina rapporter
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Hantera och visa dina sparade ROI-beräkningar
+            </p>
+            <Button variant="outline" className="w-full">Visa rapporter</Button>
           </div>
-          <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-500 transition-colors">
-            Mina rapporter
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Hantera och visa dina sparade ROI-beräkningar
-          </p>
-          <Button variant="outline" className="w-full" disabled>Kommer snart</Button>
-        </div>
+        </Link>
 
         {/* Statistik kort */}
         <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-green-500/20 group">

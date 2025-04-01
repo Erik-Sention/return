@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, LogOut, Calculator } from "lucide-react";
+import { LogIn, LogOut, Calculator, FileText } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function Navbar() {
@@ -25,6 +25,12 @@ export default function Navbar() {
                 <Button variant="outline" size="sm" className="gap-2">
                   <Calculator className="h-4 w-4" />
                   ROI-kalkylator
+                </Button>
+              </Link>
+              <Link href="/rapporter">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Rapporter
                 </Button>
               </Link>
               <Button 
