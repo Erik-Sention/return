@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -407,15 +407,12 @@ const InternalCostCard = ({
   
   return (
     <div className="p-4 border rounded-md mb-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 p-2 rounded-full w-8 h-8 flex items-center justify-center">
             <span className="text-primary font-bold">{index + 1}</span>
           </div>
-          <div>
-            <h4 className="font-medium">Insats: {internalCost.interventionName}</h4>
-            <p className="text-sm text-muted-foreground">Delinsats: {internalCost.subInterventionName}</p>
-          </div>
+          <h4 className="font-medium">Insats</h4>
         </div>
         <div className="flex items-center gap-1">
           <Button 
@@ -447,6 +444,31 @@ const InternalCostCard = ({
           >
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        <div>
+          <label className="text-sm font-medium">Insatsnamn</label>
+          <Input 
+            value={internalCost.interventionName || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              onChange({ ...internalCost, interventionName: e.target.value })
+            }
+            placeholder="Ange namn på insatsen"
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Delinsatsnamn</label>
+          <Input 
+            value={internalCost.subInterventionName || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+              onChange({ ...internalCost, subInterventionName: e.target.value })
+            }
+            placeholder="Ange namn på delinsatsen"
+            className="text-sm"
+          />
         </div>
       </div>
       
@@ -918,6 +940,18 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     return Array.from(groupedInterventions.keys());
   }, [groupedInterventions]);
 
+  // Funktion för att lägga till en ny intern kostnad manuellt
+  const addInternalCost = () => {
+    // Skapa en ny tom intern kostnad
+    const newInternalCost = createEmptyInternalCost("", "");
+    
+    // Lägg till den nya kostnaden i formuläret
+    setFormData(prev => ({
+      ...prev,
+      internalCosts: [...safeFormData.internalCosts, newInternalCost]
+    }));
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -1012,28 +1046,50 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
               title="Interna kostnader" 
               icon={<Calculator className="h-5 w-5 text-primary" />}
             />
-            <FetchFromFormGButton 
-              onClick={fetchInterventionsFromFormG}
-              disabled={!currentUser?.uid}
-              message={fetchMessageFormG}
-            />
+            <div className="flex items-center gap-2">
+              <FetchFromFormGButton 
+                onClick={fetchInterventionsFromFormG}
+                disabled={!currentUser?.uid}
+                message={fetchMessageFormG}
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="gap-1"
+                onClick={addInternalCost}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Lägg till insats
+              </Button>
+            </div>
           </div>
           
           {safeFormData.internalCosts.length === 0 ? (
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
               <p className="text-muted-foreground mb-4">
-                Det finns inga interna kostnader att visa. Klicka på &quot;Hämta från Formulär G&quot; för att komma igång.
+                Det finns inga interna kostnader att visa. Lägg till en insats för att komma igång eller hämta från Formulär G.
               </p>
-              <Button 
-                type="button" 
-                variant="default" 
-                className="gap-2"
-                onClick={fetchInterventionsFromFormG}
-                disabled={!currentUser?.uid}
-              >
-                <Download className="h-4 w-4" />
-                Hämta från Formulär G
-              </Button>
+              <div className="flex justify-center gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="gap-1"
+                  onClick={fetchInterventionsFromFormG}
+                  disabled={!currentUser?.uid}
+                >
+                  <Download className="h-4 w-4" />
+                  Hämta från Formulär G
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="default" 
+                  className="gap-1"
+                  onClick={addInternalCost}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Lägg till din första insats
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
