@@ -26,7 +26,7 @@ interface FormCData {
   percentHighStress?: number;
   valueProductionLoss?: number;
   totalCostSickLeaveMentalHealth?: number;
-  [key: string]: any; // För övriga fält i formulär C som vi inte behöver specifika typer för här
+  [key: string]: string | number | undefined | null; // Mer specifik typ istället för 'any'
 }
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -67,12 +67,10 @@ type FormAProps = React.ComponentProps<'div'>;
 const FetchFormCValueButton = ({ 
   onClick, 
   disabled,
-  formField,
   message 
 }: { 
   onClick: () => void;
   disabled?: boolean;
-  formField: string;
   message?: string | null;
 }) => (
   <div className="flex items-center gap-2">
@@ -424,7 +422,6 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                     await fetchValueFromFormC('C7');
                   }}
                   disabled={!currentUser?.uid}
-                  formField="C7"
                   message={fetchMessageC7}
                 />
               </div>
@@ -441,7 +438,6 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                     await fetchValueFromFormC('C10');
                   }}
                   disabled={!currentUser?.uid}
-                  formField="C10"
                   message={fetchMessageC10}
                 />
               </div>
@@ -458,7 +454,6 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                     await fetchValueFromFormC('C17');
                   }}
                   disabled={!currentUser?.uid}
-                  formField="C17"
                   message={fetchMessageC17}
                 />
               </div>
