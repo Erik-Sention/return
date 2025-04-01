@@ -74,12 +74,12 @@ interface FormAData {
   organizationId?: string;
   timePeriod?: string;
   currentSituation?: string;
-  stressPercentage?: number;        // Andel av personalen med hög stressnivå
-  productionLossValue?: number;     // Värde av produktionsbortfall
-  sickLeaveValue?: number;          // Kostnad för sjukfrånvaro
+  stressLevel?: number;           // Ändrat från stressPercentage för att matcha FormA.tsx
+  productionLoss?: number;        // Ändrat från productionLossValue för att matcha FormA.tsx
+  sickLeaveCost?: number;         // Ändrat från sickLeaveValue för att matcha FormA.tsx
   goals?: string;
-  causeAnalysis?: string;          // Nytt fält
-  recommendation?: string;         // Nytt fält
+  causeAnalysis?: string;         
+  recommendation?: string;        
   interventions?: string[];
 }
 
@@ -161,6 +161,11 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
       reportData.goalsDescription = formAData.goals || '';
       reportData.causeAnalysis = formAData.causeAnalysis || '';     // Nytt fält
       reportData.recommendation = formAData.recommendation || '';   // Nytt fält
+      
+      // Hämta statistik om nuläget
+      reportData.stressPercentage = formAData.stressLevel || 0;
+      reportData.productionLossValue = formAData.productionLoss || 0;
+      reportData.sickLeaveValue = formAData.sickLeaveCost || 0;
       
       // Om vi har en array med interventioner, skapa en sammanhängande text
       if (formAData.interventions && Array.isArray(formAData.interventions) && formAData.interventions.length > 0) {

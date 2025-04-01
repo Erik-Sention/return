@@ -183,7 +183,7 @@ export default function ExekutivSammanfattningPage() {
         return `Med samma effekt som beräknats i ROI-alternativet (${formatPercent(reportData?.roi || 0)}) kan du maximalt investera ${formatCurrency(reportData?.totalCostAlt2 || 0)} för att nå break-even (ROI = 0%). 
 Detta skulle innebära att investeringen precis täcker sina kostnader. Allt över detta belopp skulle ge en negativ avkastning med nuvarande effektberäkning.`;
       case "min-effekt":
-        return `Med nuvarande investering på ${formatCurrency(reportData?.totalCostAlt3 || 0)} skulle stressnivån behöva minska med minst ${formatPercent((reportData?.minEffectForBreakEvenAlt3 || 0) / 100)} för att nå break-even (ROI = 0%). 
+        return `Med nuvarande investering på ${formatCurrency(reportData?.totalCostAlt3 || 0)} skulle stressnivån behöva minska med minst ${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} för att nå break-even (ROI = 0%). 
 Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta skulle ge en positiv avkastning.`;
       default:
         return generateConclusion(reportData);
@@ -476,9 +476,9 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                     variant="purple"
                   >
                     <StatItem 
-                      label="Minskning av stressnivå"
-                      value={getRoiData().requiredEffect !== undefined ? formatPercent((getRoiData().requiredEffect || 0) / 100) : "N/A"}
-                      description="För att nå break-even"
+                      label="Minsta effekt"
+                      value={getRoiData().requiredEffect !== undefined ? formatPercent(getRoiData().requiredEffect || 0) : "N/A"}
+                      description="för break-even"
                       variant="purple"
                     />
                   </ChartCard>
@@ -518,7 +518,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                     {reportData.stressPercentage !== undefined && (
                       <div className="flex justify-between items-center border-b border-border pb-2">
                         <span className="text-sm font-medium">Andel av personalen med hög stressnivå:</span>
-                        <span className="font-semibold">{formatPercent(reportData.stressPercentage / 100)}</span>
+                        <span className="font-semibold">{formatPercent(reportData.stressPercentage)}</span>
                       </div>
                     )}
                     

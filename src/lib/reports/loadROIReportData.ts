@@ -43,9 +43,9 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
       reportData.recommendation = formAData.recommendation || '';
       
       // Hämta statistik om nuläget
-      reportData.stressPercentage = formAData.stressPercentage || 0;
-      reportData.productionLossValue = formAData.productionLossValue || 0;
-      reportData.sickLeaveValue = formAData.sickLeaveValue || 0;
+      reportData.stressPercentage = formAData.stressLevel || 0;
+      reportData.productionLossValue = formAData.productionLoss || 0;
+      reportData.sickLeaveValue = formAData.sickLeaveCost || 0;
       
       // Om vi har en array med interventioner, skapa en sammanhängande text
       if (formAData.interventions && Array.isArray(formAData.interventions) && formAData.interventions.length > 0) {

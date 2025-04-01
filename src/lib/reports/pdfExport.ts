@@ -130,7 +130,7 @@ export function exportROIToPdf(data: ROIReportData): void {
       head: [['Beskrivning', 'Värde']],
       body: [
         ['Total kostnad', formatCurrency(data.totalCostAlt3)],
-        ['Minsta effekt (minskad stressnivå)', data.minEffectForBreakEvenAlt3 ? formatPercent(data.minEffectForBreakEvenAlt3 / 100) : 'N/A'],
+        ['Minsta effekt (minskad stressnivå)', data.minEffectForBreakEvenAlt3 ? formatPercent(data.minEffectForBreakEvenAlt3) : 'N/A'],
         ['ROI', '0%'],
       ],
       theme: 'striped',
@@ -158,7 +158,7 @@ export function exportROIToPdf(data: ROIReportData): void {
         startY: currentY,
         head: [['Mätning', 'Värde']],
         body: [
-          data.stressPercentage ? ['Andel av personalen med hög stressnivå', formatPercent(data.stressPercentage / 100)] : [],
+          data.stressPercentage ? ['Andel av personalen med hög stressnivå', formatPercent(data.stressPercentage)] : [],
           data.productionLossValue ? ['Värde av produktionsbortfall per år', formatCurrency(data.productionLossValue)] : [],
           data.sickLeaveValue ? ['Kostnad för sjukfrånvaro per år', formatCurrency(data.sickLeaveValue)] : []
         ].filter(row => row.length > 0),
