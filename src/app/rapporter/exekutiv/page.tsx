@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChartCard } from '@/components/ui/chart-card';
 import { StatItem } from '@/components/ui/stat-item';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, FileDown, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { exportROIToPdf } from '@/lib/reports/pdfExport';
@@ -86,7 +86,6 @@ export default function ExekutivSammanfattningPage() {
   const [reportData, setReportData] = useState<ROIReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>("roi");
 
@@ -132,13 +131,10 @@ export default function ExekutivSammanfattningPage() {
     if (!reportData) return;
     
     try {
-      setIsExporting(true);
       exportROIToPdf(reportData);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Ett fel uppstod vid export till PDF. Försök igen senare.');
-    } finally {
-      setIsExporting(false);
     }
   };
 

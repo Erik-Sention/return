@@ -1,7 +1,7 @@
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
 import { ROIReportData } from './reportUtils';
-import { SharedFields, loadSharedFields } from '@/lib/firebase/sharedFields';
+import { loadSharedFields } from '@/lib/firebase/sharedFields';
 
 export async function loadROIReportData(userId: string): Promise<ROIReportData | null> {
   try {
@@ -77,7 +77,7 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
       // Lägg till kostnadsdata
       if (formBData.costs && Array.isArray(formBData.costs)) {
         const validCosts = formBData.costs
-          .filter((cost: any) => 
+          .filter((cost: { description?: string; amount?: number }) => 
             !!cost && typeof cost.description === 'string' && typeof cost.amount === 'number'
           )
           .map((cost: { description: string; amount: number }) => ({

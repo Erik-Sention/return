@@ -93,7 +93,7 @@ export function exportROIToPdf(data: ROIReportData): void {
     margin: { left: margin, right: margin }
   });
   
-  currentY = (doc as any).lastAutoTable.finalY + 15;
+  currentY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
   
   // Alternativ 2: Maxkostnad för break-even
   if (data.totalCostAlt2) {
@@ -115,7 +115,7 @@ export function exportROIToPdf(data: ROIReportData): void {
       margin: { left: margin, right: margin }
     });
     
-    currentY = (doc as any).lastAutoTable.finalY + 15;
+    currentY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
   }
   
   // Alternativ 3: Minsta effekt för break-even
@@ -138,7 +138,7 @@ export function exportROIToPdf(data: ROIReportData): void {
       margin: { left: margin, right: margin }
     });
     
-    currentY = (doc as any).lastAutoTable.finalY + 15;
+    currentY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
   }
   
   // Add a page break before details
@@ -168,7 +168,7 @@ export function exportROIToPdf(data: ROIReportData): void {
         margin: { left: margin, right: margin }
       });
       
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      currentY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
     }
   }
   
@@ -225,7 +225,7 @@ export function exportROIToPdf(data: ROIReportData): void {
         margin: { left: margin, right: margin }
       });
       
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      currentY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
     }
   }
   
@@ -248,105 +248,16 @@ export function exportROIToPdf(data: ROIReportData): void {
     currentY = 20;
   }
   
-  // ROI-slutsats
-  currentY = addSection(doc, 'Slutsats - ROI', currentY, margin, contentWidth);
-  
-  // Generera ROI-slutsatstexten
-  let roiConclusionText = '';
-  
-  if (!data || !data.totalCost || !data.totalBenefit || data.totalCost <= 0 || data.totalBenefit <= 0) {
-    roiConclusionText = 'Baserat på tillgänglig data kan vi inte fastställa en ROI-analys. Vänligen fyll i både kostnader och fördelar för att generera en slutsats.';
-  } else if (data.roi && data.roi > 0) {
-    // Bedöm styrkan på ROI
-    let strengthText = '';
-    if (data.roi >= 200) strengthText = 'extremt stark';
-    else if (data.roi >= 100) strengthText = 'mycket stark';
-    else if (data.roi >= 50) strengthText = 'stark';
-    else if (data.roi >= 20) strengthText = 'god';
-    else strengthText = 'positiv';
-    
-    // Beräkna värde per investerad krona
-    const valuePerCrown = data.roi / 100 + 1;
-    
-    const costText = formatCurrency(data.totalCost);
-    const benefitText = formatCurrency(data.totalBenefit);
-    const roiText = formatPercent(data.roi);
-    
-    roiConclusionText = `Analysen visar en ${strengthText} avkastning på ${roiText} för investeringen på ${costText}. 
-Det innebär att varje investerad krona genererar ${valuePerCrown.toFixed(2)} kronor i värde. 
-Det totala värdet av interventionen uppskattas till ${benefitText}.`;
-    
-    if (data.paybackPeriod) {
-      const paybackText = formatMonths(data.paybackPeriod);
-      if (data.paybackPeriod < 3) {
-        roiConclusionText += ` Återbetalningstiden är mycket kort (${paybackText}), vilket gör detta till en investering med låg risk.`;
-      } else if (data.paybackPeriod < 12) {
-        roiConclusionText += ` Återbetalningstiden är rimlig (${paybackText}) och inom ett år, vilket är lovande för denna typ av intervention.`;
-      } else {
-        roiConclusionText += ` Återbetalningstiden på ${paybackText} är relativt lång, men investeringen ger ändå ett positivt resultat över tid.`;
-      }
-    }
-    
-    roiConclusionText += ' Baserat på denna analys rekommenderas investeringen som en ekonomiskt fördelaktig åtgärd.';
-  } else {
-    const costText = formatCurrency(data.totalCost);
-    const benefitText = formatCurrency(data.totalBenefit);
-    
-    roiConclusionText = `ROI-beräkningen visar att investeringen på ${costText} inte ger en positiv ekonomisk avkastning jämfört med det förväntade värdet på ${benefitText}.
-Detta betyder dock inte nödvändigtvis att interventionen saknar värde, då vissa fördelar kan vara svåra att kvantifiera ekonomiskt. 
-Vi rekommenderar en fördjupad analys med fokus på både ekonomiska och icke-ekonomiska fördelar innan ett beslut fattas.`;
-  }
-  
-  currentY = addWrappedText(doc, roiConclusionText, currentY, margin, contentWidth);
-  currentY += 10;
-  
-  // Max kostnad-slutsats
-  if (data.totalCostAlt2) {
-    currentY = addSection(doc, 'Slutsats - Max kostnad', currentY, margin, contentWidth);
-    
-    const maxCostConclusionText = `Med samma effekt som beräknats i ROI-alternativet (${formatPercent(data.roi || 0)}) kan du maximalt investera ${formatCurrency(data.totalCostAlt2)} för att nå break-even (ROI = 0%). 
-Detta skulle innebära att investeringen precis täcker sina kostnader. Allt över detta belopp skulle ge en negativ avkastning med nuvarande effektberäkning.`;
-    
-    currentY = addWrappedText(doc, maxCostConclusionText, currentY, margin, contentWidth);
-    currentY += 10;
-  }
-  
-  // Förutsättning-slutsats
-  if (data.totalCostAlt3 && data.minEffectForBreakEvenAlt3) {
-    currentY = addSection(doc, 'Slutsats - Förutsättning', currentY, margin, contentWidth);
-    
-    const minEffectConclusionText = `Med nuvarande investering på ${formatCurrency(data.totalCostAlt3)} skulle stressnivån behöva minska med minst ${formatPercent((data.minEffectForBreakEvenAlt3 || 0) / 100)} för att nå break-even (ROI = 0%). 
-Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta skulle ge en positiv avkastning.`;
-    
-    currentY = addWrappedText(doc, minEffectConclusionText, currentY, margin, contentWidth);
-  }
-  
-  // Sidfot
-  doc.setFontSize(9);
-  doc.setTextColor(120, 120, 120);
-  const pageCount = doc.getNumberOfPages();
-  
-  // Lägg till företagsnamn och sidnumrering i sidfoten på varje sida
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.text('ROI-kalkylator v1.0', margin, 285);
-    doc.text(`Sida ${i} av ${pageCount}`, pageWidth - margin, 285, { align: 'right' });
-  }
-  
-  // Spara PDF-filen
-  const fileName = `${data.sharedFields.organizationName.replace(/\s+/g, '_')}_ROI_Rapport_${today.replace(/\-/g, '')}.pdf`;
-  doc.save(fileName);
+  // Spara filen till användarens dator
+  doc.save(`ROI-rapport-${data.sharedFields.organizationName}-${today}.pdf`);
 }
 
 /**
- * Hjälpfunktion för att lägga till en ny sektion med rubrik
+ * Hjälpfunktion för att lägga till en sektionsrubrik i PDF-dokumentet
  */
 function addSection(doc: jsPDF, title: string, y: number, margin: number, width: number): number {
-  // Lägg till lite mellanrum
-  y += 5;
-  
-  // Kontrollera om det finns plats på sidan, annars lägg till en ny sida
-  if (y > 270) {
+  // Kontrollera om vi behöver en ny sida innan vi lägger till rubriken
+  if (y > 250) {
     doc.addPage();
     y = 20;
   }
@@ -357,32 +268,28 @@ function addSection(doc: jsPDF, title: string, y: number, margin: number, width:
   doc.text(title, margin, y);
   
   // Lägg till en linje under rubriken
-  y += 2;
-  doc.setDrawColor(0, 102, 204);
-  doc.line(margin, y, margin + width * 0.3, y);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y + 2, margin + width, y + 2);
   
-  return y + 5;
+  return y + 8; // Returnera ny Y-position
 }
 
 /**
- * Hjälpfunktion för att lägga till text med radbrytning
+ * Hjälpfunktion för att lägga till text med automatisk radbrytning
  */
 function addWrappedText(doc: jsPDF, text: string, y: number, margin: number, width: number): number {
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.setTextColor(50, 50, 50);
   
-  // Dela upp texten i rader som passar inom den angivna bredden
   const textLines = doc.splitTextToSize(text, width);
   
-  // Kontrollera om vi behöver en ny sida
-  if (y + textLines.length * 5 > 270) {
+  // Om texten skulle gå utanför sidan, lägg till en ny sida
+  if (y + (textLines.length * 5) > 280) {
     doc.addPage();
     y = 20;
   }
   
-  // Lägg till texten
   doc.text(textLines, margin, y);
   
-  // Returnera den nya Y-positionen
-  return y + textLines.length * 5 + 5;
+  return y + (textLines.length * 5) + 5; // Returnera ny Y-position
 } 
