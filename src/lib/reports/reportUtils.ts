@@ -260,6 +260,57 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
         reportData.roi = formJData.roiPercentageAlt1;
       }
       
+      // Spara data om psykisk ohälsa och minskad stress från alternativ 1
+      if (formJData.totalCostMentalHealthAlt1 !== undefined) {
+        reportData.totalMentalHealthCost = formJData.totalCostMentalHealthAlt1;
+      }
+      
+      if (formJData.reducedStressPercentageAlt1 !== undefined) {
+        reportData.reducedStressPercentage = formJData.reducedStressPercentageAlt1;
+      }
+      
+      // Lägg till data från alternativ 2 (maximal kostnad för break-even)
+      if (formJData.maxInterventionCostAlt2 !== undefined) {
+        reportData.totalCostAlt2 = formJData.maxInterventionCostAlt2;
+      }
+      
+      if (formJData.totalCostMentalHealthAlt2 !== undefined) {
+        reportData.totalMentalHealthCostAlt2 = formJData.totalCostMentalHealthAlt2;
+      }
+      
+      if (formJData.reducedStressPercentageAlt2 !== undefined) {
+        reportData.reducedStressPercentageAlt2 = formJData.reducedStressPercentageAlt2;
+      }
+      
+      // Beräkna totalBenefitAlt2 (ska vara samma som från alt 1)
+      if (formJData.totalCostMentalHealthAlt2 !== undefined && formJData.reducedStressPercentageAlt2 !== undefined) {
+        reportData.totalBenefitAlt2 = formJData.totalCostMentalHealthAlt2 * (formJData.reducedStressPercentageAlt2 / 100);
+      }
+      
+      // Sätt fast ROI för alternativ 2 (alltid 0% för break-even)
+      reportData.roiAlt2 = 0;
+      
+      // Lägg till data från alternativ 3 (minsta effekt för break-even)
+      if (formJData.totalInterventionCostAlt3 !== undefined) {
+        reportData.totalCostAlt3 = formJData.totalInterventionCostAlt3;
+      }
+      
+      if (formJData.totalCostMentalHealthAlt3 !== undefined) {
+        reportData.totalMentalHealthCostAlt3 = formJData.totalCostMentalHealthAlt3;
+      }
+      
+      if (formJData.minEffectForBreakEvenAlt3 !== undefined) {
+        reportData.minEffectForBreakEvenAlt3 = formJData.minEffectForBreakEvenAlt3;
+      }
+      
+      // Beräkna totalBenefitAlt3 (samma värde som totalCostAlt3 för break-even)
+      if (reportData.totalCostAlt3) {
+        reportData.totalBenefitAlt3 = reportData.totalCostAlt3;
+      }
+      
+      // Sätt fast ROI för alternativ 3 (alltid 0% för break-even)
+      reportData.roiAlt3 = 0;
+      
       // Beräkna payback-period baserat på Form J data
       if (reportData.totalCost && reportData.totalCost > 0 && reportData.totalBenefit && reportData.totalBenefit > 0) {
         // Antal månader för att få tillbaka investeringen

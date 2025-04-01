@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChartCard } from '@/components/ui/chart-card';
 import { StatItem } from '@/components/ui/stat-item';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { exportROIToPdf } from '@/lib/reports/pdfExport';
@@ -138,53 +138,23 @@ export default function ExekutivSammanfattningPage() {
     }
   };
 
-  // Skapa renderingshjälpfunktion för ROI-kort baserat på aktiv flik
-  const getRoiData = () => {
-    switch (activeTab) {
-      case "roi":
-        return {
-          totalCost: reportData?.totalCost || 0,
-          totalBenefit: reportData?.totalBenefit || 0,
-          roi: reportData?.roi || 0,
-          paybackPeriod: reportData?.paybackPeriod
-        };
-      case "max-kostnad":
-        return {
-          totalCost: reportData?.totalCostAlt2 || 0,
-          totalBenefit: reportData?.totalBenefitAlt2 || 0,
-          roi: reportData?.roiAlt2 || 0,
-          paybackPeriod: undefined,
-          description: "Maximal kostnad för break-even"
-        };
-      case "min-effekt":
-        return {
-          totalCost: reportData?.totalCostAlt3 || 0,
-          totalBenefit: reportData?.totalBenefitAlt3 || 0,
-          roi: reportData?.roiAlt3 || 0,
-          requiredEffect: reportData?.minEffectForBreakEvenAlt3 || 0,
-          description: "Minsta effekt för break-even"
-        };
-      default:
-        return {
-          totalCost: reportData?.totalCost || 0,
-          totalBenefit: reportData?.totalBenefit || 0,
-          roi: reportData?.roi || 0,
-          paybackPeriod: reportData?.paybackPeriod
-        };
-    }
-  };
-
   // Generera slutsats baserat på rapporten och vald flik
   const getConclusion = () => {
     switch (activeTab) {
       case "roi":
         return generateConclusion(reportData);
       case "max-kostnad":
-        return `Med samma effekt som beräknats i ROI-alternativet (${formatPercent(reportData?.roi || 0)}) kan du maximalt investera ${formatCurrency(reportData?.totalCostAlt2 || 0)} för att nå break-even (ROI = 0%). 
-Detta skulle innebära att investeringen precis täcker sina kostnader. Allt över detta belopp skulle ge en negativ avkastning med nuvarande effektberäkning.`;
+        return `Maximal kostnad för break-even
+
+Med den förväntade minskningen av stressnivån på ${formatPercent(reportData?.reducedStressPercentageAlt2 || 0)} och den totala kostnaden för psykisk ohälsa på ${formatCurrency(reportData?.totalMentalHealthCostAlt2 || 0)} kr per år, blir den maximala kostnaden för insatsen ${formatCurrency(reportData?.totalCostAlt2 || 0)} kr.
+
+Detta representerar den högsta investering som kan göras med given effekt för att fortfarande nå break-even (ROI = 0%). All investering över detta belopp skulle ge en negativ avkastning, medan en lägre investering skulle ge en positiv ROI.`;
       case "min-effekt":
-        return `Med nuvarande investering på ${formatCurrency(reportData?.totalCostAlt3 || 0)} skulle stressnivån behöva minska med minst ${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} för att nå break-even (ROI = 0%). 
-Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta skulle ge en positiv avkastning.`;
+        return `Minsta effekt för break-even
+
+Med nuvarande investering på ${formatCurrency(reportData?.totalCostAlt3 || 0)} kr och den totala kostnaden för psykisk ohälsa på ${formatCurrency(reportData?.totalMentalHealthCostAlt3 || 0)} kr per år, måste stressnivån minska med minst ${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} för att nå break-even (ROI = 0%).
+
+Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta procenttal skulle ge en positiv avkastning.`;
       default:
         return generateConclusion(reportData);
     }
@@ -309,22 +279,53 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                 <p className="text-muted-foreground">Kontaktperson: {reportData.sharedFields.contactPerson}</p>
                 {reportData.timePeriod && <p className="text-muted-foreground">Period: {reportData.timePeriod}</p>}
               </div>
-              <div className="flex items-center gap-2 text-xl font-semibold rounded-full px-4 py-1 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400">
-                <Percent className="h-5 w-5" />
-                <span>
-                  {reportData.roi ? formatPercent(reportData.roi) : "0%"}
-                </span>
-                <span className="text-sm font-normal text-muted-foreground ml-1">Avkastning</span>
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="flex items-center gap-2 text-xl font-semibold rounded-full px-4 py-1 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400">
+                  <Percent className="h-5 w-5" />
+                  <span>
+                    {reportData.roi ? formatPercent(reportData.roi) : "0%"}
+                  </span>
+                  <span className="text-sm font-normal text-muted-foreground ml-1">Avkastning</span>
+                </div>
+                <div className="flex items-center gap-2 text-xl font-semibold rounded-full px-4 py-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400">
+                  <CreditCard className="h-5 w-5" />
+                  <span>
+                    {formatCurrency(reportData?.totalCostAlt2 || 0)}
+                  </span>
+                  <span className="text-sm font-normal text-muted-foreground ml-1">Max kostnad</span>
+                </div>
+                <div className="flex items-center gap-2 text-xl font-semibold rounded-full px-4 py-1 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-400">
+                  <TrendingDown className="h-5 w-5" />
+                  <span>
+                    {reportData?.minEffectForBreakEvenAlt3 !== undefined ? formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0) : "N/A"}
+                  </span>
+                  <span className="text-sm font-normal text-muted-foreground ml-1">Minsta effekt</span>
+                </div>
               </div>
             </div>
           </div>
           
           <div className="mb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="roi">ROI</TabsTrigger>
-                <TabsTrigger value="max-kostnad">Max kostnad</TabsTrigger>
-                <TabsTrigger value="min-effekt">Förutsättning</TabsTrigger>
+              <TabsList className="w-full gap-2 bg-transparent p-0 flex mb-4">
+                <TabsTrigger 
+                  value="roi"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                >
+                  ROI
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="max-kostnad"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                >
+                  Max kostnad
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="min-effekt"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                >
+                  Förutsättning
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="roi" className="mt-4">
@@ -336,7 +337,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                   >
                     <StatItem 
                       label="Investering"
-                      value={formatCurrency(getRoiData().totalCost)}
+                      value={formatCurrency(reportData?.totalCost || 0)}
                       description="Total kostnad för interventionen"
                       variant="blue"
                     />
@@ -349,7 +350,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                   >
                     <StatItem 
                       label="Värde"
-                      value={formatCurrency(getRoiData().totalBenefit)}
+                      value={formatCurrency(reportData?.totalBenefit || 0)}
                       description="Totalt värde av interventionen"
                       variant="green"
                     />
@@ -362,7 +363,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                   >
                     <StatItem 
                       label="Avkastning på investering"
-                      value={getRoiData().roi ? formatPercent(getRoiData().roi) : "0%"}
+                      value={reportData?.roi ? formatPercent(reportData.roi) : "0%"}
                       description="Return on Investment"
                       variant="purple"
                     />
@@ -375,7 +376,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                   >
                     <StatItem 
                       label="Payback-period"
-                      value={getRoiData().paybackPeriod ? formatMonths(getRoiData().paybackPeriod) : "N/A"}
+                      value={reportData?.paybackPeriod ? formatMonths(reportData.paybackPeriod) : "N/A"}
                       description="Tid till kostnaden är återbetald"
                       variant="orange"
                     />
@@ -387,54 +388,44 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               </TabsContent>
               
               <TabsContent value="max-kostnad" className="mt-4">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <ChartCard 
                     title="Max kostnad"
                     icon={<CreditCard className="h-5 w-5" />}
                     variant="blue"
                   >
                     <StatItem 
-                      label="Max kostnad"
-                      value={formatCurrency(getRoiData().totalCost)}
-                      description="Maximal kostnad för break-even"
+                      label="Maximal investeringskostnad"
+                      value={formatCurrency(reportData?.totalCostAlt2 || 0)}
+                      description="För att nå break-even"
                       variant="blue"
                     />
                   </ChartCard>
                   
                   <ChartCard 
-                    title="Total nytta"
+                    title="Total ohälsokostnad"
                     icon={<Activity className="h-5 w-5" />}
                     variant="green"
                   >
                     <StatItem 
-                      label="Värde"
-                      value={formatCurrency(getRoiData().totalBenefit)}
-                      description="Totalt värde av interventionen"
+                      label="Total kostnad psykisk ohälsa"
+                      value={formatCurrency(reportData?.totalMentalHealthCostAlt2 || 0)}
+                      description="Kostnad per år"
                       variant="green"
                     />
                   </ChartCard>
                   
                   <ChartCard 
-                    title="ROI"
-                    icon={<Percent className="h-5 w-5" />}
+                    title="Minskad stressnivå"
+                    icon={<TrendingDown className="h-5 w-5" />}
                     variant="purple"
                   >
                     <StatItem 
-                      label="Avkastning på investering"
-                      value="0%"
-                      description="Break-even"
+                      label="Minskad andel med stresssymptom"
+                      value={formatPercent(reportData?.reducedStressPercentageAlt2 || 0)}
+                      description="Förväntad minskning"
                       variant="purple"
                     />
-                  </ChartCard>
-                  
-                  <ChartCard 
-                    title="Förutsättning"
-                    icon={<AlertCircle className="h-5 w-5" />}
-                    variant="orange"
-                  >
-                    <div className="mt-1 text-muted-foreground text-sm">
-                      Med samma effekt som beräknats i ROI-alternativet kan du maximalt investera {formatCurrency(getRoiData().totalCost || 0)} för att nå break-even.
-                    </div>
                   </ChartCard>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -443,56 +434,43 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               </TabsContent>
               
               <TabsContent value="min-effekt" className="mt-4">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   <ChartCard 
-                    title="Total kostnad"
+                    title="Investeringskostnad"
                     icon={<CreditCard className="h-5 w-5" />}
                     variant="blue"
                   >
                     <StatItem 
-                      label="Investering"
-                      value={formatCurrency(getRoiData().totalCost)}
-                      description="Total kostnad för interventionen"
+                      label="Total kostnad för insatsen"
+                      value={formatCurrency(reportData?.totalCostAlt3 || 0)}
+                      description="Nuvarande investering"
                       variant="blue"
                     />
                   </ChartCard>
                   
                   <ChartCard 
-                    title="Total nytta"
+                    title="Total ohälsokostnad"
                     icon={<Activity className="h-5 w-5" />}
                     variant="green"
                   >
                     <StatItem 
-                      label="Värde"
-                      value={formatCurrency(getRoiData().totalBenefit)}
-                      description="För break-even"
+                      label="Total kostnad psykisk ohälsa"
+                      value={formatCurrency(reportData?.totalMentalHealthCostAlt3 || 0)}
+                      description="Kostnad per år"
                       variant="green"
                     />
                   </ChartCard>
                   
                   <ChartCard 
-                    title="Förutsättning"
+                    title="Minsta effekt"
                     icon={<TrendingDown className="h-5 w-5" />}
                     variant="purple"
                   >
                     <StatItem 
-                      label="Minsta effekt"
-                      value={getRoiData().requiredEffect !== undefined ? formatPercent(getRoiData().requiredEffect || 0) : "N/A"}
-                      description="för break-even"
+                      label="Minsta effekt för break-even"
+                      value={reportData?.minEffectForBreakEvenAlt3 !== undefined ? formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0) : "N/A"}
+                      description="Minskad andel med stresssymptom"
                       variant="purple"
-                    />
-                  </ChartCard>
-                  
-                  <ChartCard 
-                    title="ROI"
-                    icon={<Percent className="h-5 w-5" />}
-                    variant="orange"
-                  >
-                    <StatItem 
-                      label="Avkastning på investering"
-                      value="0%"
-                      description="Break-even"
-                      variant="orange"
                     />
                   </ChartCard>
                 </div>
