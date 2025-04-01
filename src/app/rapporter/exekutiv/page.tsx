@@ -310,19 +310,19 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               <TabsList className="w-full gap-2 bg-transparent p-0 flex mb-4">
                 <TabsTrigger 
                   value="roi"
-                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/50 hover:ring-2 hover:ring-primary/20 hover:scale-[1.05] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 transition-all"
                 >
                   ROI
                 </TabsTrigger>
                 <TabsTrigger 
                   value="max-kostnad"
-                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/50 hover:ring-2 hover:ring-primary/20 hover:scale-[1.05] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 transition-all"
                 >
                   Max kostnad
                 </TabsTrigger>
                 <TabsTrigger 
                   value="min-effekt"
-                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/40 hover:shadow-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
+                  className="flex-1 font-medium rounded-md border border-border/80 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/50 hover:ring-2 hover:ring-primary/20 hover:scale-[1.05] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary/30 transition-all"
                 >
                   Förutsättning
                 </TabsTrigger>
