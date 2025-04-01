@@ -560,7 +560,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
-              <InfoLabel text="Standardvärde är 2,0% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (2.5-3.0%), IT (1.5-2.0%), Finans (1.8-2.2%), Handel (1.5-2.0%). Produktionsbortfallet beror på sänkt koncentration, ökad risk för fel, och minskad effektivitet." />
+              <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst nio procent. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
               <FormattedNumberInput
                 value={formData.productionLossHighStress}
                 onChange={(value) => handleChange('productionLossHighStress', value)}

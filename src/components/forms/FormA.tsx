@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 're
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target } from 'lucide-react';
+import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
@@ -19,6 +19,14 @@ interface FormAData {
   goals: string;
   interventions: string[];
   recommendation: string;
+}
+
+// Interface för FormC-data som behövs för att hämta värden
+interface FormCData {
+  percentHighStress?: number;
+  valueProductionLoss?: number;
+  totalCostSickLeaveMentalHealth?: number;
+  [key: string]: any; // För övriga fält i formulär C som vi inte behöver specifika typer för här
 }
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -55,6 +63,38 @@ const FORM_TYPE = 'A';
 // Definiera en typ för komponentens props
 type FormAProps = React.ComponentProps<'div'>;
 
+// Lägg till en ny komponent för att hämta värde från FormC
+const FetchFormCValueButton = ({ 
+  onClick, 
+  disabled,
+  formField,
+  message 
+}: { 
+  onClick: () => void;
+  disabled?: boolean;
+  formField: string;
+  message?: string | null;
+}) => (
+  <div className="flex items-center gap-2">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className="mt-1"
+    >
+      <ArrowDown className="h-4 w-4 mr-2" />
+      Hämta från Formulär C
+    </Button>
+    {message && (
+      <span className={`text-sm ${message.includes('Inget') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+        {message}
+      </span>
+    )}
+  </div>
+);
+
 // Gör FormA till en forwardRef component
 const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const { currentUser } = useAuth();
@@ -75,6 +115,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [fetchMessageC7, setFetchMessageC7] = useState<string | null>(null);
+  const [fetchMessageC10, setFetchMessageC10] = useState<string | null>(null);
+  const [fetchMessageC17, setFetchMessageC17] = useState<string | null>(null);
 
   // Load data from Firebase on mount
   useEffect(() => {
@@ -200,6 +243,74 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   };
 
+  // Lägg till useEffect för att rensa fetchMessages efter viss tid
+  useEffect(() => {
+    if (fetchMessageC7) {
+      const timer = setTimeout(() => {
+        setFetchMessageC7(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageC7]);
+
+  useEffect(() => {
+    if (fetchMessageC10) {
+      const timer = setTimeout(() => {
+        setFetchMessageC10(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageC10]);
+
+  useEffect(() => {
+    if (fetchMessageC17) {
+      const timer = setTimeout(() => {
+        setFetchMessageC17(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageC17]);
+
+  // Hjälpfunktion för att hämta värden från Form C
+  const fetchValueFromFormC = async (field: 'C7' | 'C10' | 'C17') => {
+    if (!currentUser?.uid) {
+      setError('Du måste vara inloggad för att hämta data');
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+      if (formCData) {
+        if (field === 'C7' && formCData.percentHighStress !== undefined) {
+          handleChange('stressLevel', formCData.percentHighStress);
+          setFetchMessageC7(`Värde hämtat från Formulär C!`);
+        } else if (field === 'C10' && formCData.valueProductionLoss !== undefined) {
+          handleChange('productionLoss', formCData.valueProductionLoss);
+          setFetchMessageC10(`Värde hämtat från Formulär C!`);
+        } else if (field === 'C17' && formCData.totalCostSickLeaveMentalHealth !== undefined) {
+          handleChange('sickLeaveCost', formCData.totalCostSickLeaveMentalHealth);
+          setFetchMessageC17(`Värde hämtat från Formulär C!`);
+        } else {
+          if (field === 'C7') setFetchMessageC7(`Inget värde hittades i Formulär C.`);
+          if (field === 'C10') setFetchMessageC10(`Inget värde hittades i Formulär C.`);
+          if (field === 'C17') setFetchMessageC17(`Inget värde hittades i Formulär C.`);
+        }
+      } else {
+        if (field === 'C7') setFetchMessageC7(`Inget värde hittades i Formulär C.`);
+        if (field === 'C10') setFetchMessageC10(`Inget värde hittades i Formulär C.`);
+        if (field === 'C17') setFetchMessageC17(`Inget värde hittades i Formulär C.`);
+      }
+    } catch (error) {
+      console.error(`Error fetching value from FormC:`, error);
+      setError(`Kunde inte hämta värdet från Formulär C`);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -308,6 +419,14 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                   placeholder="Ange procent"
                   className="bg-background/50"
                 />
+                <FetchFormCValueButton
+                  onClick={async () => {
+                    await fetchValueFromFormC('C7');
+                  }}
+                  disabled={!currentUser?.uid}
+                  formField="C7"
+                  message={fetchMessageC7}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
@@ -317,6 +436,14 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                   placeholder="Ange summa i kr"
                   className="bg-background/50"
                 />
+                <FetchFormCValueButton
+                  onClick={async () => {
+                    await fetchValueFromFormC('C10');
+                  }}
+                  disabled={!currentUser?.uid}
+                  formField="C10"
+                  message={fetchMessageC10}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
@@ -325,6 +452,14 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                   onChange={(value) => handleChange('sickLeaveCost', value)}
                   placeholder="Ange summa i kr"
                   className="bg-background/50"
+                />
+                <FetchFormCValueButton
+                  onClick={async () => {
+                    await fetchValueFromFormC('C17');
+                  }}
+                  disabled={!currentUser?.uid}
+                  formField="C17"
+                  message={fetchMessageC17}
                 />
               </div>
             </div>
