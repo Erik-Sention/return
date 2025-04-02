@@ -149,7 +149,13 @@ export default function ROIPage() {
         />
 
         <div className="form-card">
-          {currentForm === 'A' && <FormA ref={formARef} />}
+          {currentForm === 'A' && <FormA 
+            ref={formARef} 
+            onNavigateToForm={(formName) => {
+              // Navigera till det specifika formuläret
+              setCurrentForm(formName);
+            }} 
+          />}
           {currentForm === 'B' && <FormB ref={formBRef} />}
           {currentForm === 'C' && <FormC ref={formCRef} />}
           {currentForm === 'D' && <FormD ref={formDRef} />}

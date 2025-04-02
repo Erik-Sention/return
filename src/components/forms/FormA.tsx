@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 're
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowDown } from 'lucide-react';
+import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowRight, Calculator } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
@@ -26,6 +26,12 @@ interface FormCData {
   percentHighStress?: number;
   valueProductionLoss?: number;
   totalCostSickLeaveMentalHealth?: number;
+  productionLossHighStress?: number;
+  // Nya fält för att kontrollera om sjukfrånvarokostnaden är komplett
+  costShortSickLeave?: number;                   // C11
+  percentShortSickLeaveMentalHealth?: number;    // C12
+  costLongSickLeave?: number;                    // C14
+  percentLongSickLeaveMentalHealth?: number;     // C15
   [key: string]: string | number | undefined | null; // Mer specifik typ istället för 'any'
 }
 
@@ -60,42 +66,59 @@ const SectionHeader = ({
 
 const FORM_TYPE = 'A';
 
-// Definiera en typ för komponentens props
-type FormAProps = React.ComponentProps<'div'>;
+// Utöka FormAProps för att inkludera en onNavigateToForm prop
+type FormAProps = React.ComponentProps<'div'> & {
+  onNavigateToForm?: (formName: string) => void;
+};
 
-// Lägg till en ny komponent för att hämta värde från FormC
-const FetchFormCValueButton = ({ 
-  onClick, 
-  disabled,
-  message 
+// Lägg till AutoFilledField-komponenten för att visa automatiskt hämtad data
+const AutoFilledField = ({ 
+  value, 
+  sourceFormName,
+  onNavigate,
+  isEmpty = false
 }: { 
-  onClick: () => void;
-  disabled?: boolean;
-  message?: string | null;
+  value: string; 
+  sourceFormName: string;
+  onNavigate: (formName: string) => void;
+  isEmpty?: boolean;
 }) => (
-  <div className="flex items-center gap-2">
+  <div className="space-y-1">
+    <div className="p-2 bg-primary/5 border border-dashed border-primary/40 rounded-md flex justify-between shadow-sm items-center">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Calculator className="w-3 h-3" />
+        <span>Auto från Formulär {sourceFormName}</span>
+      </div>
+      {isEmpty ? (
+        <span className="text-amber-500 font-medium">Saknar värde i formulär {sourceFormName}</span>
+      ) : (
+        <span className="font-semibold">{value}</span>
+      )}
+    </div>
     <Button
       type="button"
       variant="outline"
       size="sm"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={() => onNavigate(sourceFormName)}
       className="mt-1"
     >
-      <ArrowDown className="h-4 w-4 mr-2" />
-      Hämta från Formulär C
+      <ArrowRight className="h-4 w-4 mr-2" />
+      Gå till Formulär {sourceFormName}
     </Button>
-    {message && (
-      <span className={`text-sm ${message.includes('Inget') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
-        {message}
-      </span>
-    )}
+  </div>
+);
+
+// Lägg till InfoBox-komponenten
+const InfoBox = ({ message }: { message: string }) => (
+  <div className="p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-800 dark:bg-amber-900/30 dark:border-amber-800/30 dark:text-amber-200 text-sm">
+    {message}
   </div>
 );
 
 // Gör FormA till en forwardRef component
 const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const { currentUser } = useAuth();
+  const { onNavigateToForm } = props;
   const [formData, setFormData] = useState<FormAData>({
     organizationName: '',
     contactPerson: '',
@@ -113,9 +136,15 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [fetchMessageC7, setFetchMessageC7] = useState<string | null>(null);
-  const [fetchMessageC10, setFetchMessageC10] = useState<string | null>(null);
-  const [fetchMessageC17, setFetchMessageC17] = useState<string | null>(null);
+  
+  // Lägg till state för att spåra automatisk datahämtning
+  const [autoFetchStatus, setAutoFetchStatus] = useState({
+    hasFetched: false,
+    stressLevel: false,
+    productionLoss: false,
+    sickLeaveCost: false,
+    errorMessage: null as string | null
+  });
 
   // Load data from Firebase on mount
   useEffect(() => {
@@ -241,72 +270,73 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   };
 
-  // Lägg till useEffect för att rensa fetchMessages efter viss tid
+  // Hjälpfunktion för att navigera till specifikt formulär
+  const navigateToForm = (formName: string) => {
+    if (onNavigateToForm) {
+      onNavigateToForm(formName);
+    } else {
+      console.warn('Navigation callback is not provided to FormA component');
+    }
+  };
+  
+  // Ny useEffect för att automatiskt hämta data från Formulär C vid inladdning
   useEffect(() => {
-    if (fetchMessageC7) {
-      const timer = setTimeout(() => {
-        setFetchMessageC7(null);
-      }, 3000);
+    const autoFetchFromFormC = async () => {
+      if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
       
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageC7]);
-
-  useEffect(() => {
-    if (fetchMessageC10) {
-      const timer = setTimeout(() => {
-        setFetchMessageC10(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageC10]);
-
-  useEffect(() => {
-    if (fetchMessageC17) {
-      const timer = setTimeout(() => {
-        setFetchMessageC17(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageC17]);
-
-  // Hjälpfunktion för att hämta värden från Form C
-  const fetchValueFromFormC = async (field: 'C7' | 'C10' | 'C17') => {
-    if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att hämta data');
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
-      if (formCData) {
-        if (field === 'C7' && formCData.percentHighStress !== undefined) {
-          handleChange('stressLevel', formCData.percentHighStress);
-          setFetchMessageC7(`Värde hämtat från Formulär C!`);
-        } else if (field === 'C10' && formCData.valueProductionLoss !== undefined) {
-          handleChange('productionLoss', formCData.valueProductionLoss);
-          setFetchMessageC10(`Värde hämtat från Formulär C!`);
-        } else if (field === 'C17' && formCData.totalCostSickLeaveMentalHealth !== undefined) {
-          handleChange('sickLeaveCost', formCData.totalCostSickLeaveMentalHealth);
-          setFetchMessageC17(`Värde hämtat från Formulär C!`);
-        } else {
-          if (field === 'C7') setFetchMessageC7(`Inget värde hittades i Formulär C.`);
-          if (field === 'C10') setFetchMessageC10(`Inget värde hittades i Formulär C.`);
-          if (field === 'C17') setFetchMessageC17(`Inget värde hittades i Formulär C.`);
+      try {
+        setAutoFetchStatus(prev => ({ ...prev, hasFetched: true }));
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+        
+        if (formCData) {
+          let updatedStatus = { ...autoFetchStatus, hasFetched: true };
+          
+          // Hämta stressnivå om tillgänglig
+          if (formCData.percentHighStress !== undefined) {
+            handleChange('stressLevel', formCData.percentHighStress);
+            updatedStatus.stressLevel = true;
+          }
+          
+          // Hämta produktionsbortfall om tillgänglig och C8 (productionLossHighStress) har ett värde
+          if (formCData.valueProductionLoss !== undefined && 
+              typeof formCData.productionLossHighStress === 'number' && 
+              formCData.productionLossHighStress > 0) {
+            handleChange('productionLoss', formCData.valueProductionLoss);
+            updatedStatus.productionLoss = true;
+          }
+          
+          // Kontrollera om alla nödvändiga fält för sjukfrånvarokostnad finns
+          const hasAllSickLeaveFields = 
+            formCData.costShortSickLeave !== undefined && 
+            formCData.percentShortSickLeaveMentalHealth !== undefined &&
+            formCData.costLongSickLeave !== undefined && 
+            formCData.percentLongSickLeaveMentalHealth !== undefined;
+          
+          // Hämta sjukfrånvarokostnad endast om alla nödvändiga fält finns
+          if (formCData.totalCostSickLeaveMentalHealth !== undefined && hasAllSickLeaveFields) {
+            handleChange('sickLeaveCost', formCData.totalCostSickLeaveMentalHealth);
+            updatedStatus.sickLeaveCost = true;
+          }
+          
+          setAutoFetchStatus(updatedStatus);
         }
-      } else {
-        if (field === 'C7') setFetchMessageC7(`Inget värde hittades i Formulär C.`);
-        if (field === 'C10') setFetchMessageC10(`Inget värde hittades i Formulär C.`);
-        if (field === 'C17') setFetchMessageC17(`Inget värde hittades i Formulär C.`);
+      } catch (error) {
+        console.error('Fel vid automatisk hämtning från Formulär C:', error);
+        setAutoFetchStatus(prev => ({ 
+          ...prev, 
+          hasFetched: true, 
+          errorMessage: 'Kunde inte automatiskt hämta data från Formulär C. Gå till Formulär C för att fylla i data.' 
+        }));
       }
-    } catch (error) {
-      console.error(`Error fetching value from FormC:`, error);
-      setError(`Kunde inte hämta värdet från Formulär C`);
-    }
+    };
+    
+    autoFetchFromFormC();
+  }, [currentUser, autoFetchStatus.hasFetched]);
+
+  // Formatera nummer med tusentalsavgränsare
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return '';
+    return num.toLocaleString('sv-SE');
   };
 
   return (
@@ -339,6 +369,24 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         {error && (
           <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
             {error}
+          </div>
+        )}
+        
+        {/* Visa meddelande om automatisk hämtning av data */}
+        {autoFetchStatus.hasFetched && (autoFetchStatus.stressLevel || autoFetchStatus.productionLoss || autoFetchStatus.sickLeaveCost) && (
+          <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+            <p className="font-medium">Data har automatiskt hämtats från Formulär C:</p>
+            <ul className="list-disc list-inside mt-1">
+              {autoFetchStatus.stressLevel && <li>Andel personalen med hög stressnivå</li>}
+              {autoFetchStatus.productionLoss && <li>Värde av produktionsbortfall</li>}
+              {autoFetchStatus.sickLeaveCost && <li>Kostnad för sjukfrånvaro</li>}
+            </ul>
+          </div>
+        )}
+        
+        {autoFetchStatus.errorMessage && (
+          <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+            {autoFetchStatus.errorMessage}
           </div>
         )}
         
@@ -413,50 +461,29 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
-                <FormattedNumberInput
-                  value={formData.stressLevel}
-                  onChange={(value) => handleChange('stressLevel', value)}
-                  placeholder="Ange procent"
-                  className="bg-background/50"
-                />
-                <FetchFormCValueButton
-                  onClick={async () => {
-                    await fetchValueFromFormC('C7');
-                  }}
-                  disabled={!currentUser?.uid}
-                  message={fetchMessageC7}
+                <AutoFilledField
+                  value={formatNumber(formData.stressLevel || 0) + " %"}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.stressLevel || !formData.stressLevel}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Värde av produktionsbortfall (kr/år)</label>
-                <FormattedNumberInput
-                  value={formData.productionLoss}
-                  onChange={(value) => handleChange('productionLoss', value)}
-                  placeholder="Ange summa i kr"
-                  className="bg-background/50"
-                />
-                <FetchFormCValueButton
-                  onClick={async () => {
-                    await fetchValueFromFormC('C10');
-                  }}
-                  disabled={!currentUser?.uid}
-                  message={fetchMessageC10}
+                <AutoFilledField
+                  value={formatNumber(formData.productionLoss || 0) + " kr"}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.productionLoss || !formData.productionLoss}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Kostnad för sjukfrånvaro (kr/år)</label>
-                <FormattedNumberInput
-                  value={formData.sickLeaveCost}
-                  onChange={(value) => handleChange('sickLeaveCost', value)}
-                  placeholder="Ange summa i kr"
-                  className="bg-background/50"
-                />
-                <FetchFormCValueButton
-                  onClick={async () => {
-                    await fetchValueFromFormC('C17');
-                  }}
-                  disabled={!currentUser?.uid}
-                  message={fetchMessageC17}
+                <AutoFilledField
+                  value={formatNumber(formData.sickLeaveCost || 0) + " kr"}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.sickLeaveCost || !formData.sickLeaveCost}
                 />
               </div>
             </div>
