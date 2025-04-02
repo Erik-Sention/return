@@ -279,6 +279,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.initiativeDescription}
               onChange={(e) => handleChange('initiativeDescription', e.target.value)}
               placeholder="Beskriv insatserna..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -297,6 +298,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.purpose}
               onChange={(e) => handleChange('purpose', e.target.value)}
               placeholder="Beskriv syftet..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -315,6 +317,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.supportForGoals}
               onChange={(e) => handleChange('supportForGoals', e.target.value)}
               placeholder="Beskriv vilka verksamhetsmål som stöds..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -333,6 +336,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.alternativeApproaches}
               onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
               placeholder="Beskriv alternativa ansatser..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -351,6 +355,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.goals}
               onChange={(e) => handleChange('goals', e.target.value)}
               placeholder="Beskriv målen..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -369,6 +374,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.targetGroup}
               onChange={(e) => handleChange('targetGroup', e.target.value)}
               placeholder="Beskriv målgruppen..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>
@@ -387,6 +393,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
               value={formData.expectedEffect}
               onChange={(e) => handleChange('expectedEffect', e.target.value)}
               placeholder="Beskriv tidshorisont för förväntad effekt..."
+              style={{ userSelect: 'text' }}
             />
           </div>
         </div>

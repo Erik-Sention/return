@@ -43,13 +43,14 @@ const FormattedNumberInput = forwardRef<HTMLInputElement, FormattedNumberInputPr
     };
 
     return (
-      <div>
+      <div className="FormattedNumberInput">
         <Input
           ref={ref}
           type="text"
           inputMode="decimal"
           value={displayValue}
           onChange={handleChange}
+          style={{ userSelect: 'text' }}
           {...props}
         />
         {warning && (

@@ -32,6 +32,7 @@ interface FormCData {
 
 interface FormDData {
   totalPersonnelCosts?: number;
+  
 }
 
 interface FormEData {
@@ -73,6 +74,7 @@ const ReadOnlyField = ({
       <span className={`font-semibold ${highlight ? 'text-primary' : ''}`}>{value}</span>
     </div>
   </div>
+  
 );
 
 // Lägg till SectionHeader för tydligare struktur
