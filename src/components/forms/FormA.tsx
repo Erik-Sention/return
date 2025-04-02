@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
-import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowRight, Calculator } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,13 +104,6 @@ const AutoFilledField = ({
       <ArrowRight className="h-4 w-4 mr-2" />
       Gå till Formulär {sourceFormName}
     </Button>
-  </div>
-);
-
-// Lägg till InfoBox-komponenten
-const InfoBox = ({ message }: { message: string }) => (
-  <div className="p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-800 dark:bg-amber-900/30 dark:border-amber-800/30 dark:text-amber-200 text-sm">
-    {message}
   </div>
 );
 
@@ -285,11 +277,14 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
       
       try {
-        setAutoFetchStatus(prev => ({ ...prev, hasFetched: true }));
+        // Spara aktuell status för autoFetch
+        const currentStatus = { ...autoFetchStatus, hasFetched: true };
+        setAutoFetchStatus(currentStatus);
+        
         const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
         
         if (formCData) {
-          let updatedStatus = { ...autoFetchStatus, hasFetched: true };
+          const updatedStatus = { ...currentStatus };
           
           // Hämta stressnivå om tillgänglig
           if (formCData.percentHighStress !== undefined) {
@@ -331,7 +326,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     };
     
     autoFetchFromFormC();
-  }, [currentUser, autoFetchStatus.hasFetched]);
+  }, [currentUser, autoFetchStatus.hasFetched, handleChange]);
 
   // Formatera nummer med tusentalsavgränsare
   const formatNumber = (num: number | undefined): string => {
