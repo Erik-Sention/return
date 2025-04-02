@@ -1223,7 +1223,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 value={safeFormData.organizationName || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('organizationName', e.target.value)}
                 placeholder="Ange organisationens namn"
-                className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
@@ -1234,7 +1233,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 value={safeFormData.contactPerson || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('contactPerson', e.target.value)}
                 placeholder="Ange kontaktperson"
-                className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
@@ -1245,7 +1243,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 value={safeFormData.timePeriod || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('timePeriod', e.target.value)}
                 placeholder="Ange tidsperiod"
-                className="bg-background/50"
               />
             </div>
           </div>

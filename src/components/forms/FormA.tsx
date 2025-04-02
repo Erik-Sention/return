@@ -6,6 +6,7 @@ import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, A
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
+import { Textarea } from "@/components/ui/textarea";
 
 interface FormAData {
   organizationName: string;
@@ -382,8 +383,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           
           <div className="space-y-2">
             <InfoLabel text="Beskriv verksamhetens huvudsakliga uppgifter och mål" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+            <Textarea
               value={formData.businessDefinition}
               onChange={(e) => handleChange('businessDefinition', e.target.value)}
               placeholder="Beskriv verksamheten..."
@@ -401,8 +401,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           <div className="space-y-4">
             <div className="space-y-2">
               <InfoLabel text="Beskriv nuläget gällande psykisk hälsa i verksamheten" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+              <Textarea
                 value={formData.currentSituation}
                 onChange={(e) => handleChange('currentSituation', e.target.value)}
                 placeholder="Beskriv nuläget..."
@@ -470,8 +469,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           
           <div className="space-y-2">
             <InfoLabel text="Identifiera orsaker till problem och bedöm risker" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+            <Textarea
               value={formData.causeAnalysis}
               onChange={(e) => handleChange('causeAnalysis', e.target.value)}
               placeholder="Beskriv orsaker och risker..."
@@ -488,8 +486,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           
           <div className="space-y-2">
             <InfoLabel text="Formulera tydliga mål baserade på identifierade behov" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+            <Textarea
               value={formData.goals}
               onChange={(e) => handleChange('goals', e.target.value)}
               placeholder="Beskriv mål och behov..."
@@ -538,8 +535,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           />
           
           <div className="space-y-2">
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+            <Textarea
               value={formData.recommendation}
               onChange={(e) => handleChange('recommendation', e.target.value)}
               placeholder="Ange rekommendation..."

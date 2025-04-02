@@ -1001,7 +1001,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.organizationName || ''}
                 onChange={handleInputChange}
                 placeholder="Ange organisationens namn"
-                className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
@@ -1012,7 +1011,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.contactPerson || ''}
                 onChange={handleInputChange}
                 placeholder="Ange kontaktperson"
-                className="bg-background/50"
               />
             </div>
             <div className="space-y-2">
@@ -1023,7 +1021,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.timePeriod || ''}
                 onChange={handleInputChange}
                 placeholder="Ange tidsperiod"
-                className="bg-background/50"
               />
             </div>
           </div>

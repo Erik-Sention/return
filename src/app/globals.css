@@ -49,9 +49,9 @@
 
 @layer base {
   :root {
-    --background: 33 8% 93%;
+    --background: 40 30% 96%;
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
+    --card: 40 30% 98%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
@@ -66,15 +66,15 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --input: 0 0% 100%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
  
   .dark {
-    --background: 220 13% 18%;
+    --background: 215 25% 9%;
     --foreground: 210 40% 98%;
-    --card: 222 14% 22%;
+    --card: 215 25% 15%;
     --card-foreground: 210 40% 98%;
     --popover: 222 14% 20%;
     --popover-foreground: 210 40% 98%;
@@ -88,8 +88,8 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 25.5%;
-    --input: 217.2 32.6% 25.5%;
+    --border: 215 20% 20%;
+    --input: 215 25% 18%;
     --ring: 224.3 76.3% 48%;
   }
 }
@@ -101,54 +101,68 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: hsl(40 30% 96%);
   }
   main {
     @apply relative z-0;
   }
 }
 
-/* Gradient bakgrund i dark mode */
+/* Mörkt läge bakgrundsställningar */
 .dark body {
-  background-image: linear-gradient(to bottom right, hsl(220 15% 16%), hsl(220 13% 18%), hsl(220 10% 14%));
-  background-attachment: fixed;
+  background-color: #343a46;
+  background-image: none;
 }
 
 /* Anpassade klasser för formulärkort */
 .form-card {
-  @apply p-6 rounded-lg shadow-lg border border-border;
+  @apply p-6 rounded-lg border border-border;
   background-color: hsl(var(--card));
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* Mörkt läge specifika card-inställningar */
+.dark .form-card {
+  background-color: #3e4655;
+  border-color: hsl(var(--border));
+}
+
+/* Input-stilar för konsekvent utseende */
+input.bg-background\/50,
+textarea.bg-background\/50 {
+  @apply bg-white dark:bg-[#393E47] dark:text-[#F5F5F5] border border-border dark:border-[#494E59];
+}
+
+/* Ta bort gradientbakgrund och förenkla stylen */
 .form-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
-/* Ljust läge gradient */
+/* Ljust läge gradient - tas bort */
 :root .form-card::before {
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.8), rgba(221, 227, 239, 0.5));
-  border-top: 1px solid rgba(255, 255, 255, 0.7);
-  border-left: 1px solid rgba(255, 255, 255, 0.7);
+  content: none;
 }
 
-/* Mörkt läge gradient */
+/* Mörkt läge gradient - tas bort */
 .dark .form-card::before {
-  background: linear-gradient(to bottom right, rgba(40, 50, 80, 0.2), rgba(20, 30, 50, 0.1));
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  content: none;
 }
 
-/* Innehåll i kortet ska visas över gradientbakgrunden */
+/* Innehåll i kortet ska visas normalt utan layering */
 .form-card > * {
   position: relative;
   z-index: 1;
+}
+
+input:focus,
+textarea:focus {
+  @apply ring-2 ring-blue-500 outline-none;
+}
+
+
+input:focus,
+textarea:focus,
+select:focus {
+  @apply ring-2 ring-blue-500 outline-none;
 }
