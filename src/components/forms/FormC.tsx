@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 're
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ArrowRight, Calculator, PieChart, ArrowDown, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
@@ -299,7 +299,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     };
     
     autoFetchFromOtherForms();
-  }, [currentUser, autoFetchStatus.hasFetched, handleChange]);
+  }, [currentUser, autoFetchStatus, handleChange]);
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {

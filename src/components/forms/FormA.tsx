@@ -326,7 +326,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     };
     
     autoFetchFromFormC();
-  }, [currentUser, autoFetchStatus.hasFetched, handleChange]);
+  }, [currentUser, autoFetchStatus, handleChange]);
 
   // Formatera nummer med tusentalsavgränsare
   const formatNumber = (num: number | undefined): string => {
