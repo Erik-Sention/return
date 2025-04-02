@@ -106,6 +106,14 @@
   main {
     @apply relative z-0;
   }
+  
+  /* Fokus för alla inputfält */
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: #2563eb; /* Blå border för fokuserad input */
+    box-shadow: 0 0 0 1px #2563eb;
+  }
 }
 
 /* Mörkt läge bakgrundsställningar */
@@ -155,14 +163,25 @@ textarea.bg-background\/50 {
   z-index: 1;
 }
 
-input:focus,
-textarea:focus {
-  @apply ring-2 ring-blue-500 outline-none;
-}
-
-
-input:focus,
+/* Åsidosätt fokus-stilar för alla input-element */
+input:focus, 
+input:focus-visible,
 textarea:focus,
-select:focus {
-  @apply ring-2 ring-blue-500 outline-none;
+textarea:focus-visible {
+  outline: none !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 1px #2563eb !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-offset-shadow: none !important;
+  --tw-ring-shadow: none !important;
+  ring: 0 !important;
 }
+
+/* Se till att ring-effekten från Tailwind inte visas */
+*:focus {
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
