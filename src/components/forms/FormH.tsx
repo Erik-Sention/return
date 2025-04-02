@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator, ArrowUpRightFromCircle, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, ClipboardList, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
