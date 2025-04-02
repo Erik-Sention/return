@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
-import { Calculator, Info, LineChart, ArrowDown } from 'lucide-react';
+import { Calculator, Info, LineChart, ArrowDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
@@ -55,7 +55,46 @@ export interface FormJRef {
 }
 
 // Definiera props-typen för komponenten
-type FormJProps = React.ComponentProps<'div'>;
+type FormJProps = React.ComponentProps<'div'> & {
+  onNavigateToForm?: (formName: string) => void;
+};
+
+// Lägg till AutoFilledField-komponenten för att visa automatiskt hämtad data
+const AutoFilledField = ({ 
+  value, 
+  sourceFormName,
+  onNavigate,
+  isEmpty = false
+}: { 
+  value: string; 
+  sourceFormName: string;
+  onNavigate: (formName: string) => void;
+  isEmpty?: boolean;
+}) => (
+  <div className="space-y-1">
+    <div className="p-2 bg-primary/5 border border-dashed border-primary/40 rounded-md flex justify-between shadow-sm items-center">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Calculator className="w-3 h-3" />
+        <span>Auto från Formulär {sourceFormName}</span>
+      </div>
+      {isEmpty ? (
+        <span className="text-amber-500 font-medium">Saknar värde i formulär {sourceFormName}</span>
+      ) : (
+        <span className="font-semibold">{value}</span>
+      )}
+    </div>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => onNavigate(sourceFormName)}
+      className="mt-1"
+    >
+      <ArrowRight className="h-4 w-4 mr-2" />
+      Gå till Formulär {sourceFormName}
+    </Button>
+  </div>
+);
 
 // Lägg till FetchValueButton-komponenten för att hämta värden från andra formulär
 const FetchValueButton = ({ 
@@ -166,6 +205,7 @@ const FORM_TYPE = 'J';
 
 const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const { currentUser } = useAuth();
+  const { onNavigateToForm } = props;
   const [formData, setFormData] = useState<FormJData>({
     organizationName: '',
     contactPerson: '',
@@ -191,6 +231,17 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const [transferMessage, setTransferMessage] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Lägg till state för att spåra automatisk datahämtning
+  const [autoFetchStatus, setAutoFetchStatus] = useState({
+    hasFetched: false,
+    costMentalHealthAlt1: false,     // J5: Total kostnad för psykisk ohälsa (alt 1)
+    interventionCostAlt1: false,     // J8: Total kostnad för insatsen (alt 1)
+    costMentalHealthAlt2: false,     // J12: Total kostnad för psykisk ohälsa (alt 2)
+    interventionCostAlt3: false,     // J15: Total kostnad för insatsen (alt 3)
+    costMentalHealthAlt3: false,     // J16: Total kostnad för psykisk ohälsa (alt 3)
+    errorMessage: null as string | null
+  });
+  
   const safeFormData = useMemo<FormJData>(() => {
     return calculateValues({ ...formData });
   }, [formData]);
@@ -205,6 +256,83 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       return () => clearTimeout(timer);
     }
   }, [transferMessage]);
+  
+  // Formatera nummer med tusentalsavgränsare
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return '';
+    return num.toLocaleString('sv-SE');
+  };
+  
+  // Hjälpfunktion för att navigera till specifikt formulär
+  const navigateToForm = (formName: string) => {
+    if (onNavigateToForm) {
+      onNavigateToForm(formName);
+    } else {
+      console.warn('Navigation callback is not provided to FormJ component');
+    }
+  };
+  
+  // Hantera ändringar i formuläret
+  const handleChange = useCallback(<K extends keyof FormJData>(field: K, value: FormJData[K]) => {
+    setFormData(prev => {
+      const updatedData = { ...prev, [field]: value };
+      return calculateValues(updatedData);
+    });
+  }, []);
+  
+  // Ny useEffect för att automatiskt hämta data från Formulär C och G vid inladdning
+  useEffect(() => {
+    const autoFetchFromForms = async () => {
+      if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
+      
+      try {
+        // Spara aktuell status för autoFetch
+        const currentStatus = { ...autoFetchStatus, hasFetched: true };
+        setAutoFetchStatus(currentStatus);
+        
+        // Hämta data från Form C (totalCostMentalHealth)
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+        
+        if (formCData && formCData.totalCostMentalHealth !== undefined) {
+          const roundedValue = Math.round(formCData.totalCostMentalHealth);
+          
+          // Uppdatera alla fält som använder totalCostMentalHealth
+          handleChange('totalCostMentalHealthAlt1', roundedValue);
+          handleChange('totalCostMentalHealthAlt2', roundedValue);
+          handleChange('totalCostMentalHealthAlt3', roundedValue);
+          
+          currentStatus.costMentalHealthAlt1 = true;
+          currentStatus.costMentalHealthAlt2 = true;
+          currentStatus.costMentalHealthAlt3 = true;
+        }
+        
+        // Hämta data från Form G (totalInterventionCost)
+        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+        
+        if (formGData && formGData.totalInterventionCost !== undefined) {
+          const roundedValue = Math.round(formGData.totalInterventionCost);
+          
+          // Uppdatera alla fält som använder totalInterventionCost
+          handleChange('totalInterventionCostAlt1', roundedValue);
+          handleChange('totalInterventionCostAlt3', roundedValue);
+          
+          currentStatus.interventionCostAlt1 = true;
+          currentStatus.interventionCostAlt3 = true;
+        }
+        
+        setAutoFetchStatus(currentStatus);
+      } catch (error) {
+        console.error('Fel vid automatisk hämtning från formulär:', error);
+        setAutoFetchStatus(prev => ({ 
+          ...prev, 
+          hasFetched: true, 
+          errorMessage: 'Kunde inte automatiskt hämta data från formulär C och G.' 
+        }));
+      }
+    };
+    
+    autoFetchFromForms();
+  }, [currentUser, autoFetchStatus, handleChange]);
   
   // Ladda data från Firebase vid komponentladdning
   useEffect(() => {
@@ -223,14 +351,6 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     
     loadData();
   }, [currentUser]);
-  
-  // Hantera ändringar i formuläret
-  const handleChange = <K extends keyof FormJData>(field: K, value: FormJData[K]) => {
-    setFormData(prev => {
-      const updatedData = { ...prev, [field]: value };
-      return calculateValues(updatedData);
-    });
-  };
   
   // Funktion för att hämta värden från andra formulär
   const fetchValueFromForm = async (formType: string, targetField: keyof FormJData, setMessage: React.Dispatch<React.SetStateAction<string | null>>) => {
@@ -351,6 +471,36 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Formulär J - Return on Investment (ROI)</h2>
       
+      {/* Visa meddelande om automatisk hämtning av data */}
+      {autoFetchStatus.hasFetched && (
+        autoFetchStatus.costMentalHealthAlt1 || 
+        autoFetchStatus.interventionCostAlt1 || 
+        autoFetchStatus.costMentalHealthAlt2 || 
+        autoFetchStatus.interventionCostAlt3 || 
+        autoFetchStatus.costMentalHealthAlt3
+      ) && (
+        <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+          <p className="font-medium">Följande data har automatiskt hämtats:</p>
+          <ul className="list-disc list-inside mt-1">
+            {(autoFetchStatus.costMentalHealthAlt1 || 
+              autoFetchStatus.costMentalHealthAlt2 || 
+              autoFetchStatus.costMentalHealthAlt3) && 
+              <li>Total kostnad för psykisk ohälsa från Formulär C</li>
+            }
+            {(autoFetchStatus.interventionCostAlt1 || 
+              autoFetchStatus.interventionCostAlt3) && 
+              <li>Total kostnad för insatsen från Formulär G</li>
+            }
+          </ul>
+        </div>
+      )}
+      
+      {autoFetchStatus.errorMessage && (
+        <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+          {autoFetchStatus.errorMessage}
+        </div>
+      )}
+      
       {/* Grundinformation */}
       <div className="form-card">
         <SectionHeader 
@@ -435,20 +585,31 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär C20" />
-              <FormattedNumberInput
-                value={safeFormData.totalCostMentalHealthAlt1}
-                onChange={(value) => handleChange('totalCostMentalHealthAlt1', value)}
-                allowDecimals={false}
-                placeholder="0"
-                className="bg-background/50"
-              />
-              <FetchValueButton 
-                onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt1', setTransferMessage)}
-                disabled={!currentUser?.uid}
-                formName="C"
-                message={transferMessage}
-              />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+              {autoFetchStatus.costMentalHealthAlt1 ? (
+                <AutoFilledField
+                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt1 || 0)} kr`}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!safeFormData.totalCostMentalHealthAlt1}
+                />
+              ) : (
+                <>
+                  <FormattedNumberInput
+                    value={safeFormData.totalCostMentalHealthAlt1}
+                    onChange={(value) => handleChange('totalCostMentalHealthAlt1', value)}
+                    allowDecimals={false}
+                    placeholder="0"
+                    className="bg-background/50"
+                  />
+                  <FetchValueButton 
+                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt1', setTransferMessage)}
+                    disabled={!currentUser?.uid}
+                    formName="C"
+                    message={transferMessage}
+                  />
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">J6: Minskad andel av personal med hög stressnivå</label>
@@ -475,20 +636,31 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           <div className="grid gap-6 md:grid-cols-1">
             <div className="space-y-2">
               <label className="text-sm font-medium">J8: Total kostnad för insatsen, kr</label>
-              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär G34" />
-              <FormattedNumberInput
-                value={safeFormData.totalInterventionCostAlt1}
-                onChange={(value) => handleChange('totalInterventionCostAlt1', value)}
-                allowDecimals={false}
-                placeholder="0"
-                className="bg-background/50"
-              />
-              <FetchValueButton 
-                onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt1', setTransferMessage)}
-                disabled={!currentUser?.uid}
-                formName="G"
-                message={transferMessage}
-              />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+              {autoFetchStatus.interventionCostAlt1 ? (
+                <AutoFilledField
+                  value={`${formatNumber(safeFormData.totalInterventionCostAlt1 || 0)} kr`}
+                  sourceFormName="G"
+                  onNavigate={navigateToForm}
+                  isEmpty={!safeFormData.totalInterventionCostAlt1}
+                />
+              ) : (
+                <>
+                  <FormattedNumberInput
+                    value={safeFormData.totalInterventionCostAlt1}
+                    onChange={(value) => handleChange('totalInterventionCostAlt1', value)}
+                    allowDecimals={false}
+                    placeholder="0"
+                    className="bg-background/50"
+                  />
+                  <FetchValueButton 
+                    onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt1', setTransferMessage)}
+                    disabled={!currentUser?.uid}
+                    formName="G"
+                    message={transferMessage}
+                  />
+                </>
+              )}
             </div>
           </div>
           
@@ -529,20 +701,31 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">J12: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär C20" />
-              <FormattedNumberInput
-                value={safeFormData.totalCostMentalHealthAlt2}
-                onChange={(value) => handleChange('totalCostMentalHealthAlt2', value)}
-                allowDecimals={false}
-                placeholder="0"
-                className="bg-background/50"
-              />
-              <FetchValueButton 
-                onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt2', setTransferMessage)}
-                disabled={!currentUser?.uid}
-                formName="C"
-                message={transferMessage}
-              />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+              {autoFetchStatus.costMentalHealthAlt2 ? (
+                <AutoFilledField
+                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt2 || 0)} kr`}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!safeFormData.totalCostMentalHealthAlt2}
+                />
+              ) : (
+                <>
+                  <FormattedNumberInput
+                    value={safeFormData.totalCostMentalHealthAlt2}
+                    onChange={(value) => handleChange('totalCostMentalHealthAlt2', value)}
+                    allowDecimals={false}
+                    placeholder="0"
+                    className="bg-background/50"
+                  />
+                  <FetchValueButton 
+                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt2', setTransferMessage)}
+                    disabled={!currentUser?.uid}
+                    formName="C"
+                    message={transferMessage}
+                  />
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">J13: Minskad andel av personal med hög stressnivå</label>
@@ -582,37 +765,59 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">J15: Total kostnad för insatsen, kr</label>
-              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär G34" />
-              <FormattedNumberInput
-                value={safeFormData.totalInterventionCostAlt3}
-                onChange={(value) => handleChange('totalInterventionCostAlt3', value)}
-                allowDecimals={false}
-                placeholder="0"
-                className="bg-background/50"
-              />
-              <FetchValueButton 
-                onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt3', setTransferMessage)}
-                disabled={!currentUser?.uid}
-                formName="G"
-                message={transferMessage}
-              />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+              {autoFetchStatus.interventionCostAlt3 ? (
+                <AutoFilledField
+                  value={`${formatNumber(safeFormData.totalInterventionCostAlt3 || 0)} kr`}
+                  sourceFormName="G"
+                  onNavigate={navigateToForm}
+                  isEmpty={!safeFormData.totalInterventionCostAlt3}
+                />
+              ) : (
+                <>
+                  <FormattedNumberInput
+                    value={safeFormData.totalInterventionCostAlt3}
+                    onChange={(value) => handleChange('totalInterventionCostAlt3', value)}
+                    allowDecimals={false}
+                    placeholder="0"
+                    className="bg-background/50"
+                  />
+                  <FetchValueButton 
+                    onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt3', setTransferMessage)}
+                    disabled={!currentUser?.uid}
+                    formName="G"
+                    message={transferMessage}
+                  />
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">J16: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält kan hämtas automatiskt från formulär C20" />
-              <FormattedNumberInput
-                value={safeFormData.totalCostMentalHealthAlt3}
-                onChange={(value) => handleChange('totalCostMentalHealthAlt3', value)}
-                allowDecimals={false}
-                placeholder="0"
-                className="bg-background/50"
-              />
-              <FetchValueButton 
-                onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt3', setTransferMessage)}
-                disabled={!currentUser?.uid}
-                formName="C"
-                message={transferMessage}
-              />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+              {autoFetchStatus.costMentalHealthAlt3 ? (
+                <AutoFilledField
+                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt3 || 0)} kr`}
+                  sourceFormName="C"
+                  onNavigate={navigateToForm}
+                  isEmpty={!safeFormData.totalCostMentalHealthAlt3}
+                />
+              ) : (
+                <>
+                  <FormattedNumberInput
+                    value={safeFormData.totalCostMentalHealthAlt3}
+                    onChange={(value) => handleChange('totalCostMentalHealthAlt3', value)}
+                    allowDecimals={false}
+                    placeholder="0"
+                    className="bg-background/50"
+                  />
+                  <FetchValueButton 
+                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt3', setTransferMessage)}
+                    disabled={!currentUser?.uid}
+                    formName="C"
+                    message={transferMessage}
+                  />
+                </>
+              )}
             </div>
           </div>
           

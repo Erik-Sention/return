@@ -159,7 +159,7 @@ useEffect(() => {
   };
   
   autoFetchFromFormC();
-}, [currentUser, autoFetchStatus.hasFetched, handleChange]);
+}, [currentUser, autoFetchStatus, handleChange]);
 ```
 
 ### 5. Hjälpfunktion för att formatera nummer
@@ -292,6 +292,249 @@ if (formDData && formDData.totalPersonnelCosts !== undefined) {
   updatedStatus.personnelCost = true;
 }
 ```
+
+## Implementering: Formulär C hämtar data från formulären D, E och F
+
+I detta exempel har vi implementerat att Formulär C (kostnadsberäkningar) automatiskt hämtar data från Formulär D (personalkostnader), Formulär E (kort sjukfrånvaro) och Formulär F (lång sjukfrånvaro).
+
+### 1. Definiera datainterfacen för källformulären
+
+```typescript
+// I FormC.tsx
+interface FormDData {
+  totalPersonnelCosts?: number;  // Hämtas till C4: Totala personalkostnader
+}
+
+interface FormEData {
+  totalSickLeaveCosts?: number;  // Hämtas till C11: Kostnad för kort sjukfrånvaro
+  shortSickLeavePercentage?: number; // Hämtas till C12: Andel av kort sjukfrånvaro pga psykisk ohälsa
+}
+
+interface FormFData {
+  totalLongSickLeaveCosts?: number;  // Hämtas till C14: Kostnad för lång sjukfrånvaro
+  longSickLeavePercentage?: number;  // Hämtas till C15: Andel av lång sjukfrånvaro pga psykisk ohälsa
+}
+```
+
+### 2. Implementera AutoFilledField-komponenten i FormC
+
+```typescript
+// I FormC.tsx
+const AutoFilledField = ({ 
+  value, 
+  sourceFormName,
+  onNavigate,
+  isEmpty = false
+}: { 
+  value: string; 
+  sourceFormName: string;
+  onNavigate: (formName: string) => void;
+  isEmpty?: boolean;
+}) => (
+  <div className="space-y-1">
+    <div className="p-2 bg-primary/5 border border-dashed border-primary/40 rounded-md flex justify-between shadow-sm items-center">
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <CalculatorIcon className="w-3 h-3" />
+        <span>Auto från Formulär {sourceFormName}</span>
+      </div>
+      {isEmpty ? (
+        <span className="text-amber-500 font-medium">Saknar värde i formulär {sourceFormName}</span>
+      ) : (
+        <span className="font-semibold">{value}</span>
+      )}
+    </div>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => onNavigate(sourceFormName)}
+      className="mt-1"
+    >
+      <ArrowRight className="h-4 w-4 mr-2" />
+      Gå till Formulär {sourceFormName}
+    </Button>
+  </div>
+);
+```
+
+### 3. Lägg till state för att spåra automatisk datahämtning i FormC
+
+```typescript
+// I FormC.tsx
+const [autoFetchStatus, setAutoFetchStatus] = useState({
+  hasFetched: false,             // Om datahämtning har körts
+  personnelCosts: false,         // Om personalkostnader har hämtats från FormD
+  shortSickLeaveCosts: false,    // Om korttidssjukfrånvarokostnader har hämtats från FormE
+  shortSickLeavePercent: false,  // Om kort sjukfrånvaroprocent har hämtats från FormE
+  longSickLeaveCosts: false,     // Om långtidssjukfrånvarokostnader har hämtats från FormF
+  longSickLeavePercent: false,   // Om lång sjukfrånvaroprocent har hämtats från FormF
+  errorMessage: null as string | null
+});
+```
+
+### 4. Uppdatera FormCProps för navigering
+
+```typescript
+// I FormC.tsx
+type FormCProps = React.ComponentProps<'div'> & {
+  onNavigateToForm?: (formName: string) => void;
+};
+
+// Hjälpfunktion för navigering
+const navigateToForm = (formName: string) => {
+  if (onNavigateToForm) {
+    onNavigateToForm(formName);
+  } else {
+    console.warn('Navigation callback is not provided to FormC component');
+  }
+};
+```
+
+### 5. Implementera automatisk datahämtning vid inladdning av FormC
+
+```typescript
+// I FormC.tsx
+useEffect(() => {
+  const autoFetchFromOtherForms = async () => {
+    if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
+    
+    try {
+      // Spara aktuell status för autoFetch
+      const currentStatus = { ...autoFetchStatus, hasFetched: true };
+      setAutoFetchStatus(currentStatus);
+      
+      // Hämta data från FormD
+      const formDData = await loadFormData<FormDData>(currentUser.uid, 'D');
+      if (formDData) {
+        // Hämta totalPersonnelCosts om det finns
+        if (formDData.totalPersonnelCosts !== undefined) {
+          const roundedValue = Math.round(formDData.totalPersonnelCosts);
+          handleChange('totalPersonnelCosts', roundedValue);
+          currentStatus.personnelCosts = true;
+        }
+      }
+      
+      // Hämta data från FormE
+      const formEData = await loadFormData<FormEData>(currentUser.uid, 'E');
+      if (formEData) {
+        // Hämta totalSickLeaveCosts om det finns
+        if (formEData.totalSickLeaveCosts !== undefined) {
+          const roundedValue = Math.round(formEData.totalSickLeaveCosts);
+          handleChange('costShortSickLeave', roundedValue);
+          currentStatus.shortSickLeaveCosts = true;
+        }
+        
+        // Hämta procentsats för kort sjukfrånvaro om det finns
+        if (formEData.shortSickLeavePercentage !== undefined) {
+          handleChange('percentShortSickLeaveMentalHealth', formEData.shortSickLeavePercentage);
+          currentStatus.shortSickLeavePercent = true;
+        }
+      }
+      
+      // Hämta data från FormF
+      const formFData = await loadFormData<FormFData>(currentUser.uid, 'F');
+      if (formFData) {
+        // Hämta totalLongSickLeaveCosts om det finns
+        if (formFData.totalLongSickLeaveCosts !== undefined) {
+          const roundedValue = Math.round(formFData.totalLongSickLeaveCosts);
+          handleChange('costLongSickLeave', roundedValue);
+          currentStatus.longSickLeaveCosts = true;
+        }
+        
+        // Hämta procentsats för lång sjukfrånvaro om det finns
+        if (formFData.longSickLeavePercentage !== undefined) {
+          handleChange('percentLongSickLeaveMentalHealth', formFData.longSickLeavePercentage);
+          currentStatus.longSickLeavePercent = true;
+        }
+      }
+      
+      setAutoFetchStatus(currentStatus);
+    } catch (error) {
+      console.error('Fel vid automatisk hämtning från andra formulär:', error);
+      setAutoFetchStatus(prev => ({ 
+        ...prev, 
+        hasFetched: true, 
+        errorMessage: 'Kunde inte automatiskt hämta data från formulär D, E och F.' 
+      }));
+    }
+  };
+  
+  autoFetchFromOtherForms();
+}, [currentUser, autoFetchStatus, handleChange]);
+```
+
+### 6. Visa information om automatiskt hämtad data i FormC
+
+```tsx
+{/* I FormC.tsx */}
+{autoFetchStatus.hasFetched && (autoFetchStatus.personnelCosts || 
+                              autoFetchStatus.shortSickLeaveCosts || 
+                              autoFetchStatus.shortSickLeavePercent || 
+                              autoFetchStatus.longSickLeaveCosts || 
+                              autoFetchStatus.longSickLeavePercent) && (
+  <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+    <p className="font-medium">Följande data har automatiskt hämtats:</p>
+    <ul className="list-disc list-inside mt-1">
+      {autoFetchStatus.personnelCosts && <li>Totala personalkostnader från Formulär D</li>}
+      {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro från Formulär E</li>}
+      {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro från Formulär E</li>}
+      {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro från Formulär F</li>}
+      {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro från Formulär F</li>}
+    </ul>
+  </div>
+)}
+
+{autoFetchStatus.errorMessage && (
+  <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+    {autoFetchStatus.errorMessage}
+  </div>
+)}
+```
+
+### 7. Implementera fält med AutoFilledField i FormC
+
+```tsx
+{/* Exempel för totalPersonnelCosts (C4) */}
+<div className="space-y-2">
+  <label className="text-sm font-medium">
+    C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
+  </label>
+  <InfoLabel text="Detta fält hämtas automatiskt från formulär D9" />
+  <AutoFilledField
+    value={`${formatNumber(formData.totalPersonnelCosts || 0)} kr`}
+    sourceFormName="D"
+    onNavigate={navigateToForm}
+    isEmpty={!autoFetchStatus.personnelCosts || !formData.totalPersonnelCosts}
+  />
+</div>
+
+{/* Exempel för percentShortSickLeaveMentalHealth (C12) */}
+<div className="space-y-2">
+  <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+  <InfoLabel text="Standardvärde är 6% baserat på forskning..." />
+  <AutoFilledField
+    value={`${formatNumber(formData.percentShortSickLeaveMentalHealth || 0)} %`}
+    sourceFormName="E"
+    onNavigate={navigateToForm}
+    isEmpty={!autoFetchStatus.shortSickLeavePercent || !formData.percentShortSickLeaveMentalHealth}
+  />
+</div>
+```
+
+### 8. Uppdatera ROIPage.tsx för att inkludera navigeringsfunktion
+
+```tsx
+// I ROIPage.tsx
+{currentForm === 'C' && <FormC 
+  ref={formCRef} 
+  onNavigateToForm={(formName) => {
+    // Navigera till det specifika formuläret
+    setCurrentForm(formName);
+  }}
+/>}
+```
+
+Genom att följa detta mönster kan du implementera automatisk datahämtning mellan alla formulär i applikationen, vilket ger en smidig användarupplevelse och minskar risken för felinmatning.
 
 ## Slutsats
 

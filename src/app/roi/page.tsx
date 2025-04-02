@@ -170,7 +170,13 @@ export default function ROIPage() {
           {currentForm === 'G' && <FormG ref={formGRef} />}
           {currentForm === 'H' && <FormH ref={formHRef} />}
           {currentForm === 'I' && <FormI ref={formIRef} />}
-          {currentForm === 'J' && <FormJ ref={formJRef} />}
+          {currentForm === 'J' && <FormJ 
+            ref={formJRef} 
+            onNavigateToForm={(formName) => {
+              // Navigera till det specifika formuläret
+              setCurrentForm(formName);
+            }}
+          />}
         </div>
 
         <div className="flex justify-between">
