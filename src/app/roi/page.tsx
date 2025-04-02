@@ -157,7 +157,13 @@ export default function ROIPage() {
             }} 
           />}
           {currentForm === 'B' && <FormB ref={formBRef} />}
-          {currentForm === 'C' && <FormC ref={formCRef} />}
+          {currentForm === 'C' && <FormC 
+            ref={formCRef} 
+            onNavigateToForm={(formName) => {
+              // Navigera till det specifika formuläret
+              setCurrentForm(formName);
+            }}
+          />}
           {currentForm === 'D' && <FormD ref={formDRef} />}
           {currentForm === 'E' && <FormE ref={formERef} />}
           {currentForm === 'F' && <FormF ref={formFRef} />}
