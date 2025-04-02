@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Users, Coins, Calendar } from 'lucide-react';
+import { Save, Info, Calculator, Users, Coins, Calendar, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -47,7 +47,11 @@ const ReadOnlyField = ({
   <div className="space-y-1">
     <label className="text-sm font-medium">{label}</label>
     <InfoLabel text={info} />
-    <div className={`p-2 ${highlight ? 'bg-primary/5 border-primary/20' : 'bg-background'} border rounded-md flex justify-end shadow-sm`}>
+    <div className={`p-2 ${highlight ? 'bg-primary/5 border-primary/20' : 'bg-background'} border border-dashed border-muted-foreground/40 rounded-md flex justify-between shadow-sm`}>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <CalculatorIcon className="w-3 h-3" />
+        <span>Auto</span>
+      </div>
       <span className={`font-semibold ${highlight ? 'text-primary' : ''}`}>{value}</span>
     </div>
   </div>
