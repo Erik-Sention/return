@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
+import { Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { saveFormData, loadFormData } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Textarea } from '../ui/textarea';
 import { getInterventionColor } from '@/lib/utils/interventionColors';
@@ -654,24 +654,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Säkerställ att e-parameter har korrekt typ
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    handleChange(name as keyof FormHData, value);
-  };
-
-  // Rensa fetchMessage efter en viss tid
-  useEffect(() => {
-    if (fetchMessageFormG) {
-      const timer = setTimeout(() => {
-        setFetchMessageFormG(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageFormG]);
-
-  // Funktion för att hämta insats från formulär G
   const fetchInterventionFromFormG = async () => {
     if (!currentUser?.uid) {
       console.error('Du måste vara inloggad för att hämta data');
@@ -872,10 +854,16 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     }
   };
 
-  // Hantera organisationsdatahämtning
-  const handleOrgDataLoaded = (data: { organizationName: string; contactPerson: string; } | null) => {
-    // ... existing code ...
-  };
+  // Rensa fetchMessage efter en viss tid
+  useEffect(() => {
+    if (fetchMessageFormG) {
+      const timer = setTimeout(() => {
+        setFetchMessageFormG(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetchMessageFormG]);
 
   return (
     <div className="space-y-6">
