@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { loadOrganizationInfoFromFormD } from '@/lib/firebase/sharedFields';
 
@@ -20,7 +20,6 @@ export const OrganizationHeader = ({
     organizationName: string;
     contactPerson: string;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
   // Referens för att spåra om vi redan har anropat callbacks
   const callbacksCalledRef = useRef({
@@ -55,9 +54,6 @@ export const OrganizationHeader = ({
     const fetchOrganizationInfo = async () => {
       if (currentUser?.uid) {
         try {
-          // Uppdatera laddningstillstånd
-          setIsLoading(true);
-          
           // Anropa bara onLoadingChange en gång per rendering-cykel
           if (!callbacksCalledRef.current.loadingChangeSet && callbacksRef.current.onLoadingChange) {
             callbacksRef.current.onLoadingChange(true);
@@ -83,18 +79,12 @@ export const OrganizationHeader = ({
             callbacksCalledRef.current.dataLoaded = true;
           }
         } finally {
-          // Uppdatera laddningstillstånd
-          setIsLoading(false);
-          
           // Anropa bara onLoadingChange en gång per rendering-cykel
           if (callbacksRef.current.onLoadingChange) {
             callbacksRef.current.onLoadingChange(false);
           }
         }
       } else {
-        // Uppdatera laddningstillstånd
-        setIsLoading(false);
-        
         // Anropa bara callbacks en gång per rendering-cykel
         if (callbacksRef.current.onLoadingChange) {
           callbacksRef.current.onLoadingChange(false);

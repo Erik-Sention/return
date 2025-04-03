@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, DollarSign, PencilLine, Trash2, Target, Edit, CheckCircle, XCircle, Circle, FileText } from 'lucide-react';
+import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';

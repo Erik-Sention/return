@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, Ruler, AlertCircle, FileText } from 'lucide-react';
+import { Save, Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
 import { Textarea } from '../ui/textarea';
-import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
-import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
-import { SharedFields } from '@/lib/firebase/sharedFields';
 import { getInterventionColor } from '@/lib/utils/interventionColors';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
@@ -450,9 +446,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     };
   }, [formData]);
   
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [fetchMessageFormG, setFetchMessageFormG] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isContentReady, setIsContentReady] = useState(false);
@@ -466,7 +459,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       if (currentUser?.uid) {
         try {
           setIsDataLoading(true);
-          setError(null);
           const data = await loadFormData<FormHData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
@@ -474,7 +466,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
-          setError('Kunde inte ladda data från databasen.');
         } finally {
           setIsDataLoading(false);
         }
@@ -560,13 +551,11 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       const dataToSave = prepareDataForSave(safeFormData);
       
       // Skapa autosave-timer
-      autosaveTimerRef.current = setupFormAutosave(
-        currentUser.uid,
-        FORM_TYPE,
-        dataToSave,
-        setIsSaving,
-        setSaveMessage
-      );
+      autosaveTimerRef.current = setTimeout(() => {
+        saveFormData(currentUser.uid, FORM_TYPE, dataToSave)
+          .then(() => console.log('Autosparat'))
+          .catch(err => console.error('Fel vid autosparande:', err));
+      }, 2000);
     }
 
     // Rensa timer vid avmontering
@@ -620,37 +609,22 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
 
   const handleSave = async () => {
     if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att spara data');
+      console.error('Du måste vara inloggad för att spara data');
       return;
     }
 
     try {
-      setIsSaving(true);
-      setSaveMessage(null);
-      setError(null);
-      
-      // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
       
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
-      setSaveMessage('Formuläret har sparats!');
-      setTimeout(() => setSaveMessage(null), 3000);
+      console.log('Formuläret har sparats!');
     } catch (error) {
       console.error('Error saving form data:', error);
-      setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
+      console.error('Ett fel uppstod när formuläret skulle sparas till databasen.');
       throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
-    } finally {
-      setIsSaving(false);
     }
   };
-
-  // Lägga till en ny insats
-  // Denna funktion används inte för närvarande, insatser läggs endast till via hämtning från Formulär G
-  // const addIntervention = () => {
-  //   // Nya insatser kan bara läggas till via hämtning från Formulär G
-  //   console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
-  // };
 
   // Uppdatera en insats
   const updateIntervention = (updatedIntervention: Intervention) => {
@@ -700,12 +674,11 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   // Funktion för att hämta insats från formulär G
   const fetchInterventionFromFormG = async () => {
     if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att hämta data');
+      console.error('Du måste vara inloggad för att hämta data');
       return;
     }
 
     try {
-      setError(null);
       const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
       
       if (!formGData || !formGData.interventions || formGData.interventions.length === 0) {
@@ -895,8 +868,13 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       }
     } catch (error) {
       console.error('Error fetching data from Form G:', error);
-      setError('Kunde inte hämta data från Formulär G.');
+      console.error('Kunde inte hämta data från Formulär G.');
     }
+  };
+
+  // Hantera organisationsdatahämtning
+  const handleOrgDataLoaded = (data: { organizationName: string; contactPerson: string; } | null) => {
+    // ... existing code ...
   };
 
   return (

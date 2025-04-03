@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
-import { Calculator, Info, LineChart, ArrowDown, ArrowRight, Save, PieChart, ArrowDownRight, TrendingUp, FileText } from 'lucide-react';
+import { Calculator, Info, LineChart, ArrowDown, ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
