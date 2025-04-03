@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, Clock, Users, Building, PlusCircle, Trash, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -10,6 +10,8 @@ import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
 import { getInterventionColor } from '@/lib/utils/interventionColors';
+import { OrganizationHeader } from '@/components/ui/organization-header';
+import { FadeIn } from '@/components/ui/fade-in';
 
 // Typer för Form G data
 interface FormGInterventionCost {
@@ -579,6 +581,10 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const [error, setError] = useState<string | null>(null);
   const [fetchMessageFormG, setFetchMessageFormG] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
 
   // Hjälpfunktion för att skapa en tom kostnadskategori
   const createEmptyCostCategory = (): CostCategory => ({
@@ -618,48 +624,39 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       .join('|');
   }, [safeFormData.internalCosts]);
 
-  // Ladda data från Firebase vid montering
+  // Load data from Firebase on mount
   useEffect(() => {
     const loadFromFirebase = async () => {
       if (currentUser?.uid) {
         try {
+          setIsDataLoading(true);
           setError(null);
           const data = await loadFormData<FormIData>(currentUser.uid, FORM_TYPE);
           if (data) {
-            // Säkerställ att data har rätt struktur
-            const sanitizedCosts = (data.internalCosts || []).map(cost => ({
-              ...cost,
-              staff: cost.staff || createEmptyCostCategory(),
-              managers: cost.managers || createEmptyCostCategory(),
-              administration: cost.administration || createEmptyCostCategory(),
-              totalHours: cost.totalHours || 0,
-              totalCost: cost.totalCost || 0
-            }));
-            
-            // Beräkna den totala interna kostnaden baserat på insatserna
-            const calculatedTotalInternalCost = sanitizedCosts.reduce(
-              (sum, cost) => sum + cost.totalCost, 
-              0
-            );
-            
-            const sanitizedData: FormIData = {
-              ...data,
-              internalCosts: sanitizedCosts,
-              // Använd det beräknade värdet istället för värdet i databasen
-              totalInternalCost: calculatedTotalInternalCost
-            };
-            
-            setFormData(sanitizedData);
+            console.log('Loaded form data:', data);
+            setFormData(data);
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
+      } else {
+        console.log('No user logged in, cannot load data from Firebase');
+        setIsDataLoading(false);
       }
     };
 
     loadFromFirebase();
   }, [currentUser]);
+  
+  // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
+  useEffect(() => {
+    if (!isDataLoading && !isOrgInfoLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading, isOrgInfoLoading]);
 
   // Uppdatera totalsummor när en kostnad ändras
   useEffect(() => {
@@ -966,202 +963,171 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     }
   };
 
-  // Gruppera insatser efter insatsnamn för att skapa flikkategorierna
-  // Används inte för närvarande
-  // const groupedInterventions = useMemo(() => {
-  //   if (safeFormData.internalCosts.length === 0) return new Map<string, InternalCost[]>();
-  //   
-  //   const grouped = new Map<string, InternalCost[]>();
-  //   
-  //   safeFormData.internalCosts.forEach(cost => {
-  //     if (!grouped.has(cost.interventionName)) {
-  //       grouped.set(cost.interventionName, []);
-  //     }
-  //     
-  //     const costs = grouped.get(cost.interventionName) || [];
-  //     costs.push(cost);
-  //     grouped.set(cost.interventionName, costs);
-  //   });
-  //   
-  //   return grouped;
-  // }, [safeFormData.internalCosts]);
-
-  // Lista med alla unika insatsnamn (för flikkategorier)
-  // Används inte för närvarande
-  // const interventionCategories = useMemo(() => {
-  //   return Array.from(groupedInterventions.keys());
-  // }, [groupedInterventions]);
-
-  // Funktion för att lägga till en ny intern kostnad manuellt
-  // Används inte för närvarande, insatser läggs endast till via hämtning från Formulär G
-  // const addInternalCost = () => {
-  //   // Nya insatser kan bara läggas till via hämtning från Formulär G
-  //   // Denna funktion behålls för eventuell framtida användning
-  //   console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
-  // };
-
   return (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <FileBarChart2 className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">I – Interna kostnader för insats</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
-            {error}
-          </div>
-        )}
-        
-        {/* Grundinformation */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Grundinformation" 
-            icon={<Info className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">I1: Organisationens namn</label>
-              <InfoLabel text="Namnet på din organisation" />
-              <Input
-                name="organizationName"
-                value={safeFormData.organizationName || ''}
-                onChange={handleInputChange}
-                placeholder="Ange organisationens namn"
-                className="bg-white dark:bg-slate-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">I2: Kontaktperson</label>
-              <InfoLabel text="Namn på kontaktperson" />
-              <Input
-                name="contactPerson"
-                value={safeFormData.contactPerson || ''}
-                onChange={handleInputChange}
-                placeholder="Ange kontaktperson"
-                className="bg-white dark:bg-slate-800"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">I3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
-              <Input
-                name="timePeriod"
-                value={safeFormData.timePeriod || ''}
-                onChange={handleInputChange}
-                placeholder="Ange tidsperiod"
-                className="bg-white dark:bg-slate-800"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <SharedFieldsButton 
-              userId={currentUser?.uid}
-              onFieldsLoaded={(fields: SharedFields) => {
-                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-              }}
-              disabled={!currentUser?.uid}
-            />
-          </div>
-        </div>
-        
-        {/* Interna kostnader */}
-        <div className="form-card">
-          <div className="flex justify-between items-center mb-4">
-            <SectionHeader 
-              title="Interna kostnader" 
-              icon={<Calculator className="h-5 w-5 text-primary" />}
-            />
-            <div className="flex items-center gap-2">
-              <FetchFromFormGButton 
-                onClick={fetchInterventionsFromFormG}
-                disabled={!currentUser?.uid}
-                message={fetchMessageFormG}
-              />
-            </div>
-          </div>
-          
-          {safeFormData.internalCosts.length === 0 ? (
-            <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
-              <p className="text-muted-foreground mb-4">
-                Det finns inga interna kostnader att visa. Hämta insatser från Formulär G för att komma igång.
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button 
-                  type="button" 
-                  variant="default" 
-                  className="gap-1"
-                  onClick={fetchInterventionsFromFormG}
-                  disabled={!currentUser?.uid}
-                >
-                  <Download className="h-4 w-4" />
-                  Hämta från Formulär G
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Lista av alla interna kostnader utan flikar */}
-              {safeFormData.internalCosts.map((internalCost, index) => (
-                <InternalCostCard
-                  key={internalCost.id}
-                  internalCost={internalCost}
-                  index={index}
-                  onChange={updateInternalCost}
-                  onRemove={() => removeInternalCost(internalCost.id)}
-                  onMoveUp={() => moveInternalCostUp(index)}
-                  onMoveDown={() => moveInternalCostDown(index)}
-                  isFirst={index === 0}
-                  isLast={index === safeFormData.internalCosts.length - 1}
-                />
-              ))}
-              
-              {/* Total summering för alla insatser */}
-              <div className="form-card mt-6">
-                <SectionHeader 
-                  title="Summering" 
-                  icon={<Calculator className="h-5 w-5 text-primary" />}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ReadOnlyField 
-                    label="Total tidsåtgång för alla insatser"
-                    value={`${safeFormData.internalCosts.reduce((sum, cost) => sum + cost.totalHours, 0).toFixed(2)} timmar`}
-                    info="Summa av alla insatsers tidsåtgång"
-                  />
-                  <ReadOnlyField 
-                    label="Total intern kostnad"
-                    value={safeFormData.totalInternalCost}
-                    info="Summa av alla interna kostnader"
-                    highlight={true}
-                  />
+    <div className="space-y-6">
+      {/* Dold OrganizationHeader för att ladda data */}
+      <div className="sr-only">
+        <OrganizationHeader 
+          onLoadingChange={setIsOrgInfoLoading} 
+          onDataLoaded={setOrgData}
+        />
+      </div>
+      
+      <FadeIn show={isContentReady} duration={500}>
+        <div className="space-y-4">
+          {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
+          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+            <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+                  <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+                  <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
                 </div>
               </div>
             </div>
           )}
+          
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">I – Sammanfattning</h2>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Sparar...' : 'Spara formulär'}
+              </Button>
+            </div>
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          {/* Delinsats */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Delinsats" 
+              icon={<Info className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">I3: Delinsats</label>
+              <InfoLabel text="Ange vilken delinsats denna interna kostnad gäller" />
+              <Input
+                name="timePeriod"
+                value={safeFormData.timePeriod || ''}
+                onChange={handleInputChange}
+                placeholder="Ange delinsats"
+                className="bg-white dark:bg-slate-800"
+              />
+            </div>
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
+                disabled={!currentUser?.uid}
+              />
+            </div>
+          </div>
+          
+          {/* Interna kostnader */}
+          <div className="form-card">
+            <div className="flex justify-between items-center mb-4">
+              <SectionHeader 
+                title="Interna kostnader" 
+                icon={<Calculator className="h-5 w-5 text-primary" />}
+              />
+              <div className="flex items-center gap-2">
+                <FetchFromFormGButton 
+                  onClick={fetchInterventionsFromFormG}
+                  disabled={!currentUser?.uid}
+                  message={fetchMessageFormG}
+                />
+              </div>
+            </div>
+            
+            {safeFormData.internalCosts.length === 0 ? (
+              <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
+                <p className="text-muted-foreground mb-4">
+                  Det finns inga interna kostnader att visa. Hämta insatser från Formulär G för att komma igång.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button 
+                    type="button" 
+                    variant="default" 
+                    className="gap-1"
+                    onClick={fetchInterventionsFromFormG}
+                    disabled={!currentUser?.uid}
+                  >
+                    <Download className="h-4 w-4" />
+                    Hämta från Formulär G
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Lista av alla interna kostnader utan flikar */}
+                {safeFormData.internalCosts.map((internalCost, index) => (
+                  <InternalCostCard
+                    key={internalCost.id}
+                    internalCost={internalCost}
+                    index={index}
+                    onChange={updateInternalCost}
+                    onRemove={() => removeInternalCost(internalCost.id)}
+                    onMoveUp={() => moveInternalCostUp(index)}
+                    onMoveDown={() => moveInternalCostDown(index)}
+                    isFirst={index === 0}
+                    isLast={index === safeFormData.internalCosts.length - 1}
+                  />
+                ))}
+                
+                {/* Total summering för alla insatser */}
+                <div className="form-card mt-6">
+                  <SectionHeader 
+                    title="Summering" 
+                    icon={<Calculator className="h-5 w-5 text-primary" />}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ReadOnlyField 
+                      label="Total tidsåtgång för alla insatser"
+                      value={`${safeFormData.internalCosts.reduce((sum, cost) => sum + cost.totalHours, 0).toFixed(2)} timmar`}
+                      info="Summa av alla insatsers tidsåtgång"
+                    />
+                    <ReadOnlyField 
+                      label="Total intern kostnad"
+                      value={safeFormData.totalInternalCost}
+                      info="Summa av alla interna kostnader"
+                      highlight={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });

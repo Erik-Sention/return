@@ -8,6 +8,16 @@ interface FormTimelineProps {
 
 const formInfos: { id: string; title: string; description: string }[] = [
   { 
+    id: 'D', 
+    title: 'Formulär D', 
+    description: 'Personalkostnader & sjukfrånvaro' 
+  },
+  { 
+    id: 'C', 
+    title: 'Formulär C', 
+    description: 'Ekonomiska konsekvenser' 
+  },
+  { 
     id: 'A', 
     title: 'Formulär A', 
     description: 'Verksamhetsanalys' 
@@ -16,16 +26,6 @@ const formInfos: { id: string; title: string; description: string }[] = [
     id: 'B', 
     title: 'Formulär B', 
     description: 'Insatsanalys' 
-  },
-  { 
-    id: 'C', 
-    title: 'Formulär C', 
-    description: 'Ekonomiska konsekvenser' 
-  },
-  { 
-    id: 'D', 
-    title: 'Formulär D', 
-    description: 'Personalkostnader & sjukfrånvaro' 
   },
   { 
     id: 'G', 

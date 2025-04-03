@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Target, FileText, Calendar, Users, Lightbulb, ListChecks } from 'lucide-react';
@@ -7,6 +7,8 @@ import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/fo
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { OrganizationHeader } from '@/components/ui/organization-header';
+import { FadeIn } from '@/components/ui/fade-in';
 
 interface FormBData {
   organizationName: string;
@@ -76,12 +78,17 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
 
   // Load data from Firebase on mount
   useEffect(() => {
     const loadFromFirebase = async () => {
       if (currentUser?.uid) {
         try {
+          setIsDataLoading(true);
           setError(null);
           const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE);
           if (data) {
@@ -91,14 +98,29 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
       } else {
         console.log('No user logged in, cannot load data from Firebase');
+        setIsDataLoading(false);
       }
     };
 
     loadFromFirebase();
   }, [currentUser]);
+  
+  // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
+  useEffect(() => {
+    if (!isDataLoading && !isOrgInfoLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading, isOrgInfoLoading]);
+  
+  // Callback för när organisationsdata har laddats
+  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string } | null) => {
+    setOrgData(data);
+  }, []);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -182,68 +204,72 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <FileText className="h-5 w-5 text-primary" />
+    <div className="space-y-6">
+      {/* Dold OrganizationHeader för att ladda data */}
+      <div className="sr-only">
+        <OrganizationHeader 
+          onLoadingChange={setIsOrgInfoLoading} 
+          onDataLoaded={handleOrgDataLoaded}
+        />
+      </div>
+      
+      <FadeIn show={isContentReady} duration={500}>
+        <div className="space-y-4">
+          {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
+          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+            <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+                  <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+                  <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold">B – Verksamhetsanalys – insats</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
-            {error}
-          </div>
-        )}
-        
-        {/* B1, B2, B3 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Grundinformation" 
-            icon={<FileText className="h-5 w-5 text-primary" />}
-          />
+          )}
           
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">B1: Organisationens namn</label>
-              <InfoLabel text="Namnet på din organisation" />
-              <Input
-                value={formData.organizationName}
-                onChange={(e) => handleChange('organizationName', e.target.value)}
-                placeholder="Ange organisationens namn"
-                className="bg-background/50"
-              />
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">B – Planering av insatser</h2>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">B2: Kontaktperson</label>
-              <InfoLabel text="Namn på kontaktperson" />
-              <Input
-                value={formData.contactPerson}
-                onChange={(e) => handleChange('contactPerson', e.target.value)}
-                placeholder="Ange kontaktperson"
-                className="bg-background/50"
-              />
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Sparar...' : 'Spara formulär'}
+              </Button>
             </div>
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          {/* B3 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Insats" 
+              icon={<FileText className="h-5 w-5 text-primary" />}
+            />
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">B3: Insatsnamn</label>
+              <label className="text-sm font-medium">B1: Insatsnamn</label>
               <InfoLabel text="Ange namnet på den insats som ska analyseras" />
               <Input
                 value={formData.initiativeName}
@@ -252,192 +278,192 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
                 className="bg-background/50"
               />
             </div>
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
+                disabled={!currentUser?.uid}
+              />
+            </div>
           </div>
-          
-          <div className="mt-4">
-            <SharedFieldsButton 
-              userId={currentUser?.uid}
-              onFieldsLoaded={(fields: SharedFields) => {
-                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-              }}
-              disabled={!currentUser?.uid}
-            />
-          </div>
-        </div>
 
-        {/* B4 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Vilka insatser avses?" 
-            icon={<Target className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.initiativeDescription}
-              onChange={(e) => handleChange('initiativeDescription', e.target.value)}
-              placeholder="Beskriv insatserna..."
-              style={{ userSelect: 'text' }}
+          {/* B4 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Vilka insatser avses?" 
+              icon={<Target className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.initiativeDescription}
+                onChange={(e) => handleChange('initiativeDescription', e.target.value)}
+                placeholder="Beskriv insatserna..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B5 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Syfte med insatserna" 
-            icon={<Lightbulb className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.purpose}
-              onChange={(e) => handleChange('purpose', e.target.value)}
-              placeholder="Beskriv syftet..."
-              style={{ userSelect: 'text' }}
+          {/* B5 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Syfte med insatserna" 
+              icon={<Lightbulb className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.purpose}
+                onChange={(e) => handleChange('purpose', e.target.value)}
+                placeholder="Beskriv syftet..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B6 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Stöd för verksamhetens övergripande mål" 
-            icon={<Target className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.supportForGoals}
-              onChange={(e) => handleChange('supportForGoals', e.target.value)}
-              placeholder="Beskriv vilka verksamhetsmål som stöds..."
-              style={{ userSelect: 'text' }}
+          {/* B6 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Stöd för verksamhetens övergripande mål" 
+              icon={<Target className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.supportForGoals}
+                onChange={(e) => handleChange('supportForGoals', e.target.value)}
+                placeholder="Beskriv vilka verksamhetsmål som stöds..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B7 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Alternativa ansatser" 
-            icon={<Lightbulb className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv de alternativ som analyserats, och motivera vald ansats" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.alternativeApproaches}
-              onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
-              placeholder="Beskriv alternativa ansatser..."
-              style={{ userSelect: 'text' }}
+          {/* B7 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Alternativa ansatser" 
+              icon={<Lightbulb className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv de alternativ som analyserats, och motivera vald ansats" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.alternativeApproaches}
+                onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
+                placeholder="Beskriv alternativa ansatser..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B8 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Mål med insatserna" 
-            icon={<Target className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.goals}
-              onChange={(e) => handleChange('goals', e.target.value)}
-              placeholder="Beskriv målen..."
-              style={{ userSelect: 'text' }}
+          {/* B8 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Mål med insatserna" 
+              icon={<Target className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.goals}
+                onChange={(e) => handleChange('goals', e.target.value)}
+                placeholder="Beskriv målen..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B9 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Målgrupp" 
-            icon={<Users className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.targetGroup}
-              onChange={(e) => handleChange('targetGroup', e.target.value)}
-              placeholder="Beskriv målgruppen..."
-              style={{ userSelect: 'text' }}
+          {/* B9 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Målgrupp" 
+              icon={<Users className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.targetGroup}
+                onChange={(e) => handleChange('targetGroup', e.target.value)}
+                placeholder="Beskriv målgruppen..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B10 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="När nås förväntad effekt av insatsen?" 
-            icon={<Calendar className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter" />
-            <textarea
-              className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-              value={formData.expectedEffect}
-              onChange={(e) => handleChange('expectedEffect', e.target.value)}
-              placeholder="Beskriv tidshorisont för förväntad effekt..."
-              style={{ userSelect: 'text' }}
+          {/* B10 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="När nås förväntad effekt av insatsen?" 
+              icon={<Calendar className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={formData.expectedEffect}
+                onChange={(e) => handleChange('expectedEffect', e.target.value)}
+                placeholder="Beskriv tidshorisont för förväntad effekt..."
+                style={{ userSelect: 'text' }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* B11 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Genomförandeplan" 
-            icon={<ListChecks className="h-5 w-5 text-primary" />}
-          />
+          {/* B11 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Genomförandeplan" 
+              icon={<ListChecks className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="space-y-2">
+              <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
+              {formData.implementationPlan.map((step, index) => (
+                <div key={index} className="flex gap-2 mb-3">
+                  <Input
+                    value={step}
+                    onChange={(e) => {
+                      const newPlan = [...formData.implementationPlan];
+                      newPlan[index] = e.target.value;
+                      handleChange('implementationPlan', newPlan);
+                    }}
+                    placeholder={`Steg ${index + 1}`}
+                    className="bg-background/50"
+                  />
+                  {index === formData.implementationPlan.length - 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
+                    >
+                      +
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
           
-          <div className="space-y-2">
-            <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
-            {formData.implementationPlan.map((step, index) => (
-              <div key={index} className="flex gap-2 mb-3">
-                <Input
-                  value={step}
-                  onChange={(e) => {
-                    const newPlan = [...formData.implementationPlan];
-                    newPlan[index] = e.target.value;
-                    handleChange('implementationPlan', newPlan);
-                  }}
-                  placeholder={`Steg ${index + 1}`}
-                  className="bg-background/50"
-                />
-                {index === formData.implementationPlan.length - 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
-                  >
-                    +
-                  </Button>
-                )}
-              </div>
-            ))}
+          <div className="flex justify-between mt-8">
+            <div></div> {/* Tom div för att behålla layoututrymmet */}
           </div>
         </div>
-        
-        <div className="flex justify-between mt-8">
-          <div></div> {/* Tom div för att behålla layoututrymmet */}
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });

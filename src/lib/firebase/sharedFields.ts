@@ -132,4 +132,50 @@ export const updateSharedFieldsFromCurrentForm = async (userId: string, formData
     console.error('Error updating shared fields:', error);
     return Promise.reject(error);
   }
+};
+
+/**
+ * Hämta organisationsinformation från Form D (organisationsnamn och kontaktperson)
+ * @param userId - Användarens ID
+ * @returns Organisationens namn och kontaktperson eller null om de inte finns
+ */
+export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{ organizationName: string, contactPerson: string } | null> => {
+  try {
+    console.log(`Hämtar organisationsinfo från formulär D för användare ${userId}`);
+    
+    // Kontrollera om vi har en giltig databasreferens
+    if (!database) {
+      console.error('Firebase database is not initialized');
+      return null;
+    }
+    
+    const dbRef = ref(database);
+    const formDPath = `users/${userId}/forms/D`;
+    console.log('Hämtar från sökväg:', formDPath);
+    
+    const snapshot = await get(child(dbRef, formDPath));
+    
+    if (snapshot.exists()) {
+      const formDData = snapshot.val();
+      console.log(`Formulär D-data hittad:`, formDData);
+      
+      // Extrahera organisationsnamn och kontaktperson från Form D
+      const organizationInfo = {
+        organizationName: formDData.organizationName || '',
+        contactPerson: formDData.contactPerson || ''
+      };
+      
+      // Returnera bara om minst ett av fälten har data
+      if (organizationInfo.organizationName || organizationInfo.contactPerson) {
+        return organizationInfo;
+      }
+    } else {
+      console.log('Ingen data hittad i Formulär D');
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error loading organization info from Form D:`, error);
+    return null;
+  }
 }; 

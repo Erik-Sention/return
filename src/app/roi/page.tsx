@@ -168,10 +168,10 @@ export default function ROIPage() {
         </div>
 
         <div className="flex justify-between">
-          {currentForm !== 'A' && (
+          {currentForm !== 'D' && (
             <Button 
               onClick={() => {
-                const forms = 'ABCDGHIJ'.split('');
+                const forms = 'DCABGHIJ'.split('');
                 const currentIndex = forms.indexOf(currentForm);
                 setCurrentForm(forms[currentIndex - 1]);
               }}
@@ -200,7 +200,7 @@ export default function ROIPage() {
             {currentForm !== 'J' && (
               <Button 
                 onClick={() => {
-                  const forms = 'ABCDGHIJ'.split('');
+                  const forms = 'DCABGHIJ'.split('');
                   const currentIndex = forms.indexOf(currentForm);
                   setCurrentForm(forms[currentIndex + 1]);
                 }}

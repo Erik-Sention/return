@@ -8,6 +8,8 @@ import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/fo
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { OrganizationHeader } from '@/components/ui/organization-header';
+import { FadeIn } from '@/components/ui/fade-in';
 
 interface FormCData {
   organizationName: string;
@@ -178,6 +180,11 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     errorMessage: null as string | null
   });
 
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+
   // Hantera ändringar i formuläret
   const handleChange = useCallback((field: keyof FormCData, value: string | number | null | undefined) => {
     setFormData(prev => ({
@@ -191,6 +198,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     const loadFromFirebase = async () => {
       if (currentUser?.uid) {
         try {
+          setIsDataLoading(true);
           setError(null);
           const data = await loadFormData<FormCData>(currentUser.uid, FORM_TYPE);
           if (data) {
@@ -200,9 +208,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
       } else {
         console.log('No user logged in, cannot load data from Firebase');
+        setIsDataLoading(false);
       }
     };
 
@@ -403,91 +414,107 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     }
   };
 
-  return (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <Calculator className="h-5 w-5 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">C – Beräkningsmodell för ekonomiska konsekvenser av psykisk ohälsa</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
-            {error}
-          </div>
-        )}
-        
-        {/* Visa information om automatiskt hämtad data */}
-        {autoFetchStatus.hasFetched && (autoFetchStatus.personnelCosts || 
-                                        autoFetchStatus.shortSickLeaveCosts || 
-                                        autoFetchStatus.shortSickLeavePercent || 
-                                        autoFetchStatus.longSickLeaveCosts || 
-                                        autoFetchStatus.longSickLeavePercent) && (
-          <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
-            <p className="font-medium">Följande data har automatiskt hämtats från Formulär D:</p>
-            <ul className="list-disc list-inside mt-1">
-              {autoFetchStatus.personnelCosts && <li>Totala personalkostnader (D9)</li>}
-              {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro (D17)</li>}
-              {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro (D15)</li>}
-              {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro (D22)</li>}
-              {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro (D20)</li>}
-            </ul>
-          </div>
-        )}
+  // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
+  useEffect(() => {
+    // Om alla data är laddade, ställ in isContentReady till true
+    if (!isDataLoading && !isOrgInfoLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading, isOrgInfoLoading]);
 
-        {autoFetchStatus.errorMessage && (
-          <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
-            {autoFetchStatus.errorMessage}
-          </div>
-        )}
+  // Callback för när organisationsdata har laddats
+  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string } | null) => {
+    setOrgData(data);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      {/* Dold OrganizationHeader för att ladda data */}
+      <div className="sr-only">
+        <OrganizationHeader 
+          onLoadingChange={setIsOrgInfoLoading} 
+          onDataLoaded={handleOrgDataLoaded}
+        />
+      </div>
+      
+      <FadeIn show={isContentReady} duration={500}>
+        <div className="space-y-4">
+          {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
+          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+            <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+                  <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+                  <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
+                </div>
+              </div>
+            </div>
+          )}
         
-        {/* C1-C3 */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Grundinformation" 
-            icon={<Info className="h-5 w-5 text-primary" />}
-          />
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <Calculator className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">C – Beräkning av psykosocial ohälsa</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Sparar...' : 'Spara formulär'}
+              </Button>
+            </div>
+          </div>
           
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C1: Organisationens namn</label>
-              <InfoLabel text="Namnet på din organisation" />
-              <Input
-                value={formData.organizationName}
-                onChange={(e) => handleChange('organizationName', e.target.value)}
-                placeholder="Ange organisationens namn"
-                className="bg-background/50"
-              />
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C2: Kontaktperson</label>
-              <InfoLabel text="Namn på kontaktperson" />
-              <Input
-                value={formData.contactPerson}
-                onChange={(e) => handleChange('contactPerson', e.target.value)}
-                placeholder="Ange kontaktperson"
-                className="bg-background/50"
-              />
+          )}
+          
+          {/* Visa information om automatiskt hämtad data */}
+          {autoFetchStatus.hasFetched && (autoFetchStatus.personnelCosts || 
+                                          autoFetchStatus.shortSickLeaveCosts || 
+                                          autoFetchStatus.shortSickLeavePercent || 
+                                          autoFetchStatus.longSickLeaveCosts || 
+                                          autoFetchStatus.longSickLeavePercent) && (
+            <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+              <p className="font-medium">Följande data har automatiskt hämtats från Formulär D:</p>
+              <ul className="list-disc list-inside mt-1">
+                {autoFetchStatus.personnelCosts && <li>Totala personalkostnader (D9)</li>}
+                {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro (D17)</li>}
+                {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro (D15)</li>}
+                {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro (D22)</li>}
+                {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro (D20)</li>}
+              </ul>
             </div>
+          )}
+
+          {autoFetchStatus.errorMessage && (
+            <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+              {autoFetchStatus.errorMessage}
+            </div>
+          )}
+          
+          <div className="form-card">
+            <SectionHeader 
+              title="Tidsperiod" 
+              icon={<Info className="h-5 w-5 text-primary" />}
+            />
+            
             <div className="space-y-2">
               <label className="text-sm font-medium">C3: Tidsperiod (12 månader)</label>
               <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
@@ -498,226 +525,226 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                 className="bg-background/50"
               />
             </div>
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
+                disabled={!currentUser?.uid}
+              />
+            </div>
           </div>
-          
-          <div className="mt-4">
-            <SharedFieldsButton 
-              userId={currentUser?.uid}
-              onFieldsLoaded={(fields: SharedFields) => {
-                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-              }}
-              disabled={!currentUser?.uid}
-            />
-          </div>
-        </div>
 
-        <div className="form-card">
-          <SectionHeader 
-            title="Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa" 
-            icon={<Calculator className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
-              </label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär D9" />
-              <AutoFilledField
-                value={`${formatNumber(formData.totalPersonnelCosts || 0)} kr`}
-                sourceFormName="D"
-                onNavigate={navigateToForm}
-                isEmpty={!autoFetchStatus.personnelCosts || !formData.totalPersonnelCosts}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
-              <FormattedNumberInput
-                value={formData.companyProfit}
-                onChange={(value) => handleChange('companyProfit', value)}
-                placeholder="Ange summa i kr"
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C6: Summa, värde av arbete"
-              value={`${formatNumber(formData.totalWorkValue)} kr`}
-              info="Beräknas automatiskt som summan av C4 + C5"
+          <div className="form-card">
+            <SectionHeader 
+              title="Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
+                </label>
+                <InfoLabel text="Detta fält hämtas automatiskt från formulär D9" />
+                <AutoFilledField
+                  value={`${formatNumber(formData.totalPersonnelCosts || 0)} kr`}
+                  sourceFormName="D"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.personnelCosts || !formData.totalPersonnelCosts}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
+                <FormattedNumberInput
+                  value={formData.companyProfit}
+                  onChange={(value) => handleChange('companyProfit', value)}
+                  placeholder="Ange summa i kr"
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C6: Summa, värde av arbete"
+                value={`${formatNumber(formData.totalWorkValue)} kr`}
+                info="Beräknas automatiskt som summan av C4 + C5"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="form-card">
-          <SectionHeader 
-            title="Stressnivå och produktionsbortfall" 
-            icon={<ArrowRight className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
-              <InfoLabel text="Enligt Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%" />
-              <FormattedNumberInput
-                value={formData.percentHighStress}
-                onChange={(value) => handleChange('percentHighStress', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
+          <div className="form-card">
+            <SectionHeader 
+              title="Stressnivå och produktionsbortfall" 
+              icon={<ArrowRight className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
+                <InfoLabel text="Enligt Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%" />
+                <FormattedNumberInput
+                  value={formData.percentHighStress}
+                  onChange={(value) => handleChange('percentHighStress', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
+                <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst 9%. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
+                <FormattedNumberInput
+                  value={formData.productionLossHighStress}
+                  onChange={(value) => handleChange('productionLossHighStress', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C9: Totalt produktionsbortfall"
+                value={`${formatNumber(formData.totalProductionLoss)}%`}
+                info="Beräknas automatiskt baserat på värdet i C8"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
-              <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst 9%. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
-              <FormattedNumberInput
-                value={formData.productionLossHighStress}
-                onChange={(value) => handleChange('productionLossHighStress', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C10: Värde av produktionsbortfall (för över till ruta C18)"
+                value={`${formatNumber(formData.valueProductionLoss)} kr`}
+                info="Beräknas automatiskt som (C6 × C9 ÷ 100)"
+                highlight={true}
               />
             </div>
           </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C9: Totalt produktionsbortfall"
-              value={`${formatNumber(formData.totalProductionLoss)}%`}
-              info="Beräknas automatiskt baserat på värdet i C8"
-            />
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C10: Värde av produktionsbortfall (för över till ruta C18)"
-              value={`${formatNumber(formData.valueProductionLoss)} kr`}
-              info="Beräknas automatiskt som (C6 × C9 ÷ 100)"
-              highlight={true}
-            />
-          </div>
-        </div>
 
-        <div className="form-card">
-          <SectionHeader 
-            title="Beräkning av kostnad för sjukfrånvaro pga psykisk ohälsa" 
-            icon={<Calculator className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär D17" />
-              <AutoFilledField
-                value={`${formatNumber(formData.costShortSickLeave || 0)} kr`}
-                sourceFormName="D"
-                onNavigate={navigateToForm}
-                isEmpty={!autoFetchStatus.shortSickLeaveCosts || !formData.costShortSickLeave}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
-              <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
-              <AutoFilledField
-                value={`${formatNumber(formData.percentShortSickLeaveMentalHealth || 0)} %`}
-                sourceFormName="D"
-                onNavigate={navigateToForm}
-                isEmpty={!autoFetchStatus.shortSickLeavePercent || !formData.percentShortSickLeaveMentalHealth}
-              />
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år"
-              value={`${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`}
-              info="Beräknas automatiskt som (C11 × C12 ÷ 100)"
+          <div className="form-card">
+            <SectionHeader 
+              title="Beräkning av kostnad för sjukfrånvaro pga psykisk ohälsa" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
+                <InfoLabel text="Detta fält hämtas automatiskt från formulär D17" />
+                <AutoFilledField
+                  value={`${formatNumber(formData.costShortSickLeave || 0)} kr`}
+                  sourceFormName="D"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.shortSickLeaveCosts || !formData.costShortSickLeave}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+                <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
+                <AutoFilledField
+                  value={`${formatNumber(formData.percentShortSickLeaveMentalHealth || 0)} %`}
+                  sourceFormName="D"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.shortSickLeavePercent || !formData.percentShortSickLeaveMentalHealth}
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                value={`${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`}
+                info="Beräknas automatiskt som (C11 × C12 ÷ 100)"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="form-card">
-          <SectionHeader 
-            title="Kostnad för lång sjukfrånvaro" 
-            icon={<ArrowRight className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär D22" />
-              <AutoFilledField
-                value={`${formatNumber(formData.costLongSickLeave || 0)} kr`}
-                sourceFormName="D"
-                onNavigate={navigateToForm}
-                isEmpty={!autoFetchStatus.longSickLeaveCosts || !formData.costLongSickLeave}
+          <div className="form-card">
+            <SectionHeader 
+              title="Kostnad för lång sjukfrånvaro" 
+              icon={<ArrowRight className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
+                <InfoLabel text="Detta fält hämtas automatiskt från formulär D22" />
+                <AutoFilledField
+                  value={`${formatNumber(formData.costLongSickLeave || 0)} kr`}
+                  sourceFormName="D"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.longSickLeaveCosts || !formData.costLongSickLeave}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+                <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
+                <AutoFilledField
+                  value={`${formatNumber(formData.percentLongSickLeaveMentalHealth || 0)} %`}
+                  sourceFormName="D"
+                  onNavigate={navigateToForm}
+                  isEmpty={!autoFetchStatus.longSickLeavePercent || !formData.percentLongSickLeaveMentalHealth}
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                value={`${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`}
+                info="Beräknas automatiskt som (C14 × C15 ÷ 100)"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
-              <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
-              <AutoFilledField
-                value={`${formatNumber(formData.percentLongSickLeaveMentalHealth || 0)} %`}
-                sourceFormName="D"
-                onNavigate={navigateToForm}
-                isEmpty={!autoFetchStatus.longSickLeavePercent || !formData.percentLongSickLeaveMentalHealth}
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
+                info="Beräknas automatiskt som summan av C13 + C16"
+                highlight={true}
               />
             </div>
           </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år"
-              value={`${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`}
-              info="Beräknas automatiskt som (C14 × C15 ÷ 100)"
-            />
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
-              value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
-              info="Beräknas automatiskt som summan av C13 + C16"
-              highlight={true}
-            />
-          </div>
-        </div>
 
-        <div className="form-card">
-          <SectionHeader 
-            title="Summering av kostnad pga psykisk ohälsa" 
-            icon={<PieChart className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="mt-4">
-            <ReadOnlyField 
-              label="C18: Värde av produktionsbortfall, kr per år"
-              value={`${formatNumber(formData.valueProductionLoss)} kr`}
-              info="Samma värde som C10, överförs automatiskt"
+          <div className="form-card">
+            <SectionHeader 
+              title="Summering av kostnad pga psykisk ohälsa" 
+              icon={<PieChart className="h-5 w-5 text-primary" />}
             />
+            
+            <div className="mt-4">
+              <ReadOnlyField 
+                label="C18: Värde av produktionsbortfall, kr per år"
+                value={`${formatNumber(formData.valueProductionLoss)} kr`}
+                info="Samma värde som C10, överförs automatiskt"
+              />
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="C19: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
+                info="Samma värde som C17, överförs automatiskt"
+              />
+            </div>
+            
+            <div className="mt-6 pb-2">
+              <ReadOnlyField 
+                label="C20: Total kostnad för psykisk ohälsa, kr per år"
+                value={`${formatNumber(formData.totalCostMentalHealth)} kr`}
+                info="Beräknas automatiskt som summan av C18 + C19"
+                highlight={true}
+              />
+            </div>
           </div>
           
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="C19: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
-              value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
-              info="Samma värde som C17, överförs automatiskt"
-            />
-          </div>
-          
-          <div className="mt-6 pb-2">
-            <ReadOnlyField 
-              label="C20: Total kostnad för psykisk ohälsa, kr per år"
-              value={`${formatNumber(formData.totalCostMentalHealth)} kr`}
-              info="Beräknas automatiskt som summan av C18 + C19"
-              highlight={true}
-            />
+          <div className="flex justify-between mt-8">
+            <div></div> {/* Tom div för att behålla layoututrymmet */}
           </div>
         </div>
-        
-        <div className="flex justify-between mt-8">
-          <div></div> {/* Tom div för att behålla layoututrymmet */}
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });

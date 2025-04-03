@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Coins, Calendar, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
+import { Input } from '@/components/ui/input';
+import { FadeIn } from '@/components/ui/fade-in';
 
 interface FormDData {
   organizationName: string;
@@ -126,12 +128,16 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Load data from Firebase on mount
   useEffect(() => {
     const loadFromFirebase = async () => {
       if (currentUser?.uid) {
         try {
+          setIsDataLoading(true);
           setError(null);
           const data = await loadFormData<FormDData>(currentUser.uid, FORM_TYPE);
           if (data) {
@@ -141,14 +147,24 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
       } else {
         console.log('No user logged in, cannot load data from Firebase');
+        setIsDataLoading(false);
       }
     };
 
     loadFromFirebase();
   }, [currentUser]);
+  
+  // Ställ in när innehållet är redo att visas
+  useEffect(() => {
+    if (!isDataLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading]);
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
@@ -322,260 +338,294 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <Calculator className="h-5 w-5 text-primary" />
+      <FadeIn show={isContentReady} duration={500}>
+        <div className="space-y-4">
+          {/* Organisationsinformation - centralt för alla formulär */}
+          <div className="form-card bg-primary/5 border border-primary/20">
+            <SectionHeader 
+              title="Organisationsinformation" 
+              icon={<Info className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Organisationens namn</label>
+                <InfoLabel text="Namnet på din organisation (visas i alla formulär)" />
+                <Input
+                  value={formData.organizationName}
+                  onChange={(e) => handleChange('organizationName', e.target.value)}
+                  placeholder="Ange organisationens namn"
+                  className="bg-white dark:bg-slate-800 font-medium"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kontaktperson</label>
+                <InfoLabel text="Namn på kontaktperson (visas i alla formulär)" />
+                <Input
+                  value={formData.contactPerson}
+                  onChange={(e) => handleChange('contactPerson', e.target.value)}
+                  placeholder="Ange kontaktperson"
+                  className="bg-white dark:bg-slate-800 font-medium"
+                />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold">D – Beräkning av personalkostnader</h2>
           </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
+
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <Calculator className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">D – Beräkning av personalkostnader</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Sparar...' : 'Spara formulär'}
+              </Button>
+            </div>
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          {/* Gruppera alla inmatningsfält i ett enda kort för kompakt layout */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Personalkostnadsberäkning" 
+              icon={<Coins className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+              {/* Grundläggande löneinformation */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D1: Genomsnittlig månadslön</label>
+                <InfoLabel text="Inkludera alla lönekomponenter som grundlön, OB, övertidstillägg och andra fasta tillägg." />
+                <FormattedNumberInput
+                  value={formData.averageMonthlySalary}
+                  onChange={(value) => handleChange('averageMonthlySalary', value)}
+                  placeholder="Ange genomsnittlig månadslön"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D2: Sociala avgifter (%)</label>
+                <InfoLabel text="Standardvärde är 42% för de flesta branscher." />
+                <FormattedNumberInput
+                  value={formData.socialFeesPercentage}
+                  onChange={(value) => handleChange('socialFeesPercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D4: Antal anställda (FTE)</label>
+                <InfoLabel text="Ange antal heltidsanställda. Om ni har deltidsanställda, konvertera till heltid." />
+                <FormattedNumberInput
+                  value={formData.numberOfEmployees}
+                  onChange={(value) => handleChange('numberOfEmployees', value)}
+                  placeholder="Ange antal anställda"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D5: Antal månader</label>
+                <InfoLabel text="Standard är 12 månader" />
+                <FormattedNumberInput
+                  value={formData.numberOfMonths}
+                  onChange={(value) => handleChange('numberOfMonths', value)}
+                  placeholder="Ange antal månader"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D7: Personalkringkostnader (%)</label>
+                <InfoLabel text="Standardvärde är 30% för de flesta branscher." />
+                <FormattedNumberInput
+                  value={formData.personnelOverheadPercentage}
+                  onChange={(value) => handleChange('personnelOverheadPercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D10: Schemalagd arbetstid (timmar/år)</label>
+                <InfoLabel text="Standard är 1760 timmar per år (220 dagar × 8 timmar)." />
+                <FormattedNumberInput
+                  value={formData.scheduledWorkHoursPerYear}
+                  onChange={(value) => handleChange('scheduledWorkHoursPerYear', value)}
+                  placeholder="Ange antal timmar"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D12: Antal schemalagda arbetsdagar per år</label>
+                <InfoLabel text="Standard är 220 dagar." />
+                <FormattedNumberInput
+                  value={formData.scheduledWorkDaysPerYear}
+                  onChange={(value) => handleChange('scheduledWorkDaysPerYear', value)}
+                  placeholder="Ange antal dagar"
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            
+            {/* Automatiskt beräknade fält */}
+            <div className="grid gap-4 mt-6 md:grid-cols-2">
+              <ReadOnlyField 
+                label="D3: Genomsnittliga sociala avgifter per månad"
+                value={formatCurrency(formData.averageSocialFeesPerMonth)}
+                info="Beräknas automatiskt som D1 × D2"
+              />
+              
+              <ReadOnlyField 
+                label="D6: Totala lönekostnader"
+                value={formatCurrency(formData.totalSalaryCosts)}
+                info="Beräknas automatiskt som (D1 + D3) × D4 × D5"
+              />
+              
+              <ReadOnlyField 
+                label="D8: Totala personalkringkostnader"
+                value={formatCurrency(formData.totalPersonnelOverhead)}
+                info="Beräknas automatiskt som D6 × D7"
+              />
+              
+              <ReadOnlyField 
+                label="D11: Personalkostnad per arbetad timme"
+                value={formatCurrency(formData.personnelCostPerHour)}
+                info="Beräknas automatiskt som D9 ÷ D4 ÷ D10"
+              />
+            </div>
+            
+            <div className="mt-6">
+              <ReadOnlyField 
+                label="D9: Totala personalkostnader"
+                value={formatCurrency(formData.totalPersonnelCosts)}
+                info="Beräknas automatiskt som D6 + D8. Överförs till C4"
+                highlight={true}
+              />
+            </div>
+          </div>
+          
+          {/* Sjukfrånvarofält */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Sjukfrånvaro" 
+              icon={<Calendar className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+              {/* Kort sjukfrånvaro */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D13: Kort sjukfrånvaro, kostnad per dag (% av månadslön)</label>
+                <InfoLabel text="Standardvärde är 10% för de flesta branscher." />
+                <FormattedNumberInput
+                  value={formData.shortSickLeaveCostPercentage}
+                  onChange={(value) => handleChange('shortSickLeaveCostPercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D15: Kort sjukfrånvaro (dag 1–14) % av arbetstid</label>
+                <InfoLabel text="Standardvärde är 2.5% för de flesta branscher." />
+                <FormattedNumberInput
+                  value={formData.shortSickLeavePercentage}
+                  onChange={(value) => handleChange('shortSickLeavePercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              {/* Lång sjukfrånvaro */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D18: Lång sjukfrånvaro, kostnad per dag (% av månadslön)</label>
+                <InfoLabel text="Standardvärde är ofta 1%." />
+                <FormattedNumberInput
+                  value={formData.longSickLeaveCostPercentage}
+                  onChange={(value) => handleChange('longSickLeaveCostPercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">D20: Lång sjukfrånvaro (dag 15–) % av arbetstid</label>
+                <InfoLabel text="Ange procentandel av schemalagd arbetstid." />
+                <FormattedNumberInput
+                  value={formData.longSickLeavePercentage}
+                  onChange={(value) => handleChange('longSickLeavePercentage', value)}
+                  placeholder="Ange procent"
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
+            
+            {/* Automatiskt beräknade sjukfrånvarofält */}
+            <div className="grid gap-4 mt-6 md:grid-cols-2">
+              <ReadOnlyField
+                label="D14: Kostnad för kort sjukfrånvaro per sjukdag"
+                value={formatCurrency(formData.shortSickLeaveCostPerDay || 0)}
+                info="Beräknas automatiskt som D1 × D13"
+              />
+              
+              <ReadOnlyField
+                label="D19: Kostnad för lång sjukfrånvaro per sjukdag"
+                value={formatCurrency(formData.longSickLeaveCostPerDay || 0)}
+                info="Beräknas automatiskt som D1 × D18"
+              />
+              
+              <ReadOnlyField
+                label="D16: Antal sjukdagar totalt (kort sjukfrånvaro)"
+                value={(formData.totalShortSickDays || 0).toLocaleString('sv-SE')}
+                info="Beräknas automatiskt som D4 × D12 × D15"
+              />
+              
+              <ReadOnlyField
+                label="D21: Antal sjukdagar totalt (lång sjukfrånvaro)"
+                value={(formData.totalLongSickDays || 0).toLocaleString('sv-SE')}
+                info="Beräknas automatiskt som D4 × D12 × D20"
+              />
+            </div>
+            
+            <div className="grid gap-4 mt-6 md:grid-cols-2">
+              <ReadOnlyField 
+                label="D17: Totala kostnader, kort sjukfrånvaro"
+                value={formatCurrency(formData.totalShortSickLeaveCosts || 0)}
+                info="Beräknas automatiskt som D14 × D16. Överförs till C11"
+                highlight={true}
+              />
+              
+              <ReadOnlyField 
+                label="D22: Totala kostnader, lång sjukfrånvaro"
+                value={formatCurrency(formData.totalLongSickLeaveCosts || 0)}
+                info="Beräknas automatiskt som D19 × D21. Överförs till C14"
+                highlight={true}
+              />
+            </div>
           </div>
         </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
-            {error}
-          </div>
-        )}
-        
-        {/* Gruppera alla inmatningsfält i ett enda kort för kompakt layout */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Personalkostnadsberäkning" 
-            icon={<Coins className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-            {/* Grundläggande löneinformation */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D1: Genomsnittlig månadslön</label>
-              <InfoLabel text="Inkludera alla lönekomponenter som grundlön, OB, övertidstillägg och andra fasta tillägg." />
-              <FormattedNumberInput
-                value={formData.averageMonthlySalary}
-                onChange={(value) => handleChange('averageMonthlySalary', value)}
-                placeholder="Ange genomsnittlig månadslön"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D2: Sociala avgifter (%)</label>
-              <InfoLabel text="Standardvärde är 42% för de flesta branscher." />
-              <FormattedNumberInput
-                value={formData.socialFeesPercentage}
-                onChange={(value) => handleChange('socialFeesPercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D4: Antal anställda (FTE)</label>
-              <InfoLabel text="Ange antal heltidsanställda. Om ni har deltidsanställda, konvertera till heltid." />
-              <FormattedNumberInput
-                value={formData.numberOfEmployees}
-                onChange={(value) => handleChange('numberOfEmployees', value)}
-                placeholder="Ange antal anställda"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D5: Antal månader</label>
-              <InfoLabel text="Standard är 12 månader" />
-              <FormattedNumberInput
-                value={formData.numberOfMonths}
-                onChange={(value) => handleChange('numberOfMonths', value)}
-                placeholder="Ange antal månader"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D7: Personalkringkostnader (%)</label>
-              <InfoLabel text="Standardvärde är 30% för de flesta branscher." />
-              <FormattedNumberInput
-                value={formData.personnelOverheadPercentage}
-                onChange={(value) => handleChange('personnelOverheadPercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D10: Schemalagd arbetstid (timmar/år)</label>
-              <InfoLabel text="Standard är 1760 timmar per år (220 dagar × 8 timmar)." />
-              <FormattedNumberInput
-                value={formData.scheduledWorkHoursPerYear}
-                onChange={(value) => handleChange('scheduledWorkHoursPerYear', value)}
-                placeholder="Ange antal timmar"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D12: Antal schemalagda arbetsdagar per år</label>
-              <InfoLabel text="Standard är 220 dagar." />
-              <FormattedNumberInput
-                value={formData.scheduledWorkDaysPerYear}
-                onChange={(value) => handleChange('scheduledWorkDaysPerYear', value)}
-                placeholder="Ange antal dagar"
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-          
-          {/* Automatiskt beräknade fält */}
-          <div className="grid gap-4 mt-6 md:grid-cols-2">
-            <ReadOnlyField 
-              label="D3: Genomsnittliga sociala avgifter per månad"
-              value={formatCurrency(formData.averageSocialFeesPerMonth)}
-              info="Beräknas automatiskt som D1 × D2"
-            />
-            
-            <ReadOnlyField 
-              label="D6: Totala lönekostnader"
-              value={formatCurrency(formData.totalSalaryCosts)}
-              info="Beräknas automatiskt som (D1 + D3) × D4 × D5"
-            />
-            
-            <ReadOnlyField 
-              label="D8: Totala personalkringkostnader"
-              value={formatCurrency(formData.totalPersonnelOverhead)}
-              info="Beräknas automatiskt som D6 × D7"
-            />
-            
-            <ReadOnlyField 
-              label="D11: Personalkostnad per arbetad timme"
-              value={formatCurrency(formData.personnelCostPerHour)}
-              info="Beräknas automatiskt som D9 ÷ D4 ÷ D10"
-            />
-          </div>
-          
-          <div className="mt-6">
-            <ReadOnlyField 
-              label="D9: Totala personalkostnader"
-              value={formatCurrency(formData.totalPersonnelCosts)}
-              info="Beräknas automatiskt som D6 + D8. Överförs till C4"
-              highlight={true}
-            />
-          </div>
-        </div>
-        
-        {/* Sjukfrånvarofält */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Sjukfrånvaro" 
-            icon={<Calendar className="h-5 w-5 text-primary" />}
-          />
-          
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-            {/* Kort sjukfrånvaro */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D13: Kort sjukfrånvaro, kostnad per dag (% av månadslön)</label>
-              <InfoLabel text="Standardvärde är 10% för de flesta branscher." />
-              <FormattedNumberInput
-                value={formData.shortSickLeaveCostPercentage}
-                onChange={(value) => handleChange('shortSickLeaveCostPercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D15: Kort sjukfrånvaro (dag 1–14) % av arbetstid</label>
-              <InfoLabel text="Standardvärde är 2.5% för de flesta branscher." />
-              <FormattedNumberInput
-                value={formData.shortSickLeavePercentage}
-                onChange={(value) => handleChange('shortSickLeavePercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-            
-            {/* Lång sjukfrånvaro */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D18: Lång sjukfrånvaro, kostnad per dag (% av månadslön)</label>
-              <InfoLabel text="Standardvärde är ofta 1%." />
-              <FormattedNumberInput
-                value={formData.longSickLeaveCostPercentage}
-                onChange={(value) => handleChange('longSickLeaveCostPercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">D20: Lång sjukfrånvaro (dag 15–) % av arbetstid</label>
-              <InfoLabel text="Ange procentandel av schemalagd arbetstid." />
-              <FormattedNumberInput
-                value={formData.longSickLeavePercentage}
-                onChange={(value) => handleChange('longSickLeavePercentage', value)}
-                placeholder="Ange procent"
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-          
-          {/* Automatiskt beräknade sjukfrånvarofält */}
-          <div className="grid gap-4 mt-6 md:grid-cols-2">
-            <ReadOnlyField
-              label="D14: Kostnad för kort sjukfrånvaro per sjukdag"
-              value={formatCurrency(formData.shortSickLeaveCostPerDay || 0)}
-              info="Beräknas automatiskt som D1 × D13"
-            />
-            
-            <ReadOnlyField
-              label="D19: Kostnad för lång sjukfrånvaro per sjukdag"
-              value={formatCurrency(formData.longSickLeaveCostPerDay || 0)}
-              info="Beräknas automatiskt som D1 × D18"
-            />
-            
-            <ReadOnlyField
-              label="D16: Antal sjukdagar totalt (kort sjukfrånvaro)"
-              value={(formData.totalShortSickDays || 0).toLocaleString('sv-SE')}
-              info="Beräknas automatiskt som D4 × D12 × D15"
-            />
-            
-            <ReadOnlyField
-              label="D21: Antal sjukdagar totalt (lång sjukfrånvaro)"
-              value={(formData.totalLongSickDays || 0).toLocaleString('sv-SE')}
-              info="Beräknas automatiskt som D4 × D12 × D20"
-            />
-          </div>
-          
-          <div className="grid gap-4 mt-6 md:grid-cols-2">
-            <ReadOnlyField 
-              label="D17: Totala kostnader, kort sjukfrånvaro"
-              value={formatCurrency(formData.totalShortSickLeaveCosts || 0)}
-              info="Beräknas automatiskt som D14 × D16. Överförs till C11"
-              highlight={true}
-            />
-            
-            <ReadOnlyField 
-              label="D22: Totala kostnader, lång sjukfrånvaro"
-              value={formatCurrency(formData.totalLongSickLeaveCosts || 0)}
-              info="Beräknas automatiskt som D19 × D21. Överförs till C14"
-              highlight={true}
-            />
-          </div>
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, Calculator, Coins, FileBarChart2, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, DollarSign, PencilLine, Trash2, Target, Edit, CheckCircle, XCircle, Circle, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -10,6 +10,8 @@ import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
 import { getInterventionColor } from '@/lib/utils/interventionColors';
+import { OrganizationHeader } from '@/components/ui/organization-header';
+import { FadeIn } from '@/components/ui/fade-in';
 
 // Enkel Textarea-komponent
 const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
@@ -44,8 +46,6 @@ interface Intervention {
 }
 
 interface FormGData {
-  organizationName: string;
-  contactPerson: string;
   timePeriod: string;
   interventions: Intervention[];
   totalInterventionCost: number;
@@ -163,17 +163,6 @@ const nullToUndefined = (value: number | null): number | undefined => {
 const generateId = (): string => {
   return Math.random().toString(36).substring(2, 11);
 };
-
-// Hjälptexter och standardsvar
-// Konstanten används inte för närvarande
-// const COST_TYPES = [
-//   "Fast avgift för insats/offert",
-//   "Inhyrd personal",
-//   "Lokalhyra",
-//   "Resor",
-//   "Utrustning och inventarier",
-//   "Övrigt"
-// ];
 
 // Komponent för en kostnadsrad
 const CostRow = ({
@@ -469,8 +458,6 @@ type FormGProps = React.ComponentProps<'div'>;
 const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const { currentUser } = useAuth();
   const initialState: FormGData = {
-    organizationName: '',
-    contactPerson: '',
     timePeriod: '',
     interventions: [],
     totalInterventionCost: 0,
@@ -514,56 +501,49 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     }
   }, [safeFormData.interventions]);
 
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+
   // Load data from Firebase on mount
   useEffect(() => {
     const loadFromFirebase = async () => {
       if (currentUser?.uid) {
         try {
+          setIsDataLoading(true);
           setError(null);
           const data = await loadFormData<FormGData>(currentUser.uid, FORM_TYPE);
           if (data) {
-            // Säkerställ att all data har rätt struktur innan vi sätter den i state
-            const sanitizedData: FormGData = {
-              ...data,
-              interventions: (data.interventions || []).map(intervention => ({
-                ...intervention,
-                costs: intervention.costs || [],
-                totalExternalCost: intervention.totalExternalCost || 0,
-                totalInternalCost: intervention.totalInternalCost || 0,
-                totalCost: intervention.totalCost || 0
-              }))
-            };
-            
-            setFormData(sanitizedData);
-          } else {
-            // Skapa en tom insats som standard direkt i setFormData istället för att anropa addIntervention
-            
-            const initialIntervention: Intervention = {
-              id: generateId(),
-              name: '',
-              description: '',
-              costs: [],
-              totalExternalCost: 0,
-              totalInternalCost: 0,
-              totalCost: 0
-            };
-            
-            setFormData(prev => ({
-              ...prev,
-              interventions: [initialIntervention]
-            }));
+            console.log('Loaded form data:', data);
+            setFormData(data);
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
           setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
       } else {
-        // No user logged in
+        console.log('No user logged in, cannot load data from Firebase');
+        setIsDataLoading(false);
       }
     };
 
     loadFromFirebase();
   }, [currentUser]);
+  
+  // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
+  useEffect(() => {
+    if (!isDataLoading && !isOrgInfoLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading, isOrgInfoLoading]);
+  
+  // Callback för när organisationsdata har laddats
+  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string } | null) => {
+    setOrgData(data);
+  }, []);
 
   // Beräkna automatiska värden när relevanta kostnader ändras
   useEffect(() => {
@@ -1216,66 +1196,70 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   }, [fetchMessageFormI]);
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <FileBarChart2 className="h-5 w-5 text-primary" />
+    <div className="space-y-6">
+      {/* Dold OrganizationHeader för att ladda data */}
+      <div className="sr-only">
+        <OrganizationHeader 
+          onLoadingChange={setIsOrgInfoLoading} 
+          onDataLoaded={handleOrgDataLoaded}
+        />
+      </div>
+      
+      <FadeIn show={isContentReady} duration={500}>
+        <div className="space-y-4">
+          {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
+          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+            <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+                  <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+                  <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold">G – Sammanfattning av Insatskostnader</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
-                {saveMessage}
-              </span>
-            )}
-            <Button 
-              onClick={handleSave} 
-              className="gap-2"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Sparar...' : 'Spara formulär'}
-            </Button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
-            {error}
-          </div>
-        )}
-        
-        {/* G1-G3 Grundinformation */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Grundinformation" 
-            icon={<Info className="h-5 w-5 text-primary" />}
-          />
+          )}
           
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">G1: Organisationens namn</label>
-              <InfoLabel text="Namnet på din organisation" />
-              <Input
-                name="organizationName"
-                value={safeFormData.organizationName || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('organizationName', e.target.value)}
-                placeholder="Ange organisationens namn"
-              />
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">G – Resultat och utfall</h2>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">G2: Kontaktperson</label>
-              <InfoLabel text="Namn på kontaktperson" />
-              <Input
-                name="contactPerson"
-                value={safeFormData.contactPerson || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('contactPerson', e.target.value)}
-                placeholder="Ange kontaktperson"
-              />
+            <div className="flex items-center gap-2">
+              {saveMessage && (
+                <span className={`text-sm ${saveMessage.includes('fel') ? 'text-red-500' : 'text-green-500'}`}>
+                  {saveMessage}
+                </span>
+              )}
+              <Button 
+                onClick={handleSave} 
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Sparar...' : 'Spara formulär'}
+              </Button>
             </div>
+          </div>
+          
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          {/* G1-G3 Grundinformation */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Tidsperiod" 
+              icon={<Info className="h-5 w-5 text-primary" />}
+            />
+            
             <div className="space-y-2">
               <label className="text-sm font-medium">G3: Tidsperiod</label>
               <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
@@ -1286,134 +1270,134 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 placeholder="Ange tidsperiod"
               />
             </div>
-          </div>
-          
-          <div className="mt-4">
-            <SharedFieldsButton 
-              userId={currentUser?.uid}
-              onFieldsLoaded={(fields: SharedFields) => {
-                setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-              }}
-              disabled={!currentUser?.uid}
-            />
-          </div>
-        </div>
-        
-        {/* Insatser */}
-        <div className="form-card">
-          <div className="flex justify-between items-center mb-4">
-            <SectionHeader 
-              title="Insatser" 
-              icon={<Coins className="h-5 w-5 text-primary" />}
-            />
-            <div className="flex items-center gap-2">
-              <FetchValueButton 
-                onClick={fetchInterventionFromFormH}
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
                 disabled={!currentUser?.uid}
-                message={fetchMessageFormH}
-                source="H"
               />
-              <FetchValueButton 
-                onClick={fetchInterventionFromFormI}
-                disabled={!currentUser?.uid}
-                message={fetchMessageFormI}
-                source="I"
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="gap-1"
-                onClick={addIntervention}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Lägg till insats
-              </Button>
             </div>
           </div>
           
-          {(!safeFormData.interventions || safeFormData.interventions.length === 0) ? (
-            <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
-              <p className="text-muted-foreground mb-4">
-                Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär H eller I.
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="gap-1"
+          {/* Insatser */}
+          <div className="form-card">
+            <div className="flex justify-between items-center mb-4">
+              <SectionHeader 
+                title="Insatser" 
+                icon={<Coins className="h-5 w-5 text-primary" />}
+              />
+              <div className="flex items-center gap-2">
+                <FetchValueButton 
                   onClick={fetchInterventionFromFormH}
                   disabled={!currentUser?.uid}
-                >
-                  <ArrowDownIcon className="h-4 w-4" />
-                  Hämta från Formulär H
-                </Button>
+                  message={fetchMessageFormH}
+                  source="H"
+                />
+                <FetchValueButton 
+                  onClick={fetchInterventionFromFormI}
+                  disabled={!currentUser?.uid}
+                  message={fetchMessageFormI}
+                  source="I"
+                />
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="gap-1"
-                  onClick={fetchInterventionFromFormI}
-                  disabled={!currentUser?.uid}
-                >
-                  <ArrowDownIcon className="h-4 w-4" />
-                  Hämta från Formulär I
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="default" 
                   className="gap-1"
                   onClick={addIntervention}
                 >
                   <PlusCircle className="h-4 w-4" />
-                  Lägg till din första insats
+                  Lägg till insats
                 </Button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {safeFormData.interventions.map((intervention, index) => (
-                <InterventionCard
-                  key={intervention.id}
-                  intervention={intervention}
-                  index={index}
-                  onChange={updateIntervention}
-                  onRemove={() => removeIntervention(intervention.id)}
-                  onMoveUp={() => moveInterventionUp(index)}
-                  onMoveDown={() => moveInterventionDown(index)}
-                  isFirst={index === 0}
-                  isLast={index === safeFormData.interventions.length - 1}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        
-        {/* Total summering */}
-        <div className="form-card">
-          <SectionHeader 
-            title="Total summering" 
-            icon={<Calculator className="h-5 w-5 text-primary" />}
-          />
+            
+            {(!safeFormData.interventions || safeFormData.interventions.length === 0) ? (
+              <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
+                <p className="text-muted-foreground mb-4">
+                  Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär H eller I.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="gap-1"
+                    onClick={fetchInterventionFromFormH}
+                    disabled={!currentUser?.uid}
+                  >
+                    <ArrowDownIcon className="h-4 w-4" />
+                    Hämta från Formulär H
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="gap-1"
+                    onClick={fetchInterventionFromFormI}
+                    disabled={!currentUser?.uid}
+                  >
+                    <ArrowDownIcon className="h-4 w-4" />
+                    Hämta från Formulär I
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="default" 
+                    className="gap-1"
+                    onClick={addIntervention}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Lägg till din första insats
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {safeFormData.interventions.map((intervention, index) => (
+                  <InterventionCard
+                    key={intervention.id}
+                    intervention={intervention}
+                    index={index}
+                    onChange={updateIntervention}
+                    onRemove={() => removeIntervention(intervention.id)}
+                    onMoveUp={() => moveInterventionUp(index)}
+                    onMoveDown={() => moveInterventionDown(index)}
+                    isFirst={index === 0}
+                    isLast={index === safeFormData.interventions.length - 1}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
           
-          <div className="grid grid-cols-3 gap-4">
-            <ReadOnlyField 
-              label="Totala externa kostnader"
-              value={formatCurrency(safeFormData.totalExternalCost || 0)}
-              info="Summa av alla externa kostnader"
+          {/* Total summering */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Total summering" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
             />
-            <ReadOnlyField 
-              label="Totala interna kostnader"
-              value={formatCurrency(safeFormData.totalInternalCost || 0)}
-              info="Summa av alla interna kostnader"
-            />
-            <ReadOnlyField 
-              label="G34: Total insatskostnad"
-              value={formatCurrency(safeFormData.totalInterventionCost || 0)}
-              info="Beräknas automatiskt som summan av alla insatskostnader"
-              highlight={true}
-            />
+            
+            <div className="grid grid-cols-3 gap-4">
+              <ReadOnlyField 
+                label="Totala externa kostnader"
+                value={formatCurrency(safeFormData.totalExternalCost || 0)}
+                info="Summa av alla externa kostnader"
+              />
+              <ReadOnlyField 
+                label="Totala interna kostnader"
+                value={formatCurrency(safeFormData.totalInternalCost || 0)}
+                info="Summa av alla interna kostnader"
+              />
+              <ReadOnlyField 
+                label="G34: Total insatskostnad"
+                value={formatCurrency(safeFormData.totalInterventionCost || 0)}
+                info="Beräknas automatiskt som summan av alla insatskostnader"
+                highlight={true}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });

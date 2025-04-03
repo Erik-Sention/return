@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
-import { Calculator, Info, LineChart, ArrowDown, ArrowRight } from 'lucide-react';
+import { Calculator, Info, LineChart, ArrowDown, ArrowRight, Save, PieChart, ArrowDownRight, TrendingUp, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
@@ -9,6 +9,8 @@ import { formatCurrency, formatPercentage } from '@/lib/utils/format';
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { OrganizationHeader } from '@/components/ui/organization-header';
+import { FadeIn } from '@/components/ui/fade-in';
 
 // Interface för data från formulär C
 interface FormCData {
@@ -466,369 +468,434 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     }
   }));
   
+  const [error, setError] = useState<string | null>(null);
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  
+  // Lägg till hook för att hålla reda på när innehållet är redo
+  useEffect(() => {
+    // När data har laddats, sätt isContentReady till true
+    if (!isDataLoading && !isOrgInfoLoading) {
+      setIsContentReady(true);
+    }
+  }, [isDataLoading, isOrgInfoLoading]);
+  
+  // Uppdatera den befintliga datahämtningen
+  useEffect(() => {
+    const loadFromFirebase = async () => {
+      if (currentUser?.uid) {
+        try {
+          setIsDataLoading(true);
+          setError(null);
+          const data = await loadFormData<FormJData>(currentUser.uid, FORM_TYPE);
+          // Använd den befintliga logiken för datahämtning här
+          if (data) {
+            // Befintlig datahämtningslogik...
+            setFormData(data);
+          }
+        } catch (error) {
+          console.error('Error loading data from Firebase:', error);
+          setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
+        }
+      } else {
+        setIsDataLoading(false);
+      }
+    };
+
+    loadFromFirebase();
+  }, [currentUser]);
+  
+  // Callback för OrganizationHeader
+  const handleOrgLoadingChange = (isLoading: boolean) => {
+    setIsOrgInfoLoading(isLoading);
+  };
+  
   // Huvudinnehåll
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Formulär J - Return on Investment (ROI)</h2>
-      
-      {/* Visa meddelande om automatisk hämtning av data */}
-      {autoFetchStatus.hasFetched && (
-        autoFetchStatus.costMentalHealthAlt1 || 
-        autoFetchStatus.interventionCostAlt1 || 
-        autoFetchStatus.costMentalHealthAlt2 || 
-        autoFetchStatus.interventionCostAlt3 || 
-        autoFetchStatus.costMentalHealthAlt3
-      ) && (
-        <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
-          <p className="font-medium">Följande data har automatiskt hämtats:</p>
-          <ul className="list-disc list-inside mt-1">
-            {(autoFetchStatus.costMentalHealthAlt1 || 
-              autoFetchStatus.costMentalHealthAlt2 || 
-              autoFetchStatus.costMentalHealthAlt3) && 
-              <li>Total kostnad för psykisk ohälsa från Formulär C</li>
-            }
-            {(autoFetchStatus.interventionCostAlt1 || 
-              autoFetchStatus.interventionCostAlt3) && 
-              <li>Total kostnad för insatsen från Formulär G</li>
-            }
-          </ul>
-        </div>
-      )}
-      
-      {autoFetchStatus.errorMessage && (
-        <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
-          {autoFetchStatus.errorMessage}
-        </div>
-      )}
-      
-      {/* Grundinformation */}
-      <div className="form-card">
-        <SectionHeader 
-          title="Grundinformation" 
-          icon={<Info className="h-5 w-5 text-primary" />}
+      {/* Dold OrganizationHeader för att enbart ladda data */}
+      <div className="sr-only">
+        <OrganizationHeader 
+          onLoadingChange={handleOrgLoadingChange} 
+          onDataLoaded={setOrgData}
         />
-        
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">J1: Organisationens namn</label>
-            <InfoLabel text="Namnet på din organisation" />
-            <Input
-              value={safeFormData.organizationName}
-              onChange={(e) => handleChange('organizationName', e.target.value)}
-              placeholder="Ange organisationens namn"
-              className="bg-background/50"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">J2: Kontaktperson</label>
-            <InfoLabel text="Namn på kontaktperson" />
-            <Input
-              value={safeFormData.contactPerson}
-              onChange={(e) => handleChange('contactPerson', e.target.value)}
-              placeholder="Ange kontaktperson"
-              className="bg-background/50"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">J3: Tidsperiod</label>
-            <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
-            <Input
-              value={safeFormData.timePeriod}
-              onChange={(e) => handleChange('timePeriod', e.target.value)}
-              placeholder="Ange tidsperiod"
-              className="bg-background/50"
-            />
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <SharedFieldsButton 
-            userId={currentUser?.uid}
-            onFieldsLoaded={(fields: SharedFields) => {
-              setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-            }}
-            disabled={!currentUser?.uid}
-          />
-        </div>
       </div>
       
-      {/* Insatsbeskrivning */}
-      <div className="form-card">
-        <SectionHeader 
-          title="Beskriv insatsen som beräkningen avser" 
-          icon={<LineChart className="h-5 w-5 text-primary" />}
-        />
-        
-        <div className="space-y-2">
-          <label className="text-sm font-medium">J4: Insatsbeskrivning</label>
-          <InfoLabel text="Summering av alla insatser, se formulär G samt respektive underformulär" />
-          <textarea
-            className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-            value={safeFormData.interventionDescription}
-            onChange={(e) => handleChange('interventionDescription', e.target.value)}
-            placeholder="Beskriv insatsen..."
-          />
-        </div>
-      </div>
-      
-      {/* Beräkningsalternativ 1 */}
-      <div className="form-card">
-        <SectionHeader 
-          title="Beräkningsalternativ 1" 
-          icon={<Calculator className="h-5 w-5 text-primary" />}
-        />
-        <div className="text-sm text-muted-foreground mb-4">
-          (investeringen är känd, effekten är känd, beräkna ROI)
-        </div>
-        
+      <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
-              {autoFetchStatus.costMentalHealthAlt1 ? (
-                <AutoFilledField
-                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt1 || 0)} kr`}
-                  sourceFormName="C"
-                  onNavigate={navigateToForm}
-                  isEmpty={!safeFormData.totalCostMentalHealthAlt1}
-                />
-              ) : (
-                <>
-                  <FormattedNumberInput
-                    value={safeFormData.totalCostMentalHealthAlt1}
-                    onChange={(value) => handleChange('totalCostMentalHealthAlt1', value)}
-                    allowDecimals={false}
-                    placeholder="0"
-                    className="bg-background/50"
-                  />
-                  <FetchValueButton 
-                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt1', setTransferMessage)}
-                    disabled={!currentUser?.uid}
-                    formName="C"
-                    message={transferMessage}
-                  />
-                </>
-              )}
+          {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
+          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+            <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+                  <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+                  <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
+                </div>
+              </div>
             </div>
+          )}
+          
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold">J – Långsiktiga effekter</h2>
+            </div>
+          </div>
+          
+          {/* Visa meddelande om automatisk hämtning av data */}
+          {autoFetchStatus.hasFetched && (
+            autoFetchStatus.costMentalHealthAlt1 || 
+            autoFetchStatus.interventionCostAlt1 || 
+            autoFetchStatus.costMentalHealthAlt2 || 
+            autoFetchStatus.interventionCostAlt3 || 
+            autoFetchStatus.costMentalHealthAlt3
+          ) && (
+            <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+              <p className="font-medium">Följande data har automatiskt hämtats:</p>
+              <ul className="list-disc list-inside mt-1">
+                {(autoFetchStatus.costMentalHealthAlt1 || 
+                  autoFetchStatus.costMentalHealthAlt2 || 
+                  autoFetchStatus.costMentalHealthAlt3) && 
+                    <li>Total kostnad för psykisk ohälsa från Formulär C</li>
+                }
+                {(autoFetchStatus.interventionCostAlt1 || 
+                  autoFetchStatus.interventionCostAlt3) && 
+                    <li>Total kostnad för insatsen från Formulär G</li>
+                }
+              </ul>
+            </div>
+          )}
+          
+          {autoFetchStatus.errorMessage && (
+            <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+              {autoFetchStatus.errorMessage}
+            </div>
+          )}
+          
+          {error && (
+            <div className="p-3 rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          {/* Tidsperiod */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Tidsperiod" 
+              icon={<Info className="h-5 w-5 text-primary" />}
+            />
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">J6: Minskad andel av personal med hög stressnivå</label>
-              <div className="flex items-center gap-2">
-                <FormattedNumberInput
-                  value={safeFormData.reducedStressPercentageAlt1}
-                  onChange={(value) => handleChange('reducedStressPercentageAlt1', value)}
-                  allowDecimals={true}
-                  placeholder="0"
-                  className="bg-background/50"
-                />
-                <span className="text-sm">%</span>
+              <label className="text-sm font-medium">J3: Tidsperiod</label>
+              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
+              <Input
+                value={safeFormData.timePeriod}
+                onChange={(e) => handleChange('timePeriod', e.target.value)}
+                placeholder="Ange tidsperiod"
+                className="bg-background/50"
+              />
+            </div>
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
+                disabled={!currentUser?.uid}
+              />
+            </div>
+          </div>
+          
+          {/* Insatsbeskrivning */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Beskriv insatsen som beräkningen avser" 
+              icon={<LineChart className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">J4: Insatsbeskrivning</label>
+              <InfoLabel text="Summering av alla insatser, se formulär G samt respektive underformulär" />
+              <textarea
+                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                value={safeFormData.interventionDescription}
+                onChange={(e) => handleChange('interventionDescription', e.target.value)}
+                placeholder="Beskriv insatsen..."
+              />
+            </div>
+          </div>
+          
+          {/* Beräkningsalternativ 1 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Beräkningsalternativ 1" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
+            />
+            <div className="text-sm text-muted-foreground mb-4">
+              (investeringen är känd, effekten är känd, beräkna ROI)
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  {autoFetchStatus.costMentalHealthAlt1 ? (
+                    <AutoFilledField
+                      value={`${formatNumber(safeFormData.totalCostMentalHealthAlt1 || 0)} kr`}
+                      sourceFormName="C"
+                      onNavigate={navigateToForm}
+                      isEmpty={!safeFormData.totalCostMentalHealthAlt1}
+                    />
+                  ) : (
+                    <>
+                      <FormattedNumberInput
+                        value={safeFormData.totalCostMentalHealthAlt1}
+                        onChange={(value) => handleChange('totalCostMentalHealthAlt1', value)}
+                        allowDecimals={false}
+                        placeholder="0"
+                        className="bg-background/50"
+                      />
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt1', setTransferMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="C"
+                        message={transferMessage}
+                      />
+                    </>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J6: Minskad andel av personal med hög stressnivå</label>
+                  <div className="flex items-center gap-2">
+                    <FormattedNumberInput
+                      value={safeFormData.reducedStressPercentageAlt1}
+                      onChange={(value) => handleChange('reducedStressPercentageAlt1', value)}
+                      allowDecimals={true}
+                      placeholder="0"
+                      className="bg-background/50"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-t border-dashed">
+                <label className="text-sm font-medium">J7: Ekonomisk nytta av insatsen, kr per år</label>
+                <div className="text-xl font-semibold">
+                  {formatCurrency(safeFormData.economicBenefitAlt1)}
+                </div>
+              </div>
+              
+              <div className="grid gap-6 md:grid-cols-1">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J8: Total kostnad för insatsen, kr</label>
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+                  {autoFetchStatus.interventionCostAlt1 ? (
+                    <AutoFilledField
+                      value={`${formatNumber(safeFormData.totalInterventionCostAlt1 || 0)} kr`}
+                      sourceFormName="G"
+                      onNavigate={navigateToForm}
+                      isEmpty={!safeFormData.totalInterventionCostAlt1}
+                    />
+                  ) : (
+                    <>
+                      <FormattedNumberInput
+                        value={safeFormData.totalInterventionCostAlt1}
+                        onChange={(value) => handleChange('totalInterventionCostAlt1', value)}
+                        allowDecimals={false}
+                        placeholder="0"
+                        className="bg-background/50"
+                      />
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt1', setTransferMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="G"
+                        message={transferMessage}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-t border-dashed">
+                <label className="text-sm font-medium">J9: Ekonomiskt överskott av insatsen (kr)</label>
+                <div className="text-xl font-semibold">
+                  {formatCurrency(safeFormData.economicSurplusAlt1)}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 border-dashed border-t border-b">
+                <label className="text-sm font-medium">J10: Total kostnad för insatsen, kr</label>
+                <div className="text-xl font-semibold">
+                  {formatCurrency(safeFormData.totalInterventionCostAlt1 || 0)}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
+                <label className="text-base font-bold">J11: Return on investment (ROI), %, alt 1.</label>
+                <div className="text-2xl font-bold text-primary">
+                  {formatPercentage(safeFormData.roiPercentageAlt1)}
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-between py-2 border-t border-dashed">
-            <label className="text-sm font-medium">J7: Ekonomisk nytta av insatsen, kr per år</label>
-            <div className="text-xl font-semibold">
-              {formatCurrency(safeFormData.economicBenefitAlt1)}
+          {/* Beräkningsalternativ 2 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Beräkningsalternativ 2" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
+            />
+            <div className="text-sm text-muted-foreground mb-4">
+              (investeringen är okänd, effekten är känd, beräkna maximal insatskostnad)
             </div>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-1">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J8: Total kostnad för insatsen, kr</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
-              {autoFetchStatus.interventionCostAlt1 ? (
-                <AutoFilledField
-                  value={`${formatNumber(safeFormData.totalInterventionCostAlt1 || 0)} kr`}
-                  sourceFormName="G"
-                  onNavigate={navigateToForm}
-                  isEmpty={!safeFormData.totalInterventionCostAlt1}
-                />
-              ) : (
-                <>
-                  <FormattedNumberInput
-                    value={safeFormData.totalInterventionCostAlt1}
-                    onChange={(value) => handleChange('totalInterventionCostAlt1', value)}
-                    allowDecimals={false}
-                    placeholder="0"
-                    className="bg-background/50"
-                  />
-                  <FetchValueButton 
-                    onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt1', setTransferMessage)}
-                    disabled={!currentUser?.uid}
-                    formName="G"
-                    message={transferMessage}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between py-2 border-t border-dashed">
-            <label className="text-sm font-medium">J9: Ekonomiskt överskott av insatsen (kr)</label>
-            <div className="text-xl font-semibold">
-              {formatCurrency(safeFormData.economicSurplusAlt1)}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between py-2 border-dashed border-t border-b">
-            <label className="text-sm font-medium">J10: Total kostnad för insatsen, kr</label>
-            <div className="text-xl font-semibold">
-              {formatCurrency(safeFormData.totalInterventionCostAlt1 || 0)}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-            <label className="text-base font-bold">J11: Return on investment (ROI), %, alt 1.</label>
-            <div className="text-2xl font-bold text-primary">
-              {formatPercentage(safeFormData.roiPercentageAlt1)}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Beräkningsalternativ 2 */}
-      <div className="form-card">
-        <SectionHeader 
-          title="Beräkningsalternativ 2" 
-          icon={<Calculator className="h-5 w-5 text-primary" />}
-        />
-        <div className="text-sm text-muted-foreground mb-4">
-          (investeringen är okänd, effekten är känd, beräkna maximal insatskostnad)
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J12: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
-              {autoFetchStatus.costMentalHealthAlt2 ? (
-                <AutoFilledField
-                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt2 || 0)} kr`}
-                  sourceFormName="C"
-                  onNavigate={navigateToForm}
-                  isEmpty={!safeFormData.totalCostMentalHealthAlt2}
-                />
-              ) : (
-                <>
-                  <FormattedNumberInput
-                    value={safeFormData.totalCostMentalHealthAlt2}
-                    onChange={(value) => handleChange('totalCostMentalHealthAlt2', value)}
-                    allowDecimals={false}
-                    placeholder="0"
-                    className="bg-background/50"
-                  />
-                  <FetchValueButton 
-                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt2', setTransferMessage)}
-                    disabled={!currentUser?.uid}
-                    formName="C"
-                    message={transferMessage}
-                  />
-                </>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J13: Minskad andel av personal med hög stressnivå</label>
-              <div className="flex items-center gap-2">
-                <FormattedNumberInput
-                  value={safeFormData.reducedStressPercentageAlt2}
-                  onChange={(value) => handleChange('reducedStressPercentageAlt2', value)}
-                  allowDecimals={true}
-                  placeholder="0"
-                  className="bg-background/50"
-                />
-                <span className="text-sm">%</span>
+            
+            <div className="space-y-4">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J12: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  {autoFetchStatus.costMentalHealthAlt2 ? (
+                    <AutoFilledField
+                      value={`${formatNumber(safeFormData.totalCostMentalHealthAlt2 || 0)} kr`}
+                      sourceFormName="C"
+                      onNavigate={navigateToForm}
+                      isEmpty={!safeFormData.totalCostMentalHealthAlt2}
+                    />
+                  ) : (
+                    <>
+                      <FormattedNumberInput
+                        value={safeFormData.totalCostMentalHealthAlt2}
+                        onChange={(value) => handleChange('totalCostMentalHealthAlt2', value)}
+                        allowDecimals={false}
+                        placeholder="0"
+                        className="bg-background/50"
+                      />
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt2', setTransferMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="C"
+                        message={transferMessage}
+                      />
+                    </>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J13: Minskad andel av personal med hög stressnivå</label>
+                  <div className="flex items-center gap-2">
+                    <FormattedNumberInput
+                      value={safeFormData.reducedStressPercentageAlt2}
+                      onChange={(value) => handleChange('reducedStressPercentageAlt2', value)}
+                      allowDecimals={true}
+                      placeholder="0"
+                      className="bg-background/50"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
+                <label className="text-base font-bold">J14: Maximal kostnad för insatsen, alt 2.</label>
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(safeFormData.maxInterventionCostAlt2)}
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-            <label className="text-base font-bold">J14: Maximal kostnad för insatsen, alt 2.</label>
-            <div className="text-2xl font-bold text-primary">
-              {formatCurrency(safeFormData.maxInterventionCostAlt2)}
+          {/* Beräkningsalternativ 3 */}
+          <div className="form-card">
+            <SectionHeader 
+              title="Beräkningsalternativ 3" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
+            />
+            <div className="text-sm text-muted-foreground mb-4">
+              (investeringen är känd, effekten okänd, beräkna minsta effekt för att nå break-even)
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J15: Total kostnad för insatsen, kr</label>
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+                  {autoFetchStatus.interventionCostAlt3 ? (
+                    <AutoFilledField
+                      value={`${formatNumber(safeFormData.totalInterventionCostAlt3 || 0)} kr`}
+                      sourceFormName="G"
+                      onNavigate={navigateToForm}
+                      isEmpty={!safeFormData.totalInterventionCostAlt3}
+                    />
+                  ) : (
+                    <>
+                      <FormattedNumberInput
+                        value={safeFormData.totalInterventionCostAlt3}
+                        onChange={(value) => handleChange('totalInterventionCostAlt3', value)}
+                        allowDecimals={false}
+                        placeholder="0"
+                        className="bg-background/50"
+                      />
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt3', setTransferMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="G"
+                        message={transferMessage}
+                      />
+                    </>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">J16: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  {autoFetchStatus.costMentalHealthAlt3 ? (
+                    <AutoFilledField
+                      value={`${formatNumber(safeFormData.totalCostMentalHealthAlt3 || 0)} kr`}
+                      sourceFormName="C"
+                      onNavigate={navigateToForm}
+                      isEmpty={!safeFormData.totalCostMentalHealthAlt3}
+                    />
+                  ) : (
+                    <>
+                      <FormattedNumberInput
+                        value={safeFormData.totalCostMentalHealthAlt3}
+                        onChange={(value) => handleChange('totalCostMentalHealthAlt3', value)}
+                        allowDecimals={false}
+                        placeholder="0"
+                        className="bg-background/50"
+                      />
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt3', setTransferMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="C"
+                        message={transferMessage}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
+                <label className="text-base font-bold">J17: Minskad andel av personal med hög stressnivå för break even, %, alt 3.</label>
+                <div className="text-2xl font-bold text-primary">
+                  {formatPercentage(safeFormData.minEffectForBreakEvenAlt3)}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Beräkningsalternativ 3 */}
-      <div className="form-card">
-        <SectionHeader 
-          title="Beräkningsalternativ 3" 
-          icon={<Calculator className="h-5 w-5 text-primary" />}
-        />
-        <div className="text-sm text-muted-foreground mb-4">
-          (investeringen är känd, effekten okänd, beräkna minsta effekt för att nå break-even)
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J15: Total kostnad för insatsen, kr</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
-              {autoFetchStatus.interventionCostAlt3 ? (
-                <AutoFilledField
-                  value={`${formatNumber(safeFormData.totalInterventionCostAlt3 || 0)} kr`}
-                  sourceFormName="G"
-                  onNavigate={navigateToForm}
-                  isEmpty={!safeFormData.totalInterventionCostAlt3}
-                />
-              ) : (
-                <>
-                  <FormattedNumberInput
-                    value={safeFormData.totalInterventionCostAlt3}
-                    onChange={(value) => handleChange('totalInterventionCostAlt3', value)}
-                    allowDecimals={false}
-                    placeholder="0"
-                    className="bg-background/50"
-                  />
-                  <FetchValueButton 
-                    onClick={() => fetchValueFromForm('G', 'totalInterventionCostAlt3', setTransferMessage)}
-                    disabled={!currentUser?.uid}
-                    formName="G"
-                    message={transferMessage}
-                  />
-                </>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J16: Total kostnad för psykisk ohälsa, kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
-              {autoFetchStatus.costMentalHealthAlt3 ? (
-                <AutoFilledField
-                  value={`${formatNumber(safeFormData.totalCostMentalHealthAlt3 || 0)} kr`}
-                  sourceFormName="C"
-                  onNavigate={navigateToForm}
-                  isEmpty={!safeFormData.totalCostMentalHealthAlt3}
-                />
-              ) : (
-                <>
-                  <FormattedNumberInput
-                    value={safeFormData.totalCostMentalHealthAlt3}
-                    onChange={(value) => handleChange('totalCostMentalHealthAlt3', value)}
-                    allowDecimals={false}
-                    placeholder="0"
-                    className="bg-background/50"
-                  />
-                  <FetchValueButton 
-                    onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt3', setTransferMessage)}
-                    disabled={!currentUser?.uid}
-                    formName="C"
-                    message={transferMessage}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-            <label className="text-base font-bold">J17: Minskad andel av personal med hög stressnivå för break even, %, alt 3.</label>
-            <div className="text-2xl font-bold text-primary">
-              {formatPercentage(safeFormData.minEffectForBreakEvenAlt3)}
-            </div>
-          </div>
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 });
