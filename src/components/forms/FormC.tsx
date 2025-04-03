@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
@@ -186,28 +186,13 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     errorMessage: null as string | null
   });
 
-  // Definiera handleChange före användning i useEffect
-  const handleChange = (field: keyof FormCData, value: string | number | undefined) => {
-    // Om värdet är ett nummer eller undefined, uppdatera direkt
-    if (typeof value === 'number' || value === undefined) {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    } else {
-      // För strängar, konvertera till nummer om fältet är numeriskt
-      if (typeof formData[field] === 'number') {
-        // Om värdet är tomt, sätt till undefined
-        if (value === '') {
-          setFormData(prev => ({ ...prev, [field]: undefined }));
-        } else {
-          // Konvertera kommatecken till decimalpunkt
-          const normalizedValue = value.replace(',', '.');
-          const numValue = parseFloat(normalizedValue);
-          setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
-        }
-      } else {
-        setFormData(prev => ({ ...prev, [field]: value }));
-      }
-    }
-  };
+  // Hantera ändringar i formuläret
+  const handleChange = useCallback((field: keyof FormCData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
   // Load data from Firebase on mount
   useEffect(() => {

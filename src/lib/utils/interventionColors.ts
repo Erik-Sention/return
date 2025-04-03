@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
 
 // Professionella färger som fungerar i både ljust och mörkt tema
-// Varje färg har en mer dämpad ton med högre kontrast mot bakgrunden
-// Färgerna är valda för att vara både distinkta och professionella
+// Färgerna har ökad mättnad och kontrast för att fungera väl i mörkt tema
+// Varje färg har också en tydligare gräns för god läsbarhet
 const COLORS = [
-  { bg: '#e0eaf4', border: '#b0c8e0' }, // stålblå
-  { bg: '#f0e8e0', border: '#d8c0a8' }, // mocka
-  { bg: '#e0ebe0', border: '#b8d0b8' }, // jadegrön
-  { bg: '#e8e0e8', border: '#c8b0c8' }, // plommon
-  { bg: '#f0e8d0', border: '#d8c4a0' }, // sand
-  { bg: '#e8d8d8', border: '#c8a8a8' }, // terrakotta
-  { bg: '#d8e8e8', border: '#a8c8c8' }, // slate
-  { bg: '#e8e8e8', border: '#c0c0c0' }, // grafit
-  { bg: '#dce4e8', border: '#b0c0c8' }, // dimblå
-  { bg: '#e8e0e0', border: '#c8b0b0' }  // mauve
+  { bg: '#1e3a5f30', border: '#3a6ea8' }, // mörkblå
+  { bg: '#5f3a1e30', border: '#9c6240' }, // brunröd
+  { bg: '#2e5f2e30', border: '#4c8c4c' }, // mörkgrön
+  { bg: '#4e2a5f30', border: '#7a4c9c' }, // mörklila
+  { bg: '#5f4e1e30', border: '#9c8040' }, // senap
+  { bg: '#5f2a2a30', border: '#9c4c4c' }, // vinröd
+  { bg: '#2a4e5f30', border: '#4c7a9c' }, // petrol
+  { bg: '#36363630', border: '#707070' }, // mörkgrå
+  { bg: '#2a3a4f30', border: '#4c6480' }, // marinblå
+  { bg: '#4f2a3a30', border: '#804c60' }  // bordeaux
 ];
 
 /**

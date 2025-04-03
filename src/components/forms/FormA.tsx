@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowRight, Calculator } from 'lucide-react';
@@ -244,23 +244,13 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     return preparedData;
   };
 
-  const handleChange = (field: keyof FormAData, value: string | number | string[] | undefined) => {
-    if (typeof value === 'number' || value === undefined) {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    } else if (Array.isArray(value)) {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    } else if (typeof formData[field] === 'number') {
-      if (value === '') {
-        setFormData(prev => ({ ...prev, [field]: undefined }));
-      } else {
-        const normalizedValue = value.replace(',', '.');
-        const numValue = parseFloat(normalizedValue);
-        setFormData(prev => ({ ...prev, [field]: isNaN(numValue) ? undefined : numValue }));
-      }
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
-  };
+  // Hantera ändringar i formuläret
+  const handleChange = useCallback((field: keyof FormAData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
   // Hjälpfunktion för att navigera till specifikt formulär
   const navigateToForm = (formName: string) => {

@@ -197,7 +197,7 @@ const CostCategorySection = ({
             value={nullToUndefined(category.minutesSpent)}
             onChange={(value) => updateMinutes(value === undefined ? null : value)}
             placeholder="0"
-            className="text-sm bg-background/50"
+            className="text-sm bg-white dark:bg-slate-800"
           />
         </div>
         
@@ -209,7 +209,7 @@ const CostCategorySection = ({
             value={nullToUndefined(category.employeeCount)}
             onChange={(value) => updateEmployeeCount(value === undefined ? null : value)}
             placeholder="0"
-            className="text-sm bg-background/50"
+            className="text-sm bg-white dark:bg-slate-800"
           />
         </div>
         
@@ -220,8 +220,8 @@ const CostCategorySection = ({
           <FormattedNumberInput
             value={nullToUndefined(category.hourlyCost)}
             onChange={(value) => updateHourlyCost(value === undefined ? null : value)}
-            placeholder="0 kr"
-            className="text-sm bg-background/50"
+            placeholder="0 kr/timme"
+            className="text-sm bg-white dark:bg-slate-800"
           />
         </div>
         
@@ -1047,6 +1047,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.organizationName || ''}
                 onChange={handleInputChange}
                 placeholder="Ange organisationens namn"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
             <div className="space-y-2">
@@ -1057,6 +1058,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.contactPerson || ''}
                 onChange={handleInputChange}
                 placeholder="Ange kontaktperson"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
             <div className="space-y-2">
@@ -1067,6 +1069,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 value={safeFormData.timePeriod || ''}
                 onChange={handleInputChange}
                 placeholder="Ange tidsperiod"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
           </div>

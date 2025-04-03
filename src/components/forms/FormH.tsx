@@ -149,10 +149,10 @@ const CostItemRow = ({
   onRemove: () => void;
 }) => {
   return (
-    <div className="grid grid-cols-12 gap-2 items-center mb-1 p-1 rounded-md bg-background/30">
+    <div className="grid grid-cols-12 gap-2 items-center mb-1 p-1 rounded-md bg-white/50 dark:bg-background/10 border border-primary/10">
       <div className="col-span-3 flex flex-col">
         <div className="text-xs text-muted-foreground mb-1"></div>
-        <div className="bg-muted/30 p-1.5 rounded border border-muted text-sm font-medium truncate">
+        <div className="bg-white/80 dark:bg-background/20 p-1.5 rounded border border-primary/20 text-sm font-medium truncate">
           {costItem.subInterventionName || 'Ej angiven'}
         </div>
       </div>
@@ -160,7 +160,7 @@ const CostItemRow = ({
         <select 
           value={costItem.costType || ''}
           onChange={(e) => onChange({ ...costItem, costType: e.target.value })}
-          className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none"
+          className="w-full rounded-md border border-input bg-white dark:bg-slate-800 px-3 py-1 text-sm focus-visible:outline-none cursor-pointer appearance-none bg-select-arrow bg-no-repeat bg-[center_right_0.5rem] pr-8"
         >
           <option value="">Välj kostnadstyp</option>
           {COST_TYPES.map(type => (
@@ -177,7 +177,7 @@ const CostItemRow = ({
             onChange({ ...costItem, amount: safeValue });
           }}
           placeholder="0 kr"
-          className="text-sm"
+          className="text-sm bg-white dark:bg-slate-800"
         />
       </div>
       <div className="col-span-1 flex justify-center">
@@ -185,7 +185,7 @@ const CostItemRow = ({
           type="button" 
           size="icon" 
           variant="ghost" 
-          className="h-7 w-7 text-red-500"
+          className="h-7 w-7 text-red-500 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
@@ -214,7 +214,7 @@ const InterventionCard = ({
   const { bg, border } = getInterventionColor(intervention.name);
   const cardStyle = {
     borderColor: border,
-    backgroundColor: `${bg}10` // Lägg till 10% opacitet för bakgrundsfärgen
+    backgroundColor: `${bg}10`
   };
   const headerStyle = {
     backgroundColor: bg,
@@ -269,7 +269,7 @@ const InterventionCard = ({
         style={headerStyle}
       >
         <div className="flex items-center gap-2">
-          <div className="bg-white/80 w-6 h-6 rounded-full flex items-center justify-center">
+          <div className="bg-white/80 dark:bg-white/20 w-6 h-6 rounded-full flex items-center justify-center">
             <span className="text-primary text-xs font-medium">{index + 1}</span>
           </div>
           <div>
@@ -291,7 +291,7 @@ const InterventionCard = ({
             {subInterventionNames.length > 1 && (
               <div className="flex flex-wrap gap-1 mt-1">
                 {subInterventionNames.map((name, i) => (
-                  <span key={i} className="inline-flex text-xs bg-white/50 px-1.5 py-0.5 rounded">
+                  <span key={i} className="inline-flex text-xs bg-white/50 dark:bg-white/20 px-1.5 py-0.5 rounded">
                     {name}
                   </span>
                 ))}
@@ -303,14 +303,14 @@ const InterventionCard = ({
           type="button"
           size="icon"
           variant="ghost"
-          className="h-7 w-7 text-red-500 bg-white/50 hover:bg-white/70"
+          className="h-7 w-7 text-red-500 bg-white/50 dark:bg-white/20 hover:bg-white/70 dark:hover:bg-white/30"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
       
-      <div className="px-3 py-2 bg-white/70 rounded-md mb-4 border border-primary/10">
+      <div className="px-3 py-2 bg-white/70 dark:bg-background/30 rounded-md mb-4 border border-primary/10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -342,7 +342,7 @@ const InterventionCard = ({
             value={intervention.comment || ''}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...intervention, comment: e.target.value })}
             placeholder="Lägg till en kommentar om insatsen"
-            className="text-sm h-16 resize-none bg-background/80"
+            className="text-sm h-16 resize-none bg-white dark:bg-slate-800"
           />
         </div>
       </div>
@@ -354,7 +354,7 @@ const InterventionCard = ({
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1"
+            className="h-7 text-xs gap-1 bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20"
             onClick={addCostItem}
           >
             <PlusCircle className="h-3 w-3" />
@@ -363,7 +363,7 @@ const InterventionCard = ({
         </div>
         
         {costItems.length === 0 ? (
-          <div className="text-sm text-muted-foreground p-2 border border-dashed border-muted-foreground/20 rounded-md text-center">
+          <div className="text-sm text-muted-foreground p-2 border border-dashed border-muted-foreground/20 rounded-md text-center bg-white/50 dark:bg-background/20">
             Inga kostnadsposter tillagda
           </div>
         ) : (
@@ -382,7 +382,7 @@ const InterventionCard = ({
                 onRemove={() => removeCostItem(costItem.id)}
               />
             ))}
-            <div className="flex justify-end mt-2">
+            <div className="flex justify-end mt-2 bg-white/50 dark:bg-background/20 p-2 rounded-md border border-primary/10">
               <div className="text-sm font-medium">
                 Summa: {formatCurrency(intervention.totalCost)}
               </div>
@@ -930,7 +930,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 value={safeFormData.organizationName || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange organisationens namn"
-                className="bg-background/50"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
             <div className="space-y-2">
@@ -941,7 +941,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 value={safeFormData.contactPerson || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange kontaktperson"
-                className="bg-background/50"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
             <div className="space-y-2">
@@ -952,7 +952,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 value={safeFormData.timePeriod || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(e)}
                 placeholder="Ange tidsperiod"
-                className="bg-background/50"
+                className="bg-white dark:bg-slate-800"
               />
             </div>
           </div>

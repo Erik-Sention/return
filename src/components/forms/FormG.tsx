@@ -164,7 +164,17 @@ const generateId = (): string => {
   return Math.random().toString(36).substring(2, 11);
 };
 
-// Lägg till kostnadsraden
+// Hjälptexter och standardsvar
+const COST_TYPES = [
+  "Fast avgift för insats/offert",
+  "Inhyrd personal",
+  "Lokalhyra",
+  "Resor",
+  "Utrustning och inventarier",
+  "Övrigt"
+];
+
+// Komponent för en kostnadsrad
 const CostRow = ({
   cost,
   onChange,
@@ -174,36 +184,43 @@ const CostRow = ({
   onChange: (updatedCost: InterventionCost) => void;
   onRemove: () => void;
 }) => {
+  // Hantera beloppsändringar
+  const handleAmountChange = (field: 'externalCost' | 'internalCost', value: number | undefined) => {
+    // Konvertera undefined till null för att spara korrekt i databasen
+    const newValue = value === undefined ? null : value;
+    onChange({
+      ...cost,
+      [field]: newValue
+    });
+  };
+
   return (
-    <div className="grid grid-cols-12 gap-3 items-start mb-2 bg-background/30 p-2 rounded-md">
-      <div className="col-span-6 space-y-1">
-        <label className="text-xs font-medium">Delinsats</label>
-        <Input
-          value={cost.name}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...cost, name: e.target.value })}
-          placeholder="Namnge delinsats"
-          className="text-sm"
+    <div className="grid grid-cols-12 gap-3 items-start mb-2 bg-white/50 dark:bg-background/20 p-2 rounded-md border border-primary/10">
+      <div className="col-span-4">
+        <Input 
+          value={cost.name} 
+          onChange={(e) => onChange({ ...cost, name: e.target.value })} 
+          placeholder="Delinsatsnamn"
+          className="bg-white dark:bg-slate-800"
         />
       </div>
-      <div className="col-span-2 space-y-1">
-        <label className="text-xs font-medium">Extern kostnad</label>
+      <div className="col-span-4">
         <FormattedNumberInput
           value={nullToUndefined(cost.externalCost)}
-          onChange={(value) => onChange({ ...cost, externalCost: value === undefined ? null : value })}
+          onChange={(value) => handleAmountChange('externalCost', value)}
           placeholder="0 kr"
-          className="text-sm"
+          className="bg-white dark:bg-slate-800"
         />
       </div>
-      <div className="col-span-2 space-y-1">
-        <label className="text-xs font-medium">Intern kostnad</label>
+      <div className="col-span-3">
         <FormattedNumberInput
           value={nullToUndefined(cost.internalCost)}
-          onChange={(value) => onChange({ ...cost, internalCost: value === undefined ? null : value })}
+          onChange={(value) => handleAmountChange('internalCost', value)}
           placeholder="0 kr"
-          className="text-sm"
+          className="bg-white dark:bg-slate-800"
         />
       </div>
-      <div className="col-span-2 flex items-end space-x-1 h-full pb-1">
+      <div className="col-span-1 flex items-end space-x-1 h-full pb-1">
         <Button 
           type="button" 
           size="icon" 
@@ -339,7 +356,7 @@ const InterventionCard = ({
             value={intervention.name}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...intervention, name: e.target.value })}
             placeholder="Ange insatsnamn"
-            className="bg-background/80"
+            className="bg-white dark:bg-slate-800"
           />
         </div>
         
@@ -350,7 +367,7 @@ const InterventionCard = ({
             value={intervention.description}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...intervention, description: e.target.value })}
             placeholder="Beskriv insatsen"
-            className="bg-background/50 min-h-24"
+            className="bg-white dark:bg-slate-800 min-h-24"
           />
         </div>
         
