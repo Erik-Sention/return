@@ -1,9 +1,15 @@
-# Formulär E – Beräkning av kostnader för kort sjukfrånvaro (dag 1–14)
+# [INAKTUELL] Formulär E – Beräkning av kostnader för kort sjukfrånvaro (dag 1–14)
 
-## Översikt
-Detta formulär är det femte i serien A-J.
+> **OBS! Detta formulär är inaktuellt.**
+> Funktionaliteten för beräkning av kort sjukfrånvaro har integrerats i Formulär D.
+> Se avsnittet "Kort sjukfrånvaro" i dokumentationen för Formulär D för mer information.
 
-## Fältbeskrivningar
+--- 
+
+## Tidigare översikt
+Detta formulär var tidigare det femte i serien A-J.
+
+## Tidigare fältbeskrivningar
 - **E1**: Genomsnittlig månadslön
 - **E2**: Kostnad för kort sjukfrånvaro per sjukdag % av månadslön
 - **E3**: Kostnad för kort sjukfrånvaro per sjukdag, kr
@@ -12,6 +18,16 @@ Detta formulär är det femte i serien A-J.
 - **E6**: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid
 - **E7**: Antal sjukdagar totalt (kort sjukfrånvaro)
 - **E8**: Totala kostnader, kort sjukfrånvaro, överförs till C8
+
+## Motsvarande fält i Formulär D
+- **E1** → **D1**: Genomsnittlig månadslön
+- **E2** → **D13**: Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)
+- **E3** → **D14**: Kostnad för kort sjukfrånvaro per sjukdag, kr
+- **E4** → **D4**: Antal anställda (FTE)
+- **E5** → **D12**: Antal schemalagda arbetsdagar per år, per anställd
+- **E6** → **D15**: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid
+- **E7** → **D16**: Antal sjukdagar totalt (kort sjukfrånvaro)
+- **E8** → **D17**: Totala kostnader, kort sjukfrånvaro
 
 ## Beräkningar
 

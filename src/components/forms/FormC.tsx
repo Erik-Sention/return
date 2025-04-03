@@ -32,18 +32,10 @@ interface FormCData {
 
 interface FormDData {
   totalPersonnelCosts?: number;
-}
-
-interface FormEData {
-  costShortSickLeave?: number;
-  totalSickLeaveCosts?: number;
-  shortSickLeavePercentage?: number; // E6: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid
-}
-
-interface FormFData {
-  costLongSickLeave?: number;
+  totalShortSickLeaveCosts?: number;
+  shortSickLeavePercentage?: number;
   totalLongSickLeaveCosts?: number;
-  longSickLeavePercentage?: number; // F6: Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid
+  longSickLeavePercentage?: number;
 }
 
 const FORM_TYPE = 'C';
@@ -179,10 +171,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const [autoFetchStatus, setAutoFetchStatus] = useState({
     hasFetched: false,             // Om datahämtning har körts
     personnelCosts: false,         // Om personalkostnader har hämtats från FormD
-    shortSickLeaveCosts: false,    // Om korttidssjukfrånvarokostnader har hämtats från FormE
-    shortSickLeavePercent: false,  // Om kort sjukfrånvaroprocent har hämtats från FormE
-    longSickLeaveCosts: false,     // Om långtidssjukfrånvarokostnader har hämtats från FormF
-    longSickLeavePercent: false,   // Om lång sjukfrånvaroprocent har hämtats från FormF
+    shortSickLeaveCosts: false,    // Om korttidssjukfrånvarokostnader har hämtats från FormD
+    shortSickLeavePercent: false,  // Om kort sjukfrånvaroprocent har hämtats från FormD
+    longSickLeaveCosts: false,     // Om långtidssjukfrånvarokostnader har hämtats från FormD
+    longSickLeavePercent: false,   // Om lång sjukfrånvaroprocent har hämtats från FormD
     errorMessage: null as string | null
   });
 
@@ -217,7 +209,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     loadFromFirebase();
   }, [currentUser]);
 
-  // Lägg till automatisk datahämtning från FormD, FormE och FormF vid inladdning
+  // Lägg till automatisk datahämtning från FormD vid inladdning
   useEffect(() => {
     const autoFetchFromOtherForms = async () => {
       if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
@@ -236,38 +228,30 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             handleChange('totalPersonnelCosts', roundedValue);
             currentStatus.personnelCosts = true;
           }
-        }
-        
-        // Hämta data från FormE
-        const formEData = await loadFormData<FormEData>(currentUser.uid, 'E');
-        if (formEData) {
-          // Hämta totalSickLeaveCosts om det finns
-          if (formEData.totalSickLeaveCosts !== undefined) {
-            const roundedValue = Math.round(formEData.totalSickLeaveCosts);
+          
+          // Hämta totalShortSickLeaveCosts om det finns
+          if (formDData.totalShortSickLeaveCosts !== undefined) {
+            const roundedValue = Math.round(formDData.totalShortSickLeaveCosts);
             handleChange('costShortSickLeave', roundedValue);
             currentStatus.shortSickLeaveCosts = true;
           }
           
           // Hämta procentsats för kort sjukfrånvaro om det finns
-          if (formEData.shortSickLeavePercentage !== undefined) {
-            handleChange('percentShortSickLeaveMentalHealth', formEData.shortSickLeavePercentage);
+          if (formDData.shortSickLeavePercentage !== undefined) {
+            handleChange('percentShortSickLeaveMentalHealth', formDData.shortSickLeavePercentage);
             currentStatus.shortSickLeavePercent = true;
           }
-        }
-        
-        // Hämta data från FormF
-        const formFData = await loadFormData<FormFData>(currentUser.uid, 'F');
-        if (formFData) {
+          
           // Hämta totalLongSickLeaveCosts om det finns
-          if (formFData.totalLongSickLeaveCosts !== undefined) {
-            const roundedValue = Math.round(formFData.totalLongSickLeaveCosts);
+          if (formDData.totalLongSickLeaveCosts !== undefined) {
+            const roundedValue = Math.round(formDData.totalLongSickLeaveCosts);
             handleChange('costLongSickLeave', roundedValue);
             currentStatus.longSickLeaveCosts = true;
           }
           
           // Hämta procentsats för lång sjukfrånvaro om det finns
-          if (formFData.longSickLeavePercentage !== undefined) {
-            handleChange('percentLongSickLeaveMentalHealth', formFData.longSickLeavePercentage);
+          if (formDData.longSickLeavePercentage !== undefined) {
+            handleChange('percentLongSickLeaveMentalHealth', formDData.longSickLeavePercentage);
             currentStatus.longSickLeavePercent = true;
           }
         }
@@ -278,7 +262,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         setAutoFetchStatus(prev => ({ 
           ...prev, 
           hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från formulär D, E och F.' 
+          errorMessage: 'Kunde inte automatiskt hämta data från formulär D.' 
         }));
       }
     };
@@ -459,13 +443,13 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                                         autoFetchStatus.longSickLeaveCosts || 
                                         autoFetchStatus.longSickLeavePercent) && (
           <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
-            <p className="font-medium">Följande data har automatiskt hämtats:</p>
+            <p className="font-medium">Följande data har automatiskt hämtats från Formulär D:</p>
             <ul className="list-disc list-inside mt-1">
-              {autoFetchStatus.personnelCosts && <li>Totala personalkostnader från Formulär D</li>}
-              {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro från Formulär E</li>}
-              {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro från Formulär E</li>}
-              {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro från Formulär F</li>}
-              {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro från Formulär F</li>}
+              {autoFetchStatus.personnelCosts && <li>Totala personalkostnader (D9)</li>}
+              {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro (D17)</li>}
+              {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro (D15)</li>}
+              {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro (D22)</li>}
+              {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro (D20)</li>}
             </ul>
           </div>
         )}
@@ -622,10 +606,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär E8" />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär D17" />
               <AutoFilledField
                 value={`${formatNumber(formData.costShortSickLeave || 0)} kr`}
-                sourceFormName="E"
+                sourceFormName="D"
                 onNavigate={navigateToForm}
                 isEmpty={!autoFetchStatus.shortSickLeaveCosts || !formData.costShortSickLeave}
               />
@@ -635,7 +619,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
               <AutoFilledField
                 value={`${formatNumber(formData.percentShortSickLeaveMentalHealth || 0)} %`}
-                sourceFormName="E"
+                sourceFormName="D"
                 onNavigate={navigateToForm}
                 isEmpty={!autoFetchStatus.shortSickLeavePercent || !formData.percentShortSickLeaveMentalHealth}
               />
@@ -660,10 +644,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
-              <InfoLabel text="Detta fält hämtas automatiskt från formulär F8" />
+              <InfoLabel text="Detta fält hämtas automatiskt från formulär D22" />
               <AutoFilledField
                 value={`${formatNumber(formData.costLongSickLeave || 0)} kr`}
-                sourceFormName="F"
+                sourceFormName="D"
                 onNavigate={navigateToForm}
                 isEmpty={!autoFetchStatus.longSickLeaveCosts || !formData.costLongSickLeave}
               />
@@ -673,7 +657,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
               <AutoFilledField
                 value={`${formatNumber(formData.percentLongSickLeaveMentalHealth || 0)} %`}
-                sourceFormName="F"
+                sourceFormName="D"
                 onNavigate={navigateToForm}
                 isEmpty={!autoFetchStatus.longSickLeavePercent || !formData.percentLongSickLeaveMentalHealth}
               />

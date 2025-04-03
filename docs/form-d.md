@@ -1,9 +1,10 @@
-# Formulär D – Beräkning av personalkostnader
+# Formulär D – Beräkning av personalkostnader och sjukfrånvaro
 
 ## Översikt
-Detta formulär är det fjärde i serien A-J.
+Detta formulär är det fjärde i serien A-J. Det hanterar beräkningar av personalkostnader samt både kort och lång sjukfrånvaro.
 
 ## Fältbeskrivningar
+### Grundläggande information:
 - **D1**: Genomsnittlig månadslön
 - **D2**: Sociala avgifter inkl arbetsgivaravgift, tjänstepension och försäkringar (%)
 - **D3**: Genomsnittliga sociala avgifter per månad
@@ -16,8 +17,27 @@ Detta formulär är det fjärde i serien A-J.
 - **D10**: Schemalagd arbetstid (timmar) per år
 - **D11**: Personalkostnad kr: per arbetad timme
 
+### Arbetstid och sjukfrånvaro:
+- **D12**: Antal schemalagda arbetsdagar per år, per anställd
+
+### Kort sjukfrånvaro:
+- **D13**: Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)
+- **D14**: Kostnad för kort sjukfrånvaro per sjukdag, kr
+- **D15**: Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid
+- **D16**: Antal sjukdagar totalt (kort sjukfrånvaro)
+- **D17**: Totala kostnader, kort sjukfrånvaro. Överförs till C11
+
+### Lång sjukfrånvaro:
+- **D18**: Kostnad för lång sjukfrånvaro per sjukdag (% av månadslön)
+- **D19**: Kostnad för lång sjukfrånvaro per sjukdag, kr
+- **D20**: Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid
+- **D21**: Antal sjukdagar totalt (lång sjukfrånvaro)
+- **D22**: Totala kostnader, lång sjukfrånvaro. Överförs till C14
+
 ## Kopplingar till andra formulär
 - **D9** förs över till C4
+- **D17** förs över till C11
+- **D22** förs över till C14
 
 ## Referensbild
 ![Form D](../Pics/Form%20D.png)
@@ -26,7 +46,7 @@ Detta formulär är det fjärde i serien A-J.
 *Här kommer vi att specificera eventuella valideringsregler för fälten*
 
 ## Anteckningar
-*Här kan vi lägga till ytterligare information eller speciella instruktioner*
+Sjukfrånvarofunktionaliteten (både kort och lång) var tidigare uppdelad i separata formulär (E och F), men har nu integrerats i formulär D för att göra det enklare att fylla i alla fält som relaterar till personalkostnader och sjukfrånvaro på ett ställe.
 
 ## Beräkningar
 
@@ -109,6 +129,87 @@ Beräkning:
 ```plaintext
 D9 / D4 / D10
 996 840 000 / 1 500 / 1 760 = 378 kr
+```
+
+---
+
+#### **D12. Antal schemalagda arbetsdagar per år, per anställd**
+Standard är ofta `220 dagar`.
+
+---
+
+#### **D13. Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)**
+Standardvärde är 10% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (12-15% pga ersättningskostnader), IT (8-10%), Finans (8-10%), Handel (10-12%).
+
+---
+
+#### **D14. Kostnad för kort sjukfrånvaro per sjukdag**
+Beräkning:
+```plaintext
+D1 * D13
+30 000 * 0.10 = 3 000
+```
+
+---
+
+#### **D15. Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid**
+Standardvärde är 2.5% för de flesta branscher. Detta varierar mellan branscher: Vård & Omsorg (3-4% pga högre risk för smitta), IT (2-2.5%), Finans (2-2.5%), Handel (2.5-3% pga kundkontakt).
+
+---
+
+#### **D16. Antal sjukdagar totalt (kort sjukfrånvaro)**
+Beräkning:
+```plaintext
+D4 * D12 * D15
+1 500 * 220 * 0.025 = 8 250
+```
+
+---
+
+#### **D17. Totala kostnader, kort sjukfrånvaro**
+Beräkning:
+```plaintext
+D14 * D16
+3 000 * 8 250 = 24 750 000
+```
+
+---
+
+#### **D18. Kostnad för lång sjukfrånvaro per sjukdag (% av månadslön)**
+Procentandel av månadslönen som utgör kostnaden per sjukdag. Standardvärde är ofta 1%.
+
+---
+
+#### **D19. Kostnad för lång sjukfrånvaro per sjukdag**
+Beräkning:
+```plaintext
+D1 * D18
+30 000 * 0.01 = 300
+```
+
+---
+
+#### **D20. Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid**
+Ange den procentandel av den schemalagda arbetstiden som utgörs av lång sjukfrånvaro (dag 15 och framåt).
+
+**Exempelvärde:** `2,00%`
+
+---
+
+#### **D21. Antal sjukdagar totalt (lång sjukfrånvaro)**
+Beräkning:
+```plaintext
+D4 * D12 * D20
+1 500 * 220 * 0.02 = 6 600
+```
+
+---
+
+#### **D22. Totala kostnader, lång sjukfrånvaro**
+Beräkning:
+```plaintext
+D19 * D21
+300 * 6 600 = 1 980 000
 ``` 
 
     D1 = 30000  # Genomsnittlig månadslön
@@ -122,3 +223,14 @@ D9 / D4 / D10
     D9 = D6 + D8  # Totala personalkostnader
     D10 = 1760  # Schemalagd arbetstid (timmar per år)
     D11 = D9 / D4 / D10  # Personalkostnad per arbetad timme
+    D12 = 220  # Antal schemalagda arbetsdagar per år, per anställd
+    D13 = 0.10  # Kostnad för kort sjukfrånvaro per sjukdag (% av månadslön)
+    D14 = D1 * D13  # Kostnad för kort sjukfrånvaro per sjukdag
+    D15 = 0.025  # Sjukfrånvaro, kort (dag 1–14) i % av schemalagd arbetstid
+    D16 = D4 * D12 * D15  # Antal sjukdagar totalt (kort sjukfrånvaro)
+    D17 = D14 * D16  # Totala kostnader, kort sjukfrånvaro
+    D18 = 0.01  # Kostnad för lång sjukfrånvaro per sjukdag (% av månadslön)
+    D19 = D1 * D18  # Kostnad för lång sjukfrånvaro per sjukdag
+    D20 = 0.02  # Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid
+    D21 = D4 * D12 * D20  # Antal sjukdagar totalt (lång sjukfrånvaro)
+    D22 = D19 * D21  # Totala kostnader, lång sjukfrånvaro

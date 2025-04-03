@@ -1,9 +1,15 @@
-# Formulär F – Beräkning av kostnader för lång sjukfrånvaro (dag 15–)
+# [INAKTUELL] Formulär F – Beräkning av kostnader för lång sjukfrånvaro (dag 15–)
 
-## Översikt
-Detta formulär är det sjätte i serien A-J.
+> **OBS! Detta formulär är inaktuellt.**
+> Funktionaliteten för beräkning av lång sjukfrånvaro har integrerats i Formulär D.
+> Se avsnittet "Lång sjukfrånvaro" i dokumentationen för Formulär D för mer information.
 
-## Fältbeskrivningar
+--- 
+
+## Tidigare översikt
+Detta formulär var tidigare det sjätte i serien A-J.
+
+## Tidigare fältbeskrivningar
 - **F1**: Genomsnittlig månadslön
 - **F2**: Kostnad för lång sjukfrånvaro per sjukdag i % av månadslön
 - **F3**: Kostnad för lång sjukfrånvaro per sjukdag, kr
@@ -12,6 +18,16 @@ Detta formulär är det sjätte i serien A-J.
 - **F6**: Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid
 - **F7**: Antal sjukdagar totalt (lång sjukfrånvaro)
 - **F8**: Totala kostnader, lång sjukfrånvaro, överförs till C11
+
+## Motsvarande fält i Formulär D
+- **F1** → **D1**: Genomsnittlig månadslön
+- **F2** → **D18**: Kostnad för lång sjukfrånvaro per sjukdag (% av månadslön)
+- **F3** → **D19**: Kostnad för lång sjukfrånvaro per sjukdag, kr
+- **F4** → **D4**: Antal anställda (FTE)
+- **F5** → **D12**: Antal schemalagda arbetsdagar per år, per anställd
+- **F6** → **D20**: Sjukfrånvaro, lång (dag 15–) i % av schemalagd arbetstid
+- **F7** → **D21**: Antal sjukdagar totalt (lång sjukfrånvaro)
+- **F8** → **D22**: Totala kostnader, lång sjukfrånvaro
 
 ## Beräkningar
 

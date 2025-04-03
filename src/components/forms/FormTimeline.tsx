@@ -25,17 +25,7 @@ const formInfos: { id: string; title: string; description: string }[] = [
   { 
     id: 'D', 
     title: 'Formulär D', 
-    description: 'Kostnadsberäkning' 
-  },
-  { 
-    id: 'E', 
-    title: 'Formulär E', 
-    description: 'Kort sjukfrånvaro' 
-  },
-  { 
-    id: 'F', 
-    title: 'Formulär F', 
-    description: 'Lång sjukfrånvaro' 
+    description: 'Personalkostnader & sjukfrånvaro' 
   },
   { 
     id: 'G', 

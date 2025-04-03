@@ -6,8 +6,6 @@ import FormA, { FormARef } from '@/components/forms/FormA';
 import FormB, { FormBRef } from '@/components/forms/FormB';
 import FormC, { FormCRef } from '@/components/forms/FormC';
 import FormD, { FormDRef } from '@/components/forms/FormD';
-import FormE, { FormERef } from '@/components/forms/FormE';
-import FormF, { FormFRef } from '@/components/forms/FormF';
 import FormG, { FormGRef } from '@/components/forms/FormG';
 import FormH, { FormHRef } from '@/components/forms/FormH';
 import FormI, { FormIRef } from '@/components/forms/FormI';
@@ -32,8 +30,6 @@ export default function ROIPage() {
   const formBRef = useRef<FormBRef>(null);
   const formCRef = useRef<FormCRef>(null);
   const formDRef = useRef<FormDRef>(null);
-  const formERef = useRef<FormERef>(null);
-  const formFRef = useRef<FormFRef>(null);
   const formGRef = useRef<FormGRef>(null);
   const formHRef = useRef<FormHRef>(null);
   const formIRef = useRef<FormIRef>(null);
@@ -73,12 +69,6 @@ export default function ROIPage() {
       } else if (currentForm === 'D' && formDRef.current) {
         await formDRef.current.handleSave();
         setSaveMessage('Formulär D har sparats!');
-      } else if (currentForm === 'E' && formERef.current) {
-        await formERef.current.handleSave();
-        setSaveMessage('Formulär E har sparats!');
-      } else if (currentForm === 'F' && formFRef.current) {
-        await formFRef.current.handleSave();
-        setSaveMessage('Formulär F har sparats!');
       } else if (currentForm === 'G' && formGRef.current) {
         await formGRef.current.handleSave();
         setSaveMessage('Formulär G har sparats!');
@@ -165,8 +155,6 @@ export default function ROIPage() {
             }}
           />}
           {currentForm === 'D' && <FormD ref={formDRef} />}
-          {currentForm === 'E' && <FormE ref={formERef} />}
-          {currentForm === 'F' && <FormF ref={formFRef} />}
           {currentForm === 'G' && <FormG ref={formGRef} />}
           {currentForm === 'H' && <FormH ref={formHRef} />}
           {currentForm === 'I' && <FormI ref={formIRef} />}
@@ -183,7 +171,7 @@ export default function ROIPage() {
           {currentForm !== 'A' && (
             <Button 
               onClick={() => {
-                const forms = 'ABCDEFGHIJ'.split('');
+                const forms = 'ABCDGHIJ'.split('');
                 const currentIndex = forms.indexOf(currentForm);
                 setCurrentForm(forms[currentIndex - 1]);
               }}
@@ -212,7 +200,7 @@ export default function ROIPage() {
             {currentForm !== 'J' && (
               <Button 
                 onClick={() => {
-                  const forms = 'ABCDEFGHIJ'.split('');
+                  const forms = 'ABCDGHIJ'.split('');
                   const currentIndex = forms.indexOf(currentForm);
                   setCurrentForm(forms[currentIndex + 1]);
                 }}
