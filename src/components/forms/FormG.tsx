@@ -165,14 +165,15 @@ const generateId = (): string => {
 };
 
 // Hjälptexter och standardsvar
-const COST_TYPES = [
-  "Fast avgift för insats/offert",
-  "Inhyrd personal",
-  "Lokalhyra",
-  "Resor",
-  "Utrustning och inventarier",
-  "Övrigt"
-];
+// Konstanten används inte för närvarande
+// const COST_TYPES = [
+//   "Fast avgift för insats/offert",
+//   "Inhyrd personal",
+//   "Lokalhyra",
+//   "Resor",
+//   "Utrustning och inventarier",
+//   "Övrigt"
+// ];
 
 // Komponent för en kostnadsrad
 const CostRow = ({

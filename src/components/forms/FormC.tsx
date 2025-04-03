@@ -187,7 +187,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   });
 
   // Hantera ändringar i formuläret
-  const handleChange = useCallback((field: keyof FormCData, value: any) => {
+  const handleChange = useCallback((field: keyof FormCData, value: string | number | null | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

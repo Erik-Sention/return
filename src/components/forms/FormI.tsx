@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown, PlusCircle, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, Download, Calculator, FileBarChart2, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
@@ -987,16 +986,18 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   }, [safeFormData.internalCosts]);
 
   // Lista med alla unika insatsnamn (för flikkategorier)
-  const interventionCategories = useMemo(() => {
-    return Array.from(groupedInterventions.keys());
-  }, [groupedInterventions]);
+  // Används inte för närvarande
+  // const interventionCategories = useMemo(() => {
+  //   return Array.from(groupedInterventions.keys());
+  // }, [groupedInterventions]);
 
   // Funktion för att lägga till en ny intern kostnad manuellt
-  const addInternalCost = () => {
-    // Nya insatser kan bara läggas till via hämtning från Formulär G
-    // Denna funktion behålls för eventuell framtida användning
-    console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
-  };
+  // Används inte för närvarande, insatser läggs endast till via hämtning från Formulär G
+  // const addInternalCost = () => {
+  //   // Nya insatser kan bara läggas till via hämtning från Formulär G
+  //   // Denna funktion behålls för eventuell framtida användning
+  //   console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
+  // };
 
   return (
     <div className="space-y-8">

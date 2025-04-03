@@ -628,11 +628,11 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   };
 
   // Lägga till en ny insats
-  const addIntervention = () => {
-    // Nya insatser kan bara läggas till via hämtning från Formulär G
-    // Denna funktion behålls för eventuell framtida användning
-    console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
-  };
+  // Denna funktion används inte för närvarande, insatser läggs endast till via hämtning från Formulär G
+  // const addIntervention = () => {
+  //   // Nya insatser kan bara läggas till via hämtning från Formulär G
+  //   console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
+  // };
 
   // Uppdatera en insats
   const updateIntervention = (updatedIntervention: Intervention) => {
