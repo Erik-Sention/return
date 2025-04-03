@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { getInterventionColor } from '@/lib/utils/interventionColors';
 
 // Enkel Textarea-komponent
 const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
@@ -240,6 +241,17 @@ const InterventionCard = ({
   // Säkerställ att costs alltid finns tillgänglig
   const costs = intervention.costs || [];
   
+  // Hämta färger baserat på insatsnamn för konsekvent färgkodning
+  const { bg, border } = getInterventionColor(intervention.name);
+  const cardStyle = {
+    borderColor: border,
+    backgroundColor: `${bg}10` // Lägg till 10% opacitet för bakgrundsfärgen
+  };
+  const headerStyle = {
+    backgroundColor: bg,
+    borderColor: border
+  };
+  
   const addCost = () => {
     const newCost: InterventionCost = {
       id: generateId(),
@@ -272,13 +284,19 @@ const InterventionCard = ({
   };
 
   return (
-    <div className="p-4 shadow-sm border border-primary/10 rounded-md mb-4">
-      <div className="flex items-center justify-between mb-4">
+    <div 
+      className="p-4 shadow-sm border rounded-md mb-4" 
+      style={cardStyle}
+    >
+      <div 
+        className="flex items-center justify-between mb-4 p-2 rounded-md" 
+        style={headerStyle}
+      >
         <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-2 rounded-full w-8 h-8 flex items-center justify-center">
+          <div className="bg-white/80 p-2 rounded-full w-8 h-8 flex items-center justify-center">
             <span className="text-primary font-bold">{index + 1}</span>
           </div>
-          <h4 className="text-base font-semibold">Insats {index + 1}</h4>
+          <h4 className="text-base font-semibold">{intervention.name || `Insats ${index + 1}`}</h4>
         </div>
         <div className="flex items-center gap-1">
           <Button 
@@ -287,7 +305,7 @@ const InterventionCard = ({
             variant="ghost" 
             disabled={isFirst}
             onClick={onMoveUp}
-            className="h-8 w-8"
+            className="h-8 w-8 bg-white/50 hover:bg-white/70"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -297,7 +315,7 @@ const InterventionCard = ({
             variant="ghost" 
             disabled={isLast}
             onClick={onMoveDown}
-            className="h-8 w-8"
+            className="h-8 w-8 bg-white/50 hover:bg-white/70"
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -306,7 +324,7 @@ const InterventionCard = ({
             size="icon" 
             variant="ghost" 
             onClick={onRemove}
-            className="h-8 w-8 text-red-500"
+            className="h-8 w-8 text-red-500 bg-white/50 hover:bg-white/70"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -321,7 +339,7 @@ const InterventionCard = ({
             value={intervention.name}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...intervention, name: e.target.value })}
             placeholder="Ange insatsnamn"
-            className="bg-background/50"
+            className="bg-background/80"
           />
         </div>
         

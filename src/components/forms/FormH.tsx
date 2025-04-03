@@ -10,6 +10,7 @@ import { Textarea } from '../ui/textarea';
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { getInterventionColor } from '@/lib/utils/interventionColors';
 
 // Typer för Form G data
 interface FormGInterventionCost {
@@ -149,13 +150,11 @@ const CostItemRow = ({
 }) => {
   return (
     <div className="grid grid-cols-12 gap-2 items-center mb-1 p-1 rounded-md bg-background/30">
-      <div className="col-span-3">
-        <Input 
-          value={costItem.subInterventionName || ''}
-          onChange={(e) => onChange({ ...costItem, subInterventionName: e.target.value })}
-          placeholder="Ange delinsats"
-          className="text-sm"
-        />
+      <div className="col-span-3 flex flex-col">
+        <div className="text-xs text-muted-foreground mb-1"></div>
+        <div className="bg-muted/30 p-1.5 rounded border border-muted text-sm font-medium truncate">
+          {costItem.subInterventionName || 'Ej angiven'}
+        </div>
       </div>
       <div className="col-span-4">
         <select 
@@ -211,6 +210,20 @@ const InterventionCard = ({
   // Säkerställ att costItems alltid är en array, även om den är undefined
   const costItems = intervention.costItems || [];
   
+  // Hämta färger baserat på insatsnamn för konsekvent färgkodning
+  const { bg, border } = getInterventionColor(intervention.name);
+  const cardStyle = {
+    borderColor: border,
+    backgroundColor: `${bg}10` // Lägg till 10% opacitet för bakgrundsfärgen
+  };
+  const headerStyle = {
+    backgroundColor: bg,
+    borderColor: border
+  };
+  
+  // Få alla unika delinsatsnamn från kostnadsposterna
+  const subInterventionNames = [...new Set(costItems.map(item => item.subInterventionName).filter(name => name))];
+  
   const addCostItem = () => {
     const newCostItem: CostItem = {
       id: generateId(),
@@ -247,43 +260,89 @@ const InterventionCard = ({
   };
 
   return (
-    <div className="border border-border rounded-md p-3 mb-3">
-      <div className="flex justify-between items-center mb-2">
+    <div 
+      className="border rounded-md p-3 mb-3" 
+      style={cardStyle}
+    >
+      <div 
+        className="flex justify-between items-start mb-4 p-2 rounded-md" 
+        style={headerStyle}
+      >
         <div className="flex items-center gap-2">
-          <div className="bg-primary/10 w-6 h-6 rounded-full flex items-center justify-center">
+          <div className="bg-white/80 w-6 h-6 rounded-full flex items-center justify-center">
             <span className="text-primary text-xs font-medium">{index + 1}</span>
           </div>
-          <h4 className="font-medium">Insats</h4>
+          <div>
+            <div className="flex items-center">
+              <h3 className="font-semibold text-primary text-lg">
+                {intervention.name || "Insats"}
+              </h3>
+              {subInterventionNames.length > 0 && (
+                <>
+                  <div className="text-sm font-medium text-muted-foreground mx-1">›</div>
+                  <h4 className="font-medium text-primary-foreground/80">
+                    {subInterventionNames.length === 1 
+                      ? subInterventionNames[0] 
+                      : `${subInterventionNames.length} delinsatser`}
+                  </h4>
+                </>
+              )}
+            </div>
+            {subInterventionNames.length > 1 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {subInterventionNames.map((name, i) => (
+                  <span key={i} className="inline-flex text-xs bg-white/50 px-1.5 py-0.5 rounded">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <Button
           type="button"
           size="icon"
           variant="ghost"
-          className="h-7 w-7 text-red-500"
+          className="h-7 w-7 text-red-500 bg-white/50 hover:bg-white/70"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
       
-      <div className="space-y-3 mb-3">
-        <div>
-          <label className="text-sm font-medium">Insatsnamn</label>
-          <Input 
-            value={intervention.name || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...intervention, name: e.target.value })}
-            placeholder="Ange namn på insatsen"
-            className="text-sm"
-          />
+      <div className="px-3 py-2 bg-white/70 rounded-md mb-4 border border-primary/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Info className="h-3 w-3" />
+              <span>Insatsnamn (hämtas automatiskt från Formulär G)</span>
+            </div>
+            <div className="text-base font-medium">{intervention.name}</div>
+          </div>
+          {subInterventionNames.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Info className="h-3 w-3" />
+                <span>Delinsatser (hämtas automatiskt från Formulär G)</span>
+              </div>
+              <div className="text-base font-medium">
+                {subInterventionNames.length === 1 
+                  ? subInterventionNames[0]
+                  : `${subInterventionNames.length} delinsatser`}
+              </div>
+            </div>
+          )}
         </div>
-        
+      </div>
+      
+      <div className="space-y-3 mb-3">
         <div>
           <label className="text-sm font-medium">Kommentar (valfri)</label>
           <Textarea 
             value={intervention.comment || ''}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...intervention, comment: e.target.value })}
             placeholder="Lägg till en kommentar om insatsen"
-            className="text-sm h-16 resize-none"
+            className="text-sm h-16 resize-none bg-background/80"
           />
         </div>
       </div>
@@ -570,18 +629,9 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
 
   // Lägga till en ny insats
   const addIntervention = () => {
-    const newIntervention: Intervention = {
-      id: generateId(),
-      name: '',
-      comment: '',
-      costItems: [],
-      totalCost: 0
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      interventions: [...safeFormData.interventions, newIntervention]
-    }));
+    // Nya insatser kan bara läggas till via hämtning från Formulär G
+    // Denna funktion behålls för eventuell framtida användning
+    console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
   };
 
   // Uppdatera en insats
@@ -931,42 +981,24 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 disabled={!currentUser?.uid}
                 message={fetchMessageFormG}
               />
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="gap-1"
-                onClick={addIntervention}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Lägg till insats
-              </Button>
             </div>
           </div>
           
           {safeFormData.interventions.length === 0 ? (
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
               <p className="text-muted-foreground mb-4">
-                Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär G.
+                Det finns inga insatser att visa. Hämta insatser från Formulär G för att komma igång.
               </p>
               <div className="flex justify-center gap-3">
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="default" 
                   className="gap-1"
                   onClick={fetchInterventionFromFormG}
                   disabled={!currentUser?.uid}
                 >
                   <ArrowDown className="h-4 w-4" />
                   Hämta från Formulär G
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="default" 
-                  className="gap-1"
-                  onClick={addIntervention}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Lägg till din första insats
                 </Button>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
 import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
 import { SharedFields } from '@/lib/firebase/sharedFields';
+import { getInterventionColor } from '@/lib/utils/interventionColors';
 
 // Typer för Form G data
 interface FormGInterventionCost {
@@ -135,13 +136,12 @@ const FORM_TYPE = 'I';
 
 // Komponent för att visa och redigera en kostnadssektion (Personal, Chefer, Administration)
 const CostCategorySection = ({
-  title,
   category,
   onChange,
   indexLabels,
   helpTexts
 }: {
-  title: string;
+  title?: string;
   category: CostCategory;
   onChange: (updatedCategory: CostCategory) => void;
   indexLabels: { [key: string]: string };
@@ -187,8 +187,7 @@ const CostCategorySection = ({
   };
   
   return (
-    <div className="border p-4 rounded-md mb-4">
-      <h4 className="font-medium mb-3">{title}</h4>
+    <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Tidsåtgång i minuter */}
         <div className="space-y-1">
@@ -198,7 +197,31 @@ const CostCategorySection = ({
             value={nullToUndefined(category.minutesSpent)}
             onChange={(value) => updateMinutes(value === undefined ? null : value)}
             placeholder="0"
-            className="text-sm"
+            className="text-sm bg-background/50"
+          />
+        </div>
+        
+        {/* Antal anställda */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">{indexLabels.employeeCount}</label>
+          <InfoLabel text={helpTexts.employeeCount} />
+          <FormattedNumberInput
+            value={nullToUndefined(category.employeeCount)}
+            onChange={(value) => updateEmployeeCount(value === undefined ? null : value)}
+            placeholder="0"
+            className="text-sm bg-background/50"
+          />
+        </div>
+        
+        {/* Kostnad per timme */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">{indexLabels.hourlyCost}</label>
+          <InfoLabel text={helpTexts.hourlyCost} />
+          <FormattedNumberInput
+            value={nullToUndefined(category.hourlyCost)}
+            onChange={(value) => updateHourlyCost(value === undefined ? null : value)}
+            placeholder="0 kr"
+            className="text-sm bg-background/50"
           />
         </div>
         
@@ -224,18 +247,6 @@ const CostCategorySection = ({
           />
         </div>
         
-        {/* Antal anställda */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">{indexLabels.employeeCount}</label>
-          <InfoLabel text={helpTexts.employeeCount} />
-          <FormattedNumberInput
-            value={nullToUndefined(category.employeeCount)}
-            onChange={(value) => updateEmployeeCount(value === undefined ? null : value)}
-            placeholder="0"
-            className="text-sm"
-          />
-        </div>
-        
         {/* Total tidsåtgång (beräknat värde) */}
         <div className="space-y-1">
           <label className="text-sm font-medium">{indexLabels.totalHours}</label>
@@ -246,26 +257,16 @@ const CostCategorySection = ({
             className="text-sm bg-muted/30"
           />
         </div>
-        
-        {/* Kostnad per timme */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">{indexLabels.hourlyCost}</label>
-          <InfoLabel text={helpTexts.hourlyCost} />
-          <FormattedNumberInput
-            value={nullToUndefined(category.hourlyCost)}
-            onChange={(value) => updateHourlyCost(value === undefined ? null : value)}
-            placeholder="0 kr"
-            className="text-sm"
-          />
-        </div>
-        
-        {/* Total kostnad (beräknat värde) */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 bg-background/50 p-3 rounded-md mt-2 border">
-          <div className="flex justify-between items-center">
+      </div>
+      
+      {/* Total kostnad (beräknat värde) */}
+      <div className="bg-background/50 p-2 rounded-md border border-border mt-2">
+        <div className="flex justify-between items-center">
+          <div>
             <label className="text-sm font-medium">{indexLabels.totalCost}</label>
-            <span className="font-semibold">{formatCurrency(category.totalCost)}</span>
+            <InfoLabel text={helpTexts.totalCost} />
           </div>
-          <InfoLabel text={helpTexts.totalCost} />
+          <span className="font-semibold text-primary">{formatCurrency(category.totalCost)}</span>
         </div>
       </div>
     </div>
@@ -322,6 +323,17 @@ const InternalCostCard = ({
   isFirst: boolean;
   isLast: boolean;
 }) => {
+  // Hämta färger baserat på insatsnamn för konsekvent färgkodning
+  const { bg, border } = getInterventionColor(internalCost.interventionName);
+  const cardStyle = {
+    borderColor: border,
+    backgroundColor: `${bg}10` // Lägg till 10% opacitet för bakgrundsfärgen
+  };
+  const headerStyle = {
+    backgroundColor: bg,
+    borderColor: border
+  };
+
   // Hjälptexter och fältetiketter för personal
   const staffLabels = {
     minutesSpent: "I4 – Tidsåtgång insats i minuter",
@@ -409,14 +421,34 @@ const InternalCostCard = ({
     });
   };
   
+  // Hjälpfunktion för sektionsrubriker
+  const SectionTitle = ({ title, icon }: { title: string; icon: React.ReactNode }) => (
+    <div className="flex items-center gap-1.5 p-2 bg-white/50 rounded-md mb-3 border border-gray-200">
+      <div className="text-primary">{icon}</div>
+      <h5 className="font-medium text-sm">{title}</h5>
+    </div>
+  );
+  
   return (
-    <div className="p-4 border rounded-md mb-4">
-      <div className="flex items-center justify-between mb-2">
+    <div 
+      className="border rounded-md p-3 mb-3" 
+      style={cardStyle}
+    >
+      <div 
+        className="flex justify-between items-center mb-4 p-2 rounded-md" 
+        style={headerStyle}
+      >
         <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-2 rounded-full w-8 h-8 flex items-center justify-center">
-            <span className="text-primary font-bold">{index + 1}</span>
+          <div className="bg-white/80 w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="text-primary text-xs font-medium">{index + 1}</span>
           </div>
-          <h4 className="font-medium">Insats</h4>
+          <h3 className="font-semibold text-primary text-lg">
+            {internalCost.interventionName || "Insats"} 
+          </h3>
+          <div className="text-sm font-medium text-muted-foreground mx-1">›</div>
+          <h4 className="font-medium text-primary-foreground/80">
+            {internalCost.subInterventionName || "Delinsats"}
+          </h4>
         </div>
         <div className="flex items-center gap-1">
           <Button 
@@ -425,7 +457,7 @@ const InternalCostCard = ({
             variant="ghost" 
             disabled={isFirst}
             onClick={onMoveUp}
-            className="h-8 w-8"
+            className="h-8 w-8 bg-white/50 hover:bg-white/70"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -435,7 +467,7 @@ const InternalCostCard = ({
             variant="ghost" 
             disabled={isLast}
             onClick={onMoveDown}
-            className="h-8 w-8"
+            className="h-8 w-8 bg-white/50 hover:bg-white/70"
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -444,75 +476,64 @@ const InternalCostCard = ({
             size="icon" 
             variant="ghost" 
             onClick={onRemove}
-            className="h-8 w-8 text-red-500"
+            className="h-8 w-8 text-red-500 bg-white/50 hover:bg-white/70"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-        <div>
-          <label className="text-sm font-medium">Insatsnamn</label>
-          <Input 
-            value={internalCost.interventionName || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-              onChange({ ...internalCost, interventionName: e.target.value })
-            }
-            placeholder="Ange namn på insatsen"
-            className="text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Delinsatsnamn</label>
-          <Input 
-            value={internalCost.subInterventionName || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-              onChange({ ...internalCost, subInterventionName: e.target.value })
-            }
-            placeholder="Ange namn på delinsatsen"
-            className="text-sm"
-          />
+      <div className="px-3 py-2 bg-white/70 rounded-md mb-4 border border-primary/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Info className="h-3 w-3" />
+              <span>Insatsnamn (hämtas automatiskt från Formulär G)</span>
+            </div>
+            <div className="text-base font-medium">{internalCost.interventionName}</div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Info className="h-3 w-3" />
+              <span>Delinsatsnamn (hämtas automatiskt från Formulär G)</span>
+            </div>
+            <div className="text-base font-medium">{internalCost.subInterventionName}</div>
+          </div>
         </div>
       </div>
       
-      <Tabs defaultValue="staff">
-        <TabsList className="w-full mb-4">
-          <TabsTrigger value="staff" className="flex-1">Personal (I4-I10)</TabsTrigger>
-          <TabsTrigger value="managers" className="flex-1">Chefer (I11-I17)</TabsTrigger>
-          <TabsTrigger value="admin" className="flex-1">Administration (I18-I24)</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="staff" className="space-y-4">
-          <CostCategorySection 
-            title="Personal (I4-I10)"
-            category={internalCost.staff}
-            onChange={updateStaffCategory}
-            indexLabels={staffLabels}
-            helpTexts={staffHelpTexts}
-          />
-        </TabsContent>
-        
-        <TabsContent value="managers" className="space-y-4">
-          <CostCategorySection 
-            title="Chefer (I11-I17)"
-            category={internalCost.managers}
-            onChange={updateManagerCategory}
-            indexLabels={managerLabels}
-            helpTexts={managerHelpTexts}
-          />
-        </TabsContent>
-        
-        <TabsContent value="admin" className="space-y-4">
-          <CostCategorySection 
-            title="Administration (I18-I24)"
-            category={internalCost.administration}
-            onChange={updateAdminCategory}
-            indexLabels={adminLabels}
-            helpTexts={adminHelpTexts}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Personal */}
+      <div className="mb-4">
+        <SectionTitle title="Personal (I4-I10)" icon={<Info className="h-4 w-4" />} />
+        <CostCategorySection 
+          category={internalCost.staff}
+          onChange={updateStaffCategory}
+          indexLabels={staffLabels}
+          helpTexts={staffHelpTexts}
+        />
+      </div>
+      
+      {/* Chefer */}
+      <div className="mb-4">
+        <SectionTitle title="Chefer (I11-I17)" icon={<Info className="h-4 w-4" />} />
+        <CostCategorySection 
+          category={internalCost.managers}
+          onChange={updateManagerCategory}
+          indexLabels={managerLabels}
+          helpTexts={managerHelpTexts}
+        />
+      </div>
+      
+      {/* Administration */}
+      <div className="mb-4">
+        <SectionTitle title="Administration (I18-I24)" icon={<Info className="h-4 w-4" />} />
+        <CostCategorySection 
+          category={internalCost.administration}
+          onChange={updateAdminCategory}
+          indexLabels={adminLabels}
+          helpTexts={adminHelpTexts}
+        />
+      </div>
       
       {/* Totalsummor */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t">
@@ -972,14 +993,9 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
 
   // Funktion för att lägga till en ny intern kostnad manuellt
   const addInternalCost = () => {
-    // Skapa en ny tom intern kostnad
-    const newInternalCost = createEmptyInternalCost("", "");
-    
-    // Lägg till den nya kostnaden i formuläret
-    setFormData(prev => ({
-      ...prev,
-      internalCosts: [...safeFormData.internalCosts, newInternalCost]
-    }));
+    // Nya insatser kan bara läggas till via hämtning från Formulär G
+    // Denna funktion behålls för eventuell framtida användning
+    console.log("Nya insatser kan bara läggas till via hämtning från Formulär G");
   };
 
   return (
@@ -1079,27 +1095,18 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                 disabled={!currentUser?.uid}
                 message={fetchMessageFormG}
               />
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="gap-1"
-                onClick={addInternalCost}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Lägg till insats
-              </Button>
             </div>
           </div>
           
           {safeFormData.internalCosts.length === 0 ? (
             <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
               <p className="text-muted-foreground mb-4">
-                Det finns inga interna kostnader att visa. Lägg till en insats för att komma igång eller hämta från Formulär G.
+                Det finns inga interna kostnader att visa. Hämta insatser från Formulär G för att komma igång.
               </p>
               <div className="flex justify-center gap-3">
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="default" 
                   className="gap-1"
                   onClick={fetchInterventionsFromFormG}
                   disabled={!currentUser?.uid}
@@ -1107,106 +1114,31 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
                   <Download className="h-4 w-4" />
                   Hämta från Formulär G
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="default" 
-                  className="gap-1"
-                  onClick={addInternalCost}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Lägg till din första insats
-                </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Första nivån av flikar: Insatser */}
-              <Tabs defaultValue={interventionCategories[0]} className="w-full">
-                <TabsList className="mb-4 flex flex-wrap">
-                  {interventionCategories.map((category, index) => (
-                    <TabsTrigger 
-                      key={category} 
-                      value={category}
-                      className="flex-grow"
-                    >
-                      <div className="truncate max-w-[200px]">
-                        <span className="font-medium">{index + 1}. </span>
-                        <span className="text-sm">{category}</span>
-                      </div>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                
-                {/* För varje insats, visa en grupp av delinsatser */}
-                {interventionCategories.map((category) => {
-                  const costsInCategory = groupedInterventions.get(category) || [];
-                  
-                  return (
-                    <TabsContent key={category} value={category}>
-                      {/* Andra nivån av flikar: Delinsatser inom den valda insatsen */}
-                      <Tabs defaultValue={costsInCategory[0]?.id} className="w-full">
-                        <TabsList className="mb-4 flex flex-wrap">
-                          {costsInCategory.map((cost, index) => (
-                            <TabsTrigger 
-                              key={cost.id} 
-                              value={cost.id}
-                              className="flex-grow"
-                            >
-                              <div className="truncate max-w-[200px]">
-                                <span className="font-medium">{index + 1}. </span>
-                                <span className="text-sm">{cost.subInterventionName}</span>
-                              </div>
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
-                        
-                        {/* Visa detaljer för den valda delinsatsen */}
-                        {costsInCategory.map((internalCost) => {
-                          // Hitta index i den övergripande listan för att kunna navigera uppåt/nedåt
-                          const overallIndex = safeFormData.internalCosts.findIndex(c => c.id === internalCost.id);
-                          
-                          return (
-                            <TabsContent key={internalCost.id} value={internalCost.id}>
-                              <InternalCostCard
-                                internalCost={internalCost}
-                                index={overallIndex}
-                                onChange={updateInternalCost}
-                                onRemove={() => removeInternalCost(internalCost.id)}
-                                onMoveUp={() => moveInternalCostUp(overallIndex)}
-                                onMoveDown={() => moveInternalCostDown(overallIndex)}
-                                isFirst={overallIndex === 0}
-                                isLast={overallIndex === safeFormData.internalCosts.length - 1}
-                              />
-                            </TabsContent>
-                          );
-                        })}
-                      </Tabs>
-                      
-                      {/* Summering för denna insatskategori */}
-                      <div className="mt-6 p-4 border rounded-md bg-primary/5">
-                        <h4 className="font-medium mb-2">Summering för insats: {category}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <ReadOnlyField 
-                            label="Total tidsåtgång för denna insats"
-                            value={`${costsInCategory.reduce((sum, cost) => sum + cost.totalHours, 0).toFixed(2)} timmar`}
-                            info="Summa av alla delinsatsers tidsåtgång"
-                          />
-                          <ReadOnlyField 
-                            label="Total intern kostnad för denna insats"
-                            value={costsInCategory.reduce((sum, cost) => sum + cost.totalCost, 0)}
-                            info="Summa av alla delinsatsers interna kostnader"
-                            highlight={true}
-                          />
-                        </div>
-                      </div>
-                    </TabsContent>
-                  );
-                })}
-              </Tabs>
+              {/* Lista av alla interna kostnader utan flikar */}
+              {safeFormData.internalCosts.map((internalCost, index) => (
+                <InternalCostCard
+                  key={internalCost.id}
+                  internalCost={internalCost}
+                  index={index}
+                  onChange={updateInternalCost}
+                  onRemove={() => removeInternalCost(internalCost.id)}
+                  onMoveUp={() => moveInternalCostUp(index)}
+                  onMoveDown={() => moveInternalCostDown(index)}
+                  isFirst={index === 0}
+                  isLast={index === safeFormData.internalCosts.length - 1}
+                />
+              ))}
               
               {/* Total summering för alla insatser */}
-              <div className="mt-6 p-4 border rounded-md bg-primary/5">
-                <h4 className="font-medium mb-3">Total summering för alla insatser</h4>
+              <div className="form-card mt-6">
+                <SectionHeader 
+                  title="Summering" 
+                  icon={<Calculator className="h-5 w-5 text-primary" />}
+                />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ReadOnlyField 
                     label="Total tidsåtgång för alla insatser"
