@@ -967,23 +967,24 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   };
 
   // Gruppera insatser efter insatsnamn för att skapa flikkategorierna
-  const groupedInterventions = useMemo(() => {
-    if (safeFormData.internalCosts.length === 0) return new Map<string, InternalCost[]>();
-    
-    const grouped = new Map<string, InternalCost[]>();
-    
-    safeFormData.internalCosts.forEach(cost => {
-      if (!grouped.has(cost.interventionName)) {
-        grouped.set(cost.interventionName, []);
-      }
-      
-      const costs = grouped.get(cost.interventionName) || [];
-      costs.push(cost);
-      grouped.set(cost.interventionName, costs);
-    });
-    
-    return grouped;
-  }, [safeFormData.internalCosts]);
+  // Används inte för närvarande
+  // const groupedInterventions = useMemo(() => {
+  //   if (safeFormData.internalCosts.length === 0) return new Map<string, InternalCost[]>();
+  //   
+  //   const grouped = new Map<string, InternalCost[]>();
+  //   
+  //   safeFormData.internalCosts.forEach(cost => {
+  //     if (!grouped.has(cost.interventionName)) {
+  //       grouped.set(cost.interventionName, []);
+  //     }
+  //     
+  //     const costs = grouped.get(cost.interventionName) || [];
+  //     costs.push(cost);
+  //     grouped.set(cost.interventionName, costs);
+  //   });
+  //   
+  //   return grouped;
+  // }, [safeFormData.internalCosts]);
 
   // Lista med alla unika insatsnamn (för flikkategorier)
   // Används inte för närvarande
