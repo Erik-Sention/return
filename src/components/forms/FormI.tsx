@@ -438,7 +438,7 @@ const InternalCostCard = ({
         style={headerStyle}
       >
         <div className="flex items-center gap-2">
-          <div className="bg-white/80 w-6 h-6 rounded-full flex items-center justify-center">
+          <div className="bg-white/80 dark:bg-white/20 w-6 h-6 rounded-full flex items-center justify-center">
             <span className="text-primary text-xs font-medium">{index + 1}</span>
           </div>
           <h3 className="font-semibold text-primary text-lg">
@@ -456,7 +456,7 @@ const InternalCostCard = ({
             variant="ghost" 
             disabled={isFirst}
             onClick={onMoveUp}
-            className="h-8 w-8 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -466,7 +466,7 @@ const InternalCostCard = ({
             variant="ghost" 
             disabled={isLast}
             onClick={onMoveDown}
-            className="h-8 w-8 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -475,14 +475,14 @@ const InternalCostCard = ({
             size="icon" 
             variant="ghost" 
             onClick={onRemove}
-            className="h-8 w-8 text-red-500 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 text-red-500 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
       
-      <div className="px-3 py-2 bg-white/70 rounded-md mb-4 border border-primary/10">
+      <div className="px-3 py-2 bg-white/70 dark:bg-background/30 rounded-md mb-4 border border-primary/10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">

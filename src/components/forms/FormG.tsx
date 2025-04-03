@@ -226,7 +226,7 @@ const CostRow = ({
           type="button" 
           size="icon" 
           variant="ghost" 
-          className="h-8 w-8 text-red-500"
+          className="h-7 w-7 text-red-500 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
@@ -303,7 +303,7 @@ const InterventionCard = ({
 
   return (
     <div 
-      className="p-4 shadow-sm border rounded-md mb-4" 
+      className="border rounded-md p-3 mb-4" 
       style={cardStyle}
     >
       <div 
@@ -311,8 +311,8 @@ const InterventionCard = ({
         style={headerStyle}
       >
         <div className="flex items-center gap-2">
-          <div className="bg-white/80 p-2 rounded-full w-8 h-8 flex items-center justify-center">
-            <span className="text-primary font-bold">{index + 1}</span>
+          <div className="bg-white/80 dark:bg-white/20 w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="text-primary text-xs font-medium">{index + 1}</span>
           </div>
           <h4 className="text-base font-semibold">{intervention.name || `Insats ${index + 1}`}</h4>
         </div>
@@ -323,7 +323,7 @@ const InterventionCard = ({
             variant="ghost" 
             disabled={isFirst}
             onClick={onMoveUp}
-            className="h-8 w-8 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -333,7 +333,7 @@ const InterventionCard = ({
             variant="ghost" 
             disabled={isLast}
             onClick={onMoveDown}
-            className="h-8 w-8 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -342,7 +342,7 @@ const InterventionCard = ({
             size="icon" 
             variant="ghost" 
             onClick={onRemove}
-            className="h-8 w-8 text-red-500 bg-white/50 hover:bg-white/70"
+            className="h-8 w-8 text-red-500 bg-white/50 dark:bg-background/20 hover:bg-white/70 dark:hover:bg-background/30"
           >
             <X className="h-4 w-4" />
           </Button>
