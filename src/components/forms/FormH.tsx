@@ -118,9 +118,13 @@ const generateId = (): string => {
   return Math.random().toString(36).substring(2, 11);
 };
 
-// Konvertera null till undefined för FormattedNumberInput
+// Konvertera null till undefined för FormattedNumberInput och hantera NaN
 const nullToUndefined = (value: number | null): number | undefined => {
-  return value === null ? undefined : value;
+  // Hantera både null och NaN, returnera undefined i båda fallen
+  if (value === null || (typeof value === 'number' && isNaN(value))) {
+    return undefined;
+  }
+  return value;
 };
 
 // Kostnadstyperna som kan användas
@@ -168,7 +172,11 @@ const CostItemRow = ({
       <div className="col-span-4">
         <FormattedNumberInput
           value={nullToUndefined(costItem.amount)}
-          onChange={(value) => onChange({ ...costItem, amount: value === undefined ? null : value })}
+          onChange={(value) => {
+            // Kontrollera värdet innan det sparas
+            const safeValue = value === undefined || isNaN(value) ? null : value;
+            onChange({ ...costItem, amount: safeValue });
+          }}
           placeholder="0 kr"
           className="text-sm"
         />
@@ -200,6 +208,9 @@ const InterventionCard = ({
   onChange: (updatedIntervention: Intervention) => void;
   onRemove: () => void;
 }) => {
+  // Säkerställ att costItems alltid är en array, även om den är undefined
+  const costItems = intervention.costItems || [];
+  
   const addCostItem = () => {
     const newCostItem: CostItem = {
       id: generateId(),
@@ -211,12 +222,12 @@ const InterventionCard = ({
     
     onChange({
       ...intervention,
-      costItems: [...intervention.costItems, newCostItem]
+      costItems: [...costItems, newCostItem]
     });
   };
 
   const updateCostItem = (updatedCostItem: CostItem) => {
-    const updatedCostItems = intervention.costItems.map(item => 
+    const updatedCostItems = costItems.map(item => 
       item.id === updatedCostItem.id ? updatedCostItem : item
     );
     
@@ -227,7 +238,7 @@ const InterventionCard = ({
   };
 
   const removeCostItem = (costItemId: string) => {
-    const updatedCostItems = intervention.costItems.filter(item => item.id !== costItemId);
+    const updatedCostItems = costItems.filter(item => item.id !== costItemId);
     
     onChange({
       ...intervention,
@@ -292,7 +303,7 @@ const InterventionCard = ({
           </Button>
         </div>
         
-        {intervention.costItems.length === 0 ? (
+        {costItems.length === 0 ? (
           <div className="text-sm text-muted-foreground p-2 border border-dashed border-muted-foreground/20 rounded-md text-center">
             Inga kostnadsposter tillagda
           </div>
@@ -304,7 +315,7 @@ const InterventionCard = ({
               <div className="col-span-4">Belopp</div>
               <div className="col-span-1"></div>
             </div>
-            {intervention.costItems.map((costItem) => (
+            {costItems.map((costItem) => (
               <CostItemRow
                 key={costItem.id}
                 costItem={costItem}
@@ -414,10 +425,17 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       // Kontrollera om kostnaderna faktiskt ändras innan vi uppdaterar state
       let totalExternalCosts = 0;
       const updatedInterventions = safeFormData.interventions.map(intervention => {
-        // Beräkna summan av kostnadsposterna
-        const itemsTotal = intervention.costItems?.reduce((sum, item) => {
-          return sum + (item.amount || 0);
-        }, 0) || 0;
+        // Säkerställ att costItems alltid är en array
+        const costItems = intervention.costItems || [];
+        
+        // Beräkna summan av kostnadsposterna och kontrollera NaN-värden
+        const itemsTotal = costItems.reduce((sum, item) => {
+          // Kontrollera om amount är ett giltigt nummer, annars använd 0
+          const amount = typeof item.amount === 'number' && !isNaN(item.amount) 
+            ? item.amount 
+            : 0;
+          return sum + amount;
+        }, 0);
         
         // Beräkna den totala kostnaden för denna intervention
         const totalCost = itemsTotal;
@@ -427,6 +445,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
         
         return { 
           ...intervention, 
+          costItems, // Säkerställ att costItems alltid är en array i resultatet
           totalCost 
         };
       });
@@ -503,13 +522,20 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       name: intervention.name || '',
       comment: intervention.comment || '',
       totalCost: intervention.totalCost || 0,
-      costItems: (intervention.costItems || []).map(item => ({
-        id: item.id,
-        interventionName: item.interventionName || '',
-        subInterventionName: item.subInterventionName || '',
-        costType: item.costType || '',
-        amount: item.amount === undefined ? null : item.amount
-      }))
+      costItems: (intervention.costItems || []).map(item => {
+        // Kontrollera om amount är NaN och ersätt med null
+        const amount = typeof item.amount === 'number' && !isNaN(item.amount) 
+          ? item.amount 
+          : null;
+          
+        return {
+          id: item.id,
+          interventionName: item.interventionName || '',
+          subInterventionName: item.subInterventionName || '',
+          costType: item.costType || '',
+          amount: amount
+        };
+      })
     }));
     
     return preparedData;
@@ -645,7 +671,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       
       safeFormData.interventions.forEach(intervention => {
         const costItemMap = new Map<string, { id: string; amount: number | null }>();
-        intervention.costItems.forEach(item => {
+        (intervention.costItems || []).forEach(item => {
           costItemMap.set(item.subInterventionName, {
             id: item.id,
             amount: item.amount
@@ -693,30 +719,44 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
             };
             
             // Lägg till alla nya kostnadsposter
-            const newCostItems = delinsatserToAdd.map(delinsats => ({
-              id: generateId(),
-              interventionName: insatsName,
-              subInterventionName: delinsats.name,
-              costType: "Fast avgift för insats/offert", // Standard kostnadtyp
-              amount: delinsats.externalCost
-            }));
+            const newCostItems = delinsatserToAdd.map(delinsats => {
+              // Kontrollera om externalCost är ett giltigt nummer
+              const amount = typeof delinsats.externalCost === 'number' && !isNaN(delinsats.externalCost)
+                ? delinsats.externalCost 
+                : null;
+                
+              return {
+                id: generateId(),
+                interventionName: insatsName,
+                subInterventionName: delinsats.name,
+                costType: "Fast avgift för insats/offert", // Standard kostnadtyp
+                amount: amount
+              };
+            });
             
             newIntervention.costItems = newCostItems;
             interventionsToUpdate.push(newIntervention);
             added += delinsatserToAdd.length;
           } else {
             // Uppdatera befintlig insats
-            const updatedCostItems = [...targetIntervention.costItems];
+            const updatedCostItems = [...(targetIntervention.costItems || [])];
             
             // Lägg till nya kostnadsposter
             if (delinsatserToAdd.length > 0) {
-              const newCostItems = delinsatserToAdd.map(delinsats => ({
-                id: generateId(),
-                interventionName: insatsName,
-                subInterventionName: delinsats.name,
-                costType: "Fast avgift för insats/offert", // Standard kostnadtyp
-                amount: delinsats.externalCost
-              }));
+              const newCostItems = delinsatserToAdd.map(delinsats => {
+                // Kontrollera om externalCost är ett giltigt nummer
+                const amount = typeof delinsats.externalCost === 'number' && !isNaN(delinsats.externalCost)
+                  ? delinsats.externalCost 
+                  : null;
+                  
+                return {
+                  id: generateId(),
+                  interventionName: insatsName,
+                  subInterventionName: delinsats.name,
+                  costType: "Fast avgift för insats/offert", // Standard kostnadtyp
+                  amount: amount
+                };
+              });
               updatedCostItems.push(...newCostItems);
               added += delinsatserToAdd.length;
             }
@@ -728,7 +768,9 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
                 if (index !== -1) {
                   updatedCostItems[index] = {
                     ...updatedCostItems[index],
-                    amount: delinsats.externalCost
+                    amount: typeof delinsats.externalCost === 'number' && !isNaN(delinsats.externalCost)
+                      ? delinsats.externalCost 
+                      : null
                   };
                 }
               });

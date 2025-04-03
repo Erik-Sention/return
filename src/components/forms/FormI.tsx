@@ -607,16 +607,26 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
           const data = await loadFormData<FormIData>(currentUser.uid, FORM_TYPE);
           if (data) {
             // Säkerställ att data har rätt struktur
+            const sanitizedCosts = (data.internalCosts || []).map(cost => ({
+              ...cost,
+              staff: cost.staff || createEmptyCostCategory(),
+              managers: cost.managers || createEmptyCostCategory(),
+              administration: cost.administration || createEmptyCostCategory(),
+              totalHours: cost.totalHours || 0,
+              totalCost: cost.totalCost || 0
+            }));
+            
+            // Beräkna den totala interna kostnaden baserat på insatserna
+            const calculatedTotalInternalCost = sanitizedCosts.reduce(
+              (sum, cost) => sum + cost.totalCost, 
+              0
+            );
+            
             const sanitizedData: FormIData = {
               ...data,
-              internalCosts: (data.internalCosts || []).map(cost => ({
-                ...cost,
-                staff: cost.staff || createEmptyCostCategory(),
-                managers: cost.managers || createEmptyCostCategory(),
-                administration: cost.administration || createEmptyCostCategory(),
-                totalHours: cost.totalHours || 0,
-                totalCost: cost.totalCost || 0
-              }))
+              internalCosts: sanitizedCosts,
+              // Använd det beräknade värdet istället för värdet i databasen
+              totalInternalCost: calculatedTotalInternalCost
             };
             
             setFormData(sanitizedData);
@@ -633,7 +643,16 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
 
   // Uppdatera totalsummor när en kostnad ändras
   useEffect(() => {
-    if (safeFormData.internalCosts.length === 0) return;
+    // Om det inte finns några insatser, sätt totalvärdet till 0
+    if (safeFormData.internalCosts.length === 0) {
+      if (safeFormData.totalInternalCost !== 0) {
+        setFormData(prev => ({
+          ...prev,
+          totalInternalCost: 0
+        }));
+      }
+      return;
+    }
     
     // Kontrollera om någon av kostnaderna har ändrats för att undvika onödiga uppdateringar
     let hasChanges = false;
@@ -660,21 +679,21 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       return cost;
     });
     
-    // Avbryt om inget har ändrats för att undvika onödig uppdatering
-    if (!hasChanges) return;
-    
     // Beräkna den totala interna kostnaden
     const totalInternalCost = updatedInternalCosts.reduce(
       (sum, cost) => sum + cost.totalCost, 
       0
     );
     
-    setFormData(prev => ({
-      ...prev,
-      internalCosts: updatedInternalCosts,
-      totalInternalCost
-    }));
-  }, [costsDependency, safeFormData.internalCosts]);
+    // Om totalvärdet har ändrats eller om någon insats har uppdaterats
+    if (hasChanges || totalInternalCost !== safeFormData.totalInternalCost) {
+      setFormData(prev => ({
+        ...prev,
+        internalCosts: updatedInternalCosts,
+        totalInternalCost
+      }));
+    }
+  }, [costsDependency, safeFormData.internalCosts, safeFormData.totalInternalCost]);
 
   // Sätt upp autosave när formulärdata ändras
   useEffect(() => {
@@ -798,9 +817,16 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const removeInternalCost = (costId: string) => {
     const updatedCosts = safeFormData.internalCosts.filter(cost => cost.id !== costId);
     
+    // Beräkna ny totalinternkostnad
+    const newTotalInternalCost = updatedCosts.reduce(
+      (sum, cost) => sum + cost.totalCost, 
+      0
+    );
+    
     setFormData(prev => ({
       ...prev,
-      internalCosts: updatedCosts
+      internalCosts: updatedCosts,
+      totalInternalCost: newTotalInternalCost
     }));
   };
 

@@ -536,6 +536,221 @@ useEffect(() => {
 
 Genom att följa detta mönster kan du implementera automatisk datahämtning mellan alla formulär i applikationen, vilket ger en smidig användarupplevelse och minskar risken för felinmatning.
 
+## Implementering: Formulär J hämtar data från formulären C och G
+
+I detta exempel har vi implementerat att Formulär J (ROI-beräkningar) automatiskt hämtar data från Formulär C (kostnadsberäkningar) och Formulär G (insatskostnader).
+
+### 1. Definiera datainterfacen för källformulären
+
+```typescript
+// I FormJ.tsx
+interface FormCData {
+  totalCostMentalHealth?: number;  // Hämtas till J5, J12, J16: Total kostnad för psykisk ohälsa
+  [key: string]: unknown;
+}
+
+interface FormGData {
+  totalInterventionCost?: number;  // Hämtas till J8, J15: Total kostnad för insatsen
+  [key: string]: unknown;
+}
+```
+
+### 2. Uppdatera FormJProps för navigering
+
+```typescript
+// I FormJ.tsx
+type FormJProps = React.ComponentProps<'div'> & {
+  onNavigateToForm?: (formName: string) => void;
+};
+
+// Hjälpfunktion för navigering
+const navigateToForm = (formName: string) => {
+  if (onNavigateToForm) {
+    onNavigateToForm(formName);
+  } else {
+    console.warn('Navigation callback is not provided to FormJ component');
+  }
+};
+```
+
+### 3. Lägg till state för att spåra automatisk datahämtning i FormJ
+
+```typescript
+// I FormJ.tsx
+const [autoFetchStatus, setAutoFetchStatus] = useState({
+  hasFetched: false,
+  costMentalHealthAlt1: false,     // J5: Total kostnad för psykisk ohälsa (alt 1)
+  interventionCostAlt1: false,     // J8: Total kostnad för insatsen (alt 1)
+  costMentalHealthAlt2: false,     // J12: Total kostnad för psykisk ohälsa (alt 2)
+  interventionCostAlt3: false,     // J15: Total kostnad för insatsen (alt 3)
+  costMentalHealthAlt3: false,     // J16: Total kostnad för psykisk ohälsa (alt 3)
+  errorMessage: null as string | null
+});
+```
+
+### 4. Implementera handleChange med useCallback
+
+För att undvika att handleChange skapas på nytt vid varje rendering använder vi useCallback:
+
+```typescript
+// I FormJ.tsx
+const handleChange = useCallback(<K extends keyof FormJData>(field: K, value: FormJData[K]) => {
+  setFormData(prev => {
+    const updatedData = { ...prev, [field]: value };
+    return calculateValues(updatedData);
+  });
+}, []);
+```
+
+### 5. Implementera automatisk datahämtning vid inladdning av FormJ
+
+```typescript
+// I FormJ.tsx
+useEffect(() => {
+  const autoFetchFromForms = async () => {
+    if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
+    
+    try {
+      // Spara aktuell status för autoFetch
+      const currentStatus = { ...autoFetchStatus, hasFetched: true };
+      setAutoFetchStatus(currentStatus);
+      
+      // Hämta data från Form C (totalCostMentalHealth)
+      const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+      
+      if (formCData && formCData.totalCostMentalHealth !== undefined) {
+        const roundedValue = Math.round(formCData.totalCostMentalHealth);
+        
+        // Uppdatera alla fält som använder totalCostMentalHealth
+        handleChange('totalCostMentalHealthAlt1', roundedValue);
+        handleChange('totalCostMentalHealthAlt2', roundedValue);
+        handleChange('totalCostMentalHealthAlt3', roundedValue);
+        
+        currentStatus.costMentalHealthAlt1 = true;
+        currentStatus.costMentalHealthAlt2 = true;
+        currentStatus.costMentalHealthAlt3 = true;
+      }
+      
+      // Hämta data från Form G (totalInterventionCost)
+      const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+      
+      if (formGData && formGData.totalInterventionCost !== undefined) {
+        const roundedValue = Math.round(formGData.totalInterventionCost);
+        
+        // Uppdatera alla fält som använder totalInterventionCost
+        handleChange('totalInterventionCostAlt1', roundedValue);
+        handleChange('totalInterventionCostAlt3', roundedValue);
+        
+        currentStatus.interventionCostAlt1 = true;
+        currentStatus.interventionCostAlt3 = true;
+      }
+      
+      setAutoFetchStatus(currentStatus);
+    } catch (error) {
+      console.error('Fel vid automatisk hämtning från formulär:', error);
+      setAutoFetchStatus(prev => ({ 
+        ...prev, 
+        hasFetched: true, 
+        errorMessage: 'Kunde inte automatiskt hämta data från formulär C och G.' 
+      }));
+    }
+  };
+  
+  autoFetchFromForms();
+}, [currentUser, autoFetchStatus, handleChange]);
+```
+
+### 6. Visa information om automatiskt hämtad data i FormJ
+
+```tsx
+{/* I FormJ.tsx */}
+{autoFetchStatus.hasFetched && (
+  autoFetchStatus.costMentalHealthAlt1 || 
+  autoFetchStatus.interventionCostAlt1 || 
+  autoFetchStatus.costMentalHealthAlt2 || 
+  autoFetchStatus.interventionCostAlt3 || 
+  autoFetchStatus.costMentalHealthAlt3
+) && (
+  <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
+    <p className="font-medium">Följande data har automatiskt hämtats:</p>
+    <ul className="list-disc list-inside mt-1">
+      {(autoFetchStatus.costMentalHealthAlt1 || 
+        autoFetchStatus.costMentalHealthAlt2 || 
+        autoFetchStatus.costMentalHealthAlt3) && 
+        <li>Total kostnad för psykisk ohälsa från Formulär C</li>
+      }
+      {(autoFetchStatus.interventionCostAlt1 || 
+        autoFetchStatus.interventionCostAlt3) && 
+        <li>Total kostnad för insatsen från Formulär G</li>
+      }
+    </ul>
+  </div>
+)}
+
+{autoFetchStatus.errorMessage && (
+  <div className="p-3 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-sm mb-4">
+    {autoFetchStatus.errorMessage}
+  </div>
+)}
+```
+
+### 7. Implementera fält med AutoFilledField i FormJ
+
+```tsx
+{/* Exempel för totalCostMentalHealthAlt1 (J5) */}
+<div className="space-y-2">
+  <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
+  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+  {autoFetchStatus.costMentalHealthAlt1 ? (
+    <AutoFilledField
+      value={`${formatNumber(safeFormData.totalCostMentalHealthAlt1 || 0)} kr`}
+      sourceFormName="C"
+      onNavigate={navigateToForm}
+      isEmpty={!safeFormData.totalCostMentalHealthAlt1}
+    />
+  ) : (
+    <>
+      <FormattedNumberInput
+        value={safeFormData.totalCostMentalHealthAlt1}
+        onChange={(value) => handleChange('totalCostMentalHealthAlt1', value)}
+        allowDecimals={false}
+        placeholder="0"
+        className="bg-background/50"
+      />
+      <FetchValueButton 
+        onClick={() => fetchValueFromForm('C', 'totalCostMentalHealthAlt1', setTransferMessage)}
+        disabled={!currentUser?.uid}
+        formName="C"
+        message={transferMessage}
+      />
+    </>
+  )}
+</div>
+```
+
+### 8. Uppdatera ROIPage.tsx för att inkludera navigeringsfunktion
+
+```tsx
+// I ROIPage.tsx
+{currentForm === 'J' && <FormJ 
+  ref={formJRef} 
+  onNavigateToForm={(formName) => {
+    // Navigera till det specifika formuläret
+    setCurrentForm(formName);
+  }}
+/>}
+```
+
+### 9. Specialfunktioner för Formulär J
+
+I Formulär J används samma data (total kostnad för psykisk ohälsa och total kostnad för insatsen) i flera olika beräkningsalternativ, vilket kräver en något annorlunda implementation:
+
+1. Vi hämtar data från källformulären en gång och använder den för att populera flera olika fält i Formulär J.
+2. Vi håller reda på vilka fält som har uppdaterats i autoFetchStatus.
+3. Vi visar automatiskt hämtad data på samma sätt för alla fält som använder samma källa.
+
+Detta ger en smidig användarupplevelse där alla relevanta fält uppdateras konsekvent från samma källdata.
+
 ## Slutsats
 
 Genom att följa denna implementering kan du enkelt skapa datahämtning mellan olika formulär i applikationen. Kom ihåg att:
