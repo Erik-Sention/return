@@ -650,10 +650,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     }));
   };
 
-  const handleChange = (field: keyof FormHData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const fetchInterventionFromFormG = async () => {
     if (!currentUser?.uid) {
       console.error('Du måste vara inloggad för att hämta data');
