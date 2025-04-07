@@ -317,7 +317,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
       if (typedKey === 'organizationName' || typedKey === 'contactPerson' || 
           typedKey === 'startDate' || typedKey === 'endDate') {
         // Säkerställ att dessa alltid är strängar, aldrig null
-        (preparedData as any)[typedKey] = preparedData[typedKey] || '';
+        (preparedData as Record<keyof FormDData, string | number | null>)[typedKey] = preparedData[typedKey] || '';
       } 
       // För numeriska fält, konvertera undefined till null
       else if (typeof preparedData[typedKey] === 'undefined') {

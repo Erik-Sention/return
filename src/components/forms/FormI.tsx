@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Download, Calculator, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
-import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
-import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
-import { SharedFields } from '@/lib/firebase/sharedFields';
+import { Input } from '@/components/ui/input';
 import { getInterventionColor } from '@/lib/utils/interventionColors';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
@@ -807,12 +804,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
 
   const handleChange = (field: keyof FormIData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Säkerställ att e-parameter har korrekt typ
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    handleChange(name as keyof FormIData, value);
   };
 
   // Uppdatera en intern kostnad
