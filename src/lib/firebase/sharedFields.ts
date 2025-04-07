@@ -4,11 +4,12 @@ import { ref, set, get, child } from 'firebase/database';
 export interface SharedFields {
   organizationName: string;
   contactPerson: string;
-  timePeriod: string;
+  startDate: string;
+  endDate: string;
 }
 
 /**
- * Hämta gemensamma fält från Form A (organisationsnamn och kontaktperson) och Form C (tidsperiod)
+ * Hämta gemensamma fält från Form A (organisationsnamn och kontaktperson) och Form D (tidsperiod)
  * @param userId - Användarens ID
  * @returns De gemensamma fälten eller null om de inte finns
  */
@@ -26,7 +27,8 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
     const sharedFields: SharedFields = {
       organizationName: '',
       contactPerson: '',
-      timePeriod: ''
+      startDate: '',
+      endDate: ''
     };
     
     // STEG 1: Hämta alltid organisationsnamn och kontaktperson från Formulär A
@@ -46,26 +48,49 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
       console.log('No data found in Form A');
     }
     
-    // STEG 2: Hämta alltid tidsperiod från Formulär C
-    const formCPath = `users/${userId}/forms/C`;
-    console.log('Loading time period from Form C path:', formCPath);
+    // STEG 2: Hämta start- och slutdatum från Formulär D
+    const formDPath = `users/${userId}/forms/D`;
+    console.log('Loading start and end date from Form D path:', formDPath);
     
-    snapshot = await get(child(dbRef, formCPath));
+    snapshot = await get(child(dbRef, formDPath));
     
     if (snapshot.exists()) {
-      const formCData = snapshot.val();
-      console.log(`Form C data found:`, formCData);
+      const formDData = snapshot.val();
+      console.log(`Form D data found:`, formDData);
       
-      // Extrahera tidsperiod från Form C
-      if (formCData.timePeriod) {
-        sharedFields.timePeriod = formCData.timePeriod;
+      // Extrahera startdatum och slutdatum från Form D
+      if (formDData.startDate) {
+        sharedFields.startDate = formDData.startDate;
+      }
+      if (formDData.endDate) {
+        sharedFields.endDate = formDData.endDate;
       }
     } else {
-      console.log('No data found in Form C');
+      console.log('No data found in Form D');
+      
+      // Om Form D inte har data, försök med Form C (för bakåtkompatibilitet)
+      const formCPath = `users/${userId}/forms/C`;
+      console.log('Trying to load time period from Form C path:', formCPath);
+      
+      snapshot = await get(child(dbRef, formCPath));
+      
+      if (snapshot.exists()) {
+        const formCData = snapshot.val();
+        console.log(`Form C data found:`, formCData);
+        
+        // Om formCData har timePeriod, försök att dela upp den i start- och slutdatum
+        if (formCData.timePeriod) {
+          const parts = formCData.timePeriod.split(' - ');
+          if (parts.length === 2) {
+            sharedFields.startDate = parts[0];
+            sharedFields.endDate = parts[1];
+          }
+        }
+      }
     }
     
     // Returnera fälten bara om vi har hittat något
-    if (sharedFields.organizationName || sharedFields.contactPerson || sharedFields.timePeriod) {
+    if (sharedFields.organizationName || sharedFields.contactPerson || sharedFields.startDate || sharedFields.endDate) {
       return sharedFields;
     }
     
@@ -123,7 +148,8 @@ export const updateSharedFieldsFromCurrentForm = async (userId: string, formData
     const sharedFields: SharedFields = {
       organizationName: typeof formData.organizationName === 'string' ? formData.organizationName : '',
       contactPerson: typeof formData.contactPerson === 'string' ? formData.contactPerson : '',
-      timePeriod: typeof formData.timePeriod === 'string' ? formData.timePeriod : ''
+      startDate: typeof formData.startDate === 'string' ? formData.startDate : '',
+      endDate: typeof formData.endDate === 'string' ? formData.endDate : ''
     };
     
     await saveSharedFields(userId, sharedFields);
@@ -139,7 +165,12 @@ export const updateSharedFieldsFromCurrentForm = async (userId: string, formData
  * @param userId - Användarens ID
  * @returns Organisationens namn och kontaktperson eller null om de inte finns
  */
-export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{ organizationName: string, contactPerson: string } | null> => {
+export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{ 
+  organizationName: string, 
+  contactPerson: string,
+  startDate: string,
+  endDate: string 
+} | null> => {
   try {
     console.log(`Hämtar organisationsinfo från formulär D för användare ${userId}`);
     
@@ -159,14 +190,17 @@ export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{ o
       const formDData = snapshot.val();
       console.log(`Formulär D-data hittad:`, formDData);
       
-      // Extrahera organisationsnamn och kontaktperson från Form D
+      // Extrahera organisationsnamn, kontaktperson och datum från Form D
       const organizationInfo = {
         organizationName: formDData.organizationName || '',
-        contactPerson: formDData.contactPerson || ''
+        contactPerson: formDData.contactPerson || '',
+        startDate: formDData.startDate || '',
+        endDate: formDData.endDate || ''
       };
       
       // Returnera bara om minst ett av fälten har data
-      if (organizationInfo.organizationName || organizationInfo.contactPerson) {
+      if (organizationInfo.organizationName || organizationInfo.contactPerson || 
+          organizationInfo.startDate || organizationInfo.endDate) {
         return organizationInfo;
       }
     } else {

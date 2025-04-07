@@ -33,20 +33,20 @@ export const SharedFieldsButton = ({
         onFieldsLoaded(fields);
         
         if (fields.organizationName || fields.contactPerson) {
-          if (fields.timePeriod) {
-            setMessage('Namn och tidsperiod hämtade från Formulär A/C!');
+          if (fields.startDate || fields.endDate) {
+            setMessage('Namn och tidsperiod hämtade från Formulär A/D!');
           } else {
             setMessage('Organisation och kontaktperson hämtade från Formulär A!');
           }
-        } else if (fields.timePeriod) {
-          setMessage('Tidsperiod hämtad från Formulär C!');
+        } else if (fields.startDate || fields.endDate) {
+          setMessage('Tidsperiod hämtad från Formulär D!');
         } else {
           setMessage('Vissa uppgifter hämtades!');
         }
         
         setTimeout(() => setMessage(null), 3000);
       } else {
-        setMessage('Inga uppgifter hittades. Fyll i Formulär A och C först.');
+        setMessage('Inga uppgifter hittades. Fyll i Formulär A och D först.');
       }
     } catch (error) {
       console.error('Error fetching shared fields:', error);

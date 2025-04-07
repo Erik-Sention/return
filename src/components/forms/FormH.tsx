@@ -53,7 +53,6 @@ interface Intervention {
 interface FormHData {
   organizationName: string;
   contactPerson: string;
-  timePeriod: string;
   interventions: Intervention[];
   totalExternalCosts: number;
 }
@@ -433,7 +432,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [formData, setFormData] = useState<FormHData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '',
     interventions: [],
     totalExternalCosts: 0
   });
@@ -451,7 +449,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
-  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null>(null);
 
   // Load data from Firebase on mount
   useEffect(() => {
@@ -578,7 +576,6 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
     const preparedData: Record<string, unknown> = {
       organizationName: data.organizationName || '',
       contactPerson: data.contactPerson || '',
-      timePeriod: data.timePeriod || '',
       totalExternalCosts: data.totalExternalCosts || 0
     };
     
@@ -874,13 +871,23 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
-          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+          {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="mb-2 sm:mb-0">
                   <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
                   <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
                 </div>
+                
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+                  <span className="ml-2 font-semibold">
+                    {orgData.startDate && orgData.endDate 
+                      ? `${orgData.startDate} - ${orgData.endDate}`
+                      : "Ej angiven"}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
                   <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
@@ -894,7 +901,7 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">H – Insatsens påverkan</h2>
+              <h2 className="text-2xl font-bold">6 – Externa Kostnader</h2>
             </div>
             
           </div>

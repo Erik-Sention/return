@@ -4,13 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Coins, Calendar, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
 import { formatCurrency } from '@/lib/utils/format';
 import { Input } from '@/components/ui/input';
 import { FadeIn } from '@/components/ui/fade-in';
+import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
+import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
+import { SharedFields } from '@/lib/firebase/sharedFields';
 
 interface FormDData {
   organizationName: string;
   contactPerson: string;
+  startDate: string;
+  endDate: string;
   averageMonthlySalary: number | undefined;
   socialFeesPercentage: number | undefined;
   averageSocialFeesPerMonth: number;
@@ -100,6 +106,8 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const [formData, setFormData] = useState<FormDData>({
     organizationName: '',
     contactPerson: '',
+    startDate: '',
+    endDate: '',
     averageMonthlySalary: undefined,
     socialFeesPercentage: undefined,
     averageSocialFeesPerMonth: 0,
@@ -142,7 +150,13 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
           const data = await loadFormData<FormDData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
-            setFormData(data);
+            // Säkerställ att startDate och endDate alltid är strängar
+            const safeData = {
+              ...data,
+              startDate: data.startDate || '',
+              endDate: data.endDate || ''
+            };
+            setFormData(safeData);
           }
         } catch (error) {
           console.error('Error loading data from Firebase:', error);
@@ -296,10 +310,17 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const prepareDataForSave = (data: FormDData): FormDData => {
     const preparedData = { ...data };
     
-    // Ersätt undefined med null för alla fält
+    // Ersätt undefined med null för alla numeriska fält, men behåll strängar som strängar
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormDData;
-      if (typeof preparedData[typedKey] === 'undefined') {
+      // Behåll alltid string-värden för organisationsinfo och datumfält
+      if (typedKey === 'organizationName' || typedKey === 'contactPerson' || 
+          typedKey === 'startDate' || typedKey === 'endDate') {
+        // Säkerställ att dessa alltid är strängar, aldrig null
+        (preparedData as any)[typedKey] = preparedData[typedKey] || '';
+      } 
+      // För numeriska fält, konvertera undefined till null
+      else if (typeof preparedData[typedKey] === 'undefined') {
         (preparedData as Record<keyof FormDData, string | number | null>)[typedKey] = null;
       }
     });
@@ -324,6 +345,9 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
       console.log('Saving form data to Firebase:', dataToSave);
       
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      
+      // Uppdatera gemensamma fält för användaren
+      await updateSharedFieldsFromCurrentForm(currentUser.uid, dataToSave as unknown as Record<string, unknown>);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
@@ -369,6 +393,38 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
                   className="bg-white dark:bg-slate-800 font-medium"
                 />
               </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tidsperiod (startdatum)</label>
+                <InfoLabel text="Ange startdatum i formatet ÅÅÅÅ-MM-DD (visas i alla formulär)" />
+                <Input
+                  value={formData.startDate}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  placeholder="ÅÅÅÅ-MM-DD"
+                  className="bg-white dark:bg-slate-800 font-medium"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tidsperiod (slutdatum)</label>
+                <InfoLabel text="Ange slutdatum i formatet ÅÅÅÅ-MM-DD (visas i alla formulär)" />
+                <Input
+                  value={formData.endDate}
+                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  placeholder="ÅÅÅÅ-MM-DD"
+                  className="bg-white dark:bg-slate-800 font-medium"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <SharedFieldsButton 
+                userId={currentUser?.uid}
+                onFieldsLoaded={(fields: SharedFields) => {
+                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
+                }}
+                disabled={!currentUser?.uid}
+              />
             </div>
           </div>
 
@@ -377,7 +433,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <Calculator className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">D – Beräkning av personalkostnader</h2>
+              <h2 className="text-2xl font-bold">1 – Beräkning av personalkostnader</h2>
             </div>
             <div className="flex items-center gap-2">
               {saveMessage && (

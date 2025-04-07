@@ -504,7 +504,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
-  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null>(null);
 
   // Load data from Firebase on mount
   useEffect(() => {
@@ -541,7 +541,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   }, [isDataLoading, isOrgInfoLoading]);
   
   // Callback för när organisationsdata har laddats
-  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string } | null) => {
+  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null) => {
     setOrgData(data);
   }, []);
 
@@ -1208,13 +1208,23 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
-          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+          {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="mb-2 sm:mb-0">
                   <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
                   <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
                 </div>
+                
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+                  <span className="ml-2 font-semibold">
+                    {orgData.startDate && orgData.endDate 
+                      ? `${orgData.startDate} - ${orgData.endDate}`
+                      : "Ej angiven"}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
                   <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
@@ -1228,7 +1238,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">G – Resultat och utfall</h2>
+              <h2 className="text-2xl font-bold">5 – Insatskostnader</h2>
             </div>
             <div className="flex items-center gap-2">
               {saveMessage && (
@@ -1252,35 +1262,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               {error}
             </div>
           )}
-          
-          {/* G1-G3 Grundinformation */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Tidsperiod" 
-              icon={<Info className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">G3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
-              <Input
-                name="timePeriod"
-                value={safeFormData.timePeriod || ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('timePeriod', e.target.value)}
-                placeholder="Ange tidsperiod"
-              />
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-              />
-            </div>
-          </div>
           
           {/* Insatser */}
           <div className="form-card">

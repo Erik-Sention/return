@@ -7,7 +7,12 @@ import { loadOrganizationInfoFromFormD } from '@/lib/firebase/sharedFields';
 interface OrganizationHeaderProps {
   forceRefresh?: boolean;
   onLoadingChange?: (isLoading: boolean) => void;
-  onDataLoaded?: (data: { organizationName: string, contactPerson: string } | null) => void;
+  onDataLoaded?: (data: { 
+    organizationName: string, 
+    contactPerson: string,
+    startDate: string,
+    endDate: string 
+  } | null) => void;
 }
 
 export const OrganizationHeader = ({ 
@@ -19,6 +24,8 @@ export const OrganizationHeader = ({
   const [organizationInfo, setOrganizationInfo] = useState<{
     organizationName: string;
     contactPerson: string;
+    startDate: string;
+    endDate: string;
   } | null>(null);
   
   // Referens för att spåra om vi redan har anropat callbacks
@@ -102,20 +109,33 @@ export const OrganizationHeader = ({
   }, [currentUser, forceRefresh]);
   
   // Visa inte header om information saknas
-  if (!organizationInfo || (!organizationInfo.organizationName && !organizationInfo.contactPerson)) {
+  if (!organizationInfo || (!organizationInfo.organizationName && !organizationInfo.contactPerson && 
+                          !organizationInfo.startDate && !organizationInfo.endDate)) {
     return null;
   }
   
+  const timeperiodText = organizationInfo.startDate && organizationInfo.endDate 
+    ? `${organizationInfo.startDate} - ${organizationInfo.endDate}`
+    : "Ej angiven";
+  
   return (
     <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
-      <div className="flex flex-col sm:flex-row justify-between">
-        <div className="mb-2 sm:mb-0">
-          <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
-          <span className="ml-2 font-semibold">{organizationInfo.organizationName || "Ej angiven"}</span>
-        </div>
-        <div>
-          <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
-          <span className="ml-2 font-semibold">{organizationInfo.contactPerson || "Ej angiven"}</span>
+      <div className="flex flex-col space-y-2">
+        <div className="flex flex-col sm:flex-row justify-between">
+          <div className="mb-2 sm:mb-0">
+            <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
+            <span className="ml-2 font-semibold">{organizationInfo.organizationName || "Ej angiven"}</span>
+          </div>
+          
+          <div className="mb-2 sm:mb-0">
+            <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+            <span className="ml-2 font-semibold">{timeperiodText}</span>
+          </div>
+          
+          <div>
+            <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
+            <span className="ml-2 font-semibold">{organizationInfo.contactPerson || "Ej angiven"}</span>
+          </div>
         </div>
       </div>
     </div>

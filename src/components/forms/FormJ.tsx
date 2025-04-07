@@ -28,8 +28,6 @@ interface FormGData {
 interface FormJData {
   organizationName: string;
   contactPerson: string;
-  timePeriod: string;
-  interventionDescription: string;
   
   // Beräkningsalternativ 1 (investeringen är känd, effekten är känd)
   totalCostMentalHealthAlt1: number | undefined;
@@ -190,15 +188,25 @@ const calculateValues = (data: FormJData): FormJData => {
 // Uppdatera prepareDataForSave-funktionen med specifika typer
 const prepareDataForSave = (data: FormJData): Record<string, unknown> => {
   // Skapa ett objekt med väldefinierade typer
-  const cleanedData: Record<string, unknown> = {};
-  
-  // Loopa igenom alla keys i formData och rensa undefined/null
-  Object.entries(data).forEach(([key, value]) => {
-    // Spara endast definierade värden
-    if (value !== undefined && value !== null) {
-      cleanedData[key] = value;
-    }
-  });
+  const cleanedData: Record<string, unknown> = {
+    organizationName: data.organizationName || '',
+    contactPerson: data.contactPerson || '',
+    
+    totalCostMentalHealthAlt1: data.totalCostMentalHealthAlt1,
+    reducedStressPercentageAlt1: data.reducedStressPercentageAlt1,
+    economicBenefitAlt1: data.economicBenefitAlt1 || 0,
+    totalInterventionCostAlt1: data.totalInterventionCostAlt1,
+    economicSurplusAlt1: data.economicSurplusAlt1 || 0,
+    roiPercentageAlt1: data.roiPercentageAlt1 || 0,
+    
+    totalCostMentalHealthAlt2: data.totalCostMentalHealthAlt2,
+    reducedStressPercentageAlt2: data.reducedStressPercentageAlt2,
+    maxInterventionCostAlt2: data.maxInterventionCostAlt2 || 0,
+    
+    totalInterventionCostAlt3: data.totalInterventionCostAlt3,
+    totalCostMentalHealthAlt3: data.totalCostMentalHealthAlt3,
+    minEffectForBreakEvenAlt3: data.minEffectForBreakEvenAlt3 || 0
+  };
   
   return cleanedData;
 };
@@ -211,8 +219,6 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const [formData, setFormData] = useState<FormJData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '',
-    interventionDescription: '',
     
     totalCostMentalHealthAlt1: undefined,
     reducedStressPercentageAlt1: undefined,
@@ -472,7 +478,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
-  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null>(null);
   
   // Lägg till hook för att hålla reda på när innehållet är redo
   useEffect(() => {
@@ -528,13 +534,23 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
-          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+          {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="mb-2 sm:mb-0">
                   <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
                   <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
                 </div>
+                
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+                  <span className="ml-2 font-semibold">
+                    {orgData.startDate && orgData.endDate 
+                      ? `${orgData.startDate} - ${orgData.endDate}`
+                      : "Ej angiven"}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
                   <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
@@ -548,7 +564,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">J – Långsiktiga effekter</h2>
+              <h2 className="text-2xl font-bold">8 – Return on investment</h2>
             </div>
           </div>
           
@@ -587,54 +603,6 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               {error}
             </div>
           )}
-          
-          {/* Tidsperiod */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Tidsperiod" 
-              icon={<Info className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J3: Tidsperiod</label>
-              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
-              <Input
-                value={safeFormData.timePeriod}
-                onChange={(e) => handleChange('timePeriod', e.target.value)}
-                placeholder="Ange tidsperiod"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-              />
-            </div>
-          </div>
-          
-          {/* Insatsbeskrivning */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Beskriv insatsen som beräkningen avser" 
-              icon={<LineChart className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">J4: Insatsbeskrivning</label>
-              <InfoLabel text="Summering av alla insatser, se formulär G samt respektive underformulär" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={safeFormData.interventionDescription}
-                onChange={(e) => handleChange('interventionDescription', e.target.value)}
-                placeholder="Beskriv insatsen..."
-              />
-            </div>
-          </div>
           
           {/* Beräkningsalternativ 1 */}
           <div className="form-card">

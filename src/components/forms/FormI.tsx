@@ -62,7 +62,6 @@ interface InternalCost {
 interface FormIData {
   organizationName: string;
   contactPerson: string;
-  timePeriod: string;
   internalCosts: InternalCost[];
   totalInternalCost: number;
 }
@@ -563,7 +562,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const [formData, setFormData] = useState<FormIData>({
     organizationName: '',
     contactPerson: '',
-    timePeriod: '',
     internalCosts: [],
     totalInternalCost: 0
   });
@@ -584,7 +582,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
-  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null>(null);
 
   // Hjälpfunktion för att skapa en tom kostnadskategori
   const createEmptyCostCategory = (): CostCategory => ({
@@ -750,7 +748,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     const preparedData: Record<string, unknown> = {
       organizationName: data.organizationName || '',
       contactPerson: data.contactPerson || '',
-      timePeriod: data.timePeriod || '',
       totalInternalCost: data.totalInternalCost || 0
     };
     
@@ -976,13 +973,23 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
-          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+          {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="mb-2 sm:mb-0">
                   <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
                   <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
                 </div>
+                
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+                  <span className="ml-2 font-semibold">
+                    {orgData.startDate && orgData.endDate 
+                      ? `${orgData.startDate} - ${orgData.endDate}`
+                      : "Ej angiven"}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
                   <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
@@ -996,7 +1003,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">I – Sammanfattning</h2>
+              <h2 className="text-2xl font-bold">7 – Interna Kostnader</h2>
             </div>
             
             <div className="flex items-center gap-2">
@@ -1021,36 +1028,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
               {error}
             </div>
           )}
-          
-          {/* Delinsats */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Delinsats" 
-              icon={<Info className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">I3: Delinsats</label>
-              <InfoLabel text="Ange vilken delinsats denna interna kostnad gäller" />
-              <Input
-                name="timePeriod"
-                value={safeFormData.timePeriod || ''}
-                onChange={handleInputChange}
-                placeholder="Ange delinsats"
-                className="bg-white dark:bg-slate-800"
-              />
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-              />
-            </div>
-          </div>
           
           {/* Interna kostnader */}
           <div className="form-card">

@@ -183,7 +183,13 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isOrgInfoLoading, setIsOrgInfoLoading] = useState(true);
-  const [orgData, setOrgData] = useState<{ organizationName: string; contactPerson: string } | null>(null);
+  
+  const [orgData, setOrgData] = useState<{ 
+    organizationName: string; 
+    contactPerson: string; 
+    startDate: string;
+    endDate: string;
+  } | null>(null);
 
   // Hantera ändringar i formuläret
   const handleChange = useCallback((field: keyof FormCData, value: string | number | null | undefined) => {
@@ -423,7 +429,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   }, [isDataLoading, isOrgInfoLoading]);
 
   // Callback för när organisationsdata har laddats
-  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string } | null) => {
+  const handleOrgDataLoaded = useCallback((data: { 
+    organizationName: string; 
+    contactPerson: string; 
+    startDate: string;
+    endDate: string;
+  } | null) => {
     setOrgData(data);
   }, []);
 
@@ -440,13 +451,23 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
-          {orgData && (orgData.organizationName || orgData.contactPerson) && (
+          {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
               <div className="flex flex-col sm:flex-row justify-between">
                 <div className="mb-2 sm:mb-0">
                   <span className="text-sm font-medium text-muted-foreground">Organisation:</span>
                   <span className="ml-2 font-semibold">{orgData.organizationName || "Ej angiven"}</span>
                 </div>
+                
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-sm font-medium text-muted-foreground">Tidsperiod:</span>
+                  <span className="ml-2 font-semibold">
+                    {orgData.startDate && orgData.endDate 
+                      ? `${orgData.startDate} - ${orgData.endDate}`
+                      : "Ej angiven"}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Kontaktperson:</span>
                   <span className="ml-2 font-semibold">{orgData.contactPerson || "Ej angiven"}</span>
@@ -460,7 +481,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <Calculator className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">C – Beräkning av psykosocial ohälsa</h2>
+              <h2 className="text-2xl font-bold">2 – Beräkning av psykosocial ohälsa</h2>
             </div>
             <div className="flex items-center gap-2">
               {saveMessage && (
