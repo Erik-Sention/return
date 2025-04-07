@@ -15,37 +15,37 @@ const formInfos: { id: string; title: string; description: string }[] = [
   { 
     id: 'C', 
     title: 'Formulär C', 
-    description: 'Ekonomiska konsekvenser' 
+    description: 'Beräkning av psykosocial ohälsa' 
   },
   { 
     id: 'A', 
     title: 'Formulär A', 
-    description: 'Verksamhetsanalys' 
+    description: 'Organisation' 
   },
   { 
     id: 'B', 
     title: 'Formulär B', 
-    description: 'Insatsanalys' 
+    description: 'Planering av insatser' 
   },
   { 
     id: 'G', 
     title: 'Formulär G', 
-    description: 'Beräkningsmodell insatser' 
+    description: 'Totala Insatskostnader' 
   },
   { 
     id: 'H', 
     title: 'Formulär H', 
-    description: 'Kostnadsberäkning insatser' 
+    description: 'Externa Kostnader' 
   },
   { 
     id: 'I', 
     title: 'Formulär I', 
-    description: 'Vinstberäkning' 
+    description: 'Interna Kostnader' 
   },
   { 
     id: 'J', 
     title: 'Formulär J', 
-    description: 'Sammanställning' 
+    description: 'Return on investment' 
   }
 ];
 
