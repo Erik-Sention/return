@@ -182,7 +182,20 @@ export default function ROIPage() {
           
           <div className="flex-1 flex justify-center items-center">
             <span className="text-sm font-medium text-muted-foreground">
-              Formulär {currentForm}
+              Formulär {(() => {
+                // Mappa formulärbokstäver till siffror
+                const formMap: Record<string, string> = {
+                  'D': '1',
+                  'C': '2',
+                  'A': '3',
+                  'B': '4',
+                  'G': '5',
+                  'H': '6',
+                  'I': '7',
+                  'J': '8'
+                };
+                return formMap[currentForm] || currentForm;
+              })()}
             </span>
           </div>
           

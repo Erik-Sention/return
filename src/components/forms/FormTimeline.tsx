@@ -6,44 +6,52 @@ interface FormTimelineProps {
   onFormChange?: (form: string) => void;
 }
 
-const formInfos: { id: string; title: string; description: string }[] = [
+const formInfos: { id: string; displayId: string; title: string; description: string }[] = [
   { 
     id: 'D', 
+    displayId: '1',
     title: 'Formulär D', 
     description: 'Personalkostnader & sjukfrånvaro' 
   },
   { 
     id: 'C', 
+    displayId: '2',
     title: 'Formulär C', 
     description: 'Beräkning av psykosocial ohälsa' 
   },
   { 
     id: 'A', 
+    displayId: '3',
     title: 'Formulär A', 
     description: 'Organisation' 
   },
   { 
     id: 'B', 
+    displayId: '4',
     title: 'Formulär B', 
     description: 'Planering av insatser' 
   },
   { 
     id: 'G', 
+    displayId: '5',
     title: 'Formulär G', 
     description: 'Totala Insatskostnader' 
   },
   { 
     id: 'H', 
+    displayId: '6',
     title: 'Formulär H', 
     description: 'Externa Kostnader' 
   },
   { 
     id: 'I', 
+    displayId: '7',
     title: 'Formulär I', 
     description: 'Interna Kostnader' 
   },
   { 
     id: 'J', 
+    displayId: '8',
     title: 'Formulär J', 
     description: 'Return on investment' 
   }
@@ -89,12 +97,11 @@ export default function FormTimeline({ currentForm, completedForms, onFormChange
                 ? 'text-primary' 
                 : 'text-muted-foreground'
             }`}>
-              {form.id}
+              {form.displayId}
             </span>
             
             {/* Tooltip för att visa mer information - nu under istället för över */}
             <div className="absolute top-full mt-1 w-36 bg-popover text-popover-foreground rounded-md p-2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none left-1/2 -translate-x-1/2 text-center z-20">
-              <p className="text-xs font-medium"></p>
               <p className="text-xs">{form.description}</p>
             </div>
           </div>

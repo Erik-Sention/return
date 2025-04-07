@@ -72,6 +72,21 @@ type FormAProps = React.ComponentProps<'div'> & {
   onNavigateToForm?: (formName: string) => void;
 };
 
+// Lägg till en hjälpfunktion för att översätta formulärbokstäver till siffror
+const getFormNumber = (formId: string): string => {
+  const formMap: Record<string, string> = {
+    'D': '1',
+    'C': '2',
+    'A': '3',
+    'B': '4',
+    'G': '5',
+    'H': '6',
+    'I': '7',
+    'J': '8'
+  };
+  return formMap[formId] || formId;
+};
+
 // Lägg till AutoFilledField-komponenten för att visa automatiskt hämtad data
 const AutoFilledField = ({ 
   value, 
@@ -88,10 +103,10 @@ const AutoFilledField = ({
     <div className="p-2 bg-primary/5 border border-dashed border-primary/40 rounded-md flex justify-between shadow-sm items-center">
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
         <Calculator className="w-3 h-3" />
-        <span>Auto från Formulär {sourceFormName}</span>
+        <span>Auto från Formulär {getFormNumber(sourceFormName)}</span>
       </div>
       {isEmpty ? (
-        <span className="text-amber-500 font-medium">Saknar värde i formulär {sourceFormName}</span>
+        <span className="text-amber-500 font-medium">Saknar värde i formulär {getFormNumber(sourceFormName)}</span>
       ) : (
         <span className="font-semibold">{value}</span>
       )}
@@ -104,7 +119,7 @@ const AutoFilledField = ({
       className="mt-1"
     >
       <ArrowRight className="h-4 w-4 mr-2" />
-      Gå till Formulär {sourceFormName}
+      Gå till Formulär {getFormNumber(sourceFormName)}
     </Button>
   </div>
 );
