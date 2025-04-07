@@ -802,10 +802,6 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     }
   };
 
-  const handleChange = (field: keyof FormIData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   // Uppdatera en intern kostnad
   const updateInternalCost = (updatedCost: InternalCost) => {
     const updatedCosts = safeFormData.internalCosts.map(cost => 
