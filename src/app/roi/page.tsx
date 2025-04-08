@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function ROIPage() {
-  const [currentForm, setCurrentForm] = useState('A');
+  const [currentForm, setCurrentForm] = useState('D');
   const [completedForms, setCompletedForms] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -154,7 +154,13 @@ export default function ROIPage() {
               setCurrentForm(formName);
             }}
           />}
-          {currentForm === 'D' && <FormD ref={formDRef} />}
+          {currentForm === 'D' && <FormD 
+            ref={formDRef}
+            onNavigateToForm={(formName) => {
+              // Navigera till det specifika formuläret
+              setCurrentForm(formName);
+            }}
+          />}
           {currentForm === 'G' && <FormG ref={formGRef} />}
           {currentForm === 'H' && <FormH ref={formHRef} />}
           {currentForm === 'I' && <FormI ref={formIRef} />}
