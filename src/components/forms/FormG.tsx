@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, FileText } from 'lucide-react';
+import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, FileText, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -453,26 +453,25 @@ const FetchValueButton = ({
   message?: string | null;
   source?: 'H' | 'I';
 }) => {
-  // Översätt bokstav till nummer
-  const formNumber = source === 'H' ? '6' : '7';
-  
+  // Använd getFormNumber för att konvertera bokstaven till nummerbeteckning
+  const formNumber = getFormNumber(source);
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="space-y-1 mt-2">
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={onClick}
         disabled={disabled}
-        className="mt-1"
+        className={`gap-2 w-full ${message ? 'border-blue-400 dark:border-blue-500' : ''}`}
       >
-        <ArrowDownIcon className="h-4 w-4 mr-2" />
-        Hämta insats från Formulär {formNumber}
+        <Download className="h-4 w-4" />
+        Hämta data från Formulär {formNumber}
       </Button>
       {message && (
-        <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+        <div className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">
           {message}
-        </span>
+        </div>
       )}
     </div>
   );

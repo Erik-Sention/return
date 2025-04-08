@@ -120,7 +120,6 @@ const FORM_TYPE = 'D';
 
 // Definiera en typ för komponentens props
 export type FormDProps = React.ComponentProps<'div'> & {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onNavigateToForm?: (formName: string) => void;
 };
 

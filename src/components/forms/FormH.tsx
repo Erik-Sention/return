@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText, ShoppingCart, Download } from 'lucide-react';
+import { Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, ShoppingCart, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
