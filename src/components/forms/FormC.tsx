@@ -1,13 +1,9 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
-import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
-import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
-import { SharedFields } from '@/lib/firebase/sharedFields';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
 
