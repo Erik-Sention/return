@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallba
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon } from 'lucide-react';
+import { Save, Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
@@ -38,6 +38,8 @@ interface FormDData {
   shortSickLeavePercentage?: number;
   totalLongSickLeaveCosts?: number;
   longSickLeavePercentage?: number;
+  shortSickLeaveMentalHealthPercentage?: number;
+  longSickLeaveMentalHealthPercentage?: number;
 }
 
 const FORM_TYPE = 'C';
@@ -91,6 +93,11 @@ const SectionHeader = ({
     <h3 className="text-lg font-semibold">{title}</h3>
   </div>
 );
+
+// Hjälpfunktion för att konvertera null till undefined
+const nullToUndefined = (value: number | null | undefined): number | undefined => {
+  return value === null ? undefined : value;
+};
 
 // Lägg till en hjälpfunktion för att översätta formulärbokstäver till siffror
 const getFormNumber = (formId: string): string => {
@@ -154,6 +161,17 @@ type FormCProps = React.ComponentProps<'div'> & {
   onNavigateToForm?: (formName: string) => void;
 };
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 2 – Kostnader relaterade till mental ohälsa</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär beräknar du kostnader som är relaterade till mental ohälsa i organisationen.
+      Uppgifterna baseras delvis på data från Formulär 1 och används senare för att motivera investeringar i förebyggande åtgärder.
+    </p>
+  </div>
+);
+
 // Gör FormC till en forwardRef component
 const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const { currentUser } = useAuth();
@@ -190,8 +208,10 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     personnelCosts: false,         // Om personalkostnader har hämtats från FormD
     shortSickLeaveCosts: false,    // Om korttidssjukfrånvarokostnader har hämtats från FormD
     shortSickLeavePercent: false,  // Om kort sjukfrånvaroprocent har hämtats från FormD
+    shortSickLeaveMentalHealthPercent: false, // Om psykisk ohälsa för kort sjukfrånvaro har hämtats från FormD
     longSickLeaveCosts: false,     // Om långtidssjukfrånvarokostnader har hämtats från FormD
     longSickLeavePercent: false,   // Om lång sjukfrånvaroprocent har hämtats från FormD
+    longSickLeaveMentalHealthPercent: false, // Om psykisk ohälsa för lång sjukfrånvaro har hämtats från FormD
     errorMessage: null as string | null
   });
 
@@ -274,6 +294,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             currentStatus.shortSickLeavePercent = true;
           }
           
+          // Hämta procentsats för psykisk ohälsa i kort sjukfrånvaro om det finns
+          if (formDData.shortSickLeaveMentalHealthPercentage !== undefined) {
+            handleChange('percentShortSickLeaveMentalHealth', formDData.shortSickLeaveMentalHealthPercentage);
+            currentStatus.shortSickLeaveMentalHealthPercent = true;
+          }
+          
           // Hämta totalLongSickLeaveCosts om det finns
           if (formDData.totalLongSickLeaveCosts !== undefined) {
             const roundedValue = Math.round(formDData.totalLongSickLeaveCosts);
@@ -285,6 +311,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           if (formDData.longSickLeavePercentage !== undefined) {
             handleChange('percentLongSickLeaveMentalHealth', formDData.longSickLeavePercentage);
             currentStatus.longSickLeavePercent = true;
+          }
+          
+          // Hämta procentsats för psykisk ohälsa i lång sjukfrånvaro om det finns
+          if (formDData.longSickLeaveMentalHealthPercentage !== undefined) {
+            handleChange('percentLongSickLeaveMentalHealth', formDData.longSickLeaveMentalHealthPercentage);
+            currentStatus.longSickLeaveMentalHealthPercent = true;
           }
         }
         
@@ -455,16 +487,19 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
 
   return (
     <div className="space-y-6">
-      {/* Dold OrganizationHeader för att ladda data */}
-      <div className="sr-only">
-        <OrganizationHeader 
-          onLoadingChange={setIsOrgInfoLoading} 
-          onDataLoaded={handleOrgDataLoaded}
-        />
-      </div>
-      
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
+          {/* Dold OrganizationHeader för att ladda data */}
+          <div className="sr-only">
+            <OrganizationHeader 
+              onLoadingChange={setIsOrgInfoLoading} 
+              onDataLoaded={handleOrgDataLoaded}
+            />
+          </div>
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
@@ -496,7 +531,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <Calculator className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">2 – Beräkning av psykosocial ohälsa</h2>
+              <h2 className="text-2xl font-bold">2 – Kostnader relaterade till mental ohälsa</h2>
             </div>
             <div className="flex items-center gap-2">
               {saveMessage && (
@@ -525,16 +560,20 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           {autoFetchStatus.hasFetched && (autoFetchStatus.personnelCosts || 
                                           autoFetchStatus.shortSickLeaveCosts || 
                                           autoFetchStatus.shortSickLeavePercent || 
+                                          autoFetchStatus.shortSickLeaveMentalHealthPercent ||
                                           autoFetchStatus.longSickLeaveCosts || 
-                                          autoFetchStatus.longSickLeavePercent) && (
+                                          autoFetchStatus.longSickLeavePercent ||
+                                          autoFetchStatus.longSickLeaveMentalHealthPercent) && (
             <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
               <p className="font-medium">Följande data har automatiskt hämtats från Formulär D:</p>
               <ul className="list-disc list-inside mt-1">
                 {autoFetchStatus.personnelCosts && <li>Totala personalkostnader (D9)</li>}
                 {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro (D17)</li>}
                 {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro (D15)</li>}
+                {autoFetchStatus.shortSickLeaveMentalHealthPercent && <li>Andel kort sjukfrånvaro pga psykisk ohälsa</li>}
                 {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro (D22)</li>}
                 {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro (D20)</li>}
+                {autoFetchStatus.longSickLeaveMentalHealthPercent && <li>Andel lång sjukfrånvaro pga psykisk ohälsa</li>}
               </ul>
             </div>
           )}
@@ -552,7 +591,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             />
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">C3: Tidsperiod (12 månader)</label>
+              <label className="text-sm font-medium">Tidsperiod (12 månader)</label>
               <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
               <Input
                 value={formData.timePeriod}
@@ -581,10 +620,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  C4: Totala personalkostnader (lön + sociala + kringkostnader), kr per år
-                </label>
-                <InfoLabel text="Detta fält hämtas automatiskt från formulär D9" />
+                <label className="text-sm font-medium">Totala personalkostnader (lön + sociala + kringkostnader), kr per år</label>
+                <InfoLabel text="Detta värde hämtas från Formulär 1 (totala personalkostnader)" />
                 <AutoFilledField
                   value={`${formatNumber(formData.totalPersonnelCosts || 0)} kr`}
                   sourceFormName="D"
@@ -593,11 +630,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">C5: Vinst i företaget, kr per år</label>
+                <label className="text-sm font-medium">Vinst i företaget, kr per år</label>
+                <InfoLabel text="Detta fält är valfritt. Om din organisation inte har vinst kan fältet lämnas tomt." />
                 <FormattedNumberInput
-                  value={formData.companyProfit}
+                  value={nullToUndefined(formData.companyProfit)}
                   onChange={(value) => handleChange('companyProfit', value)}
-                  placeholder="Ange summa i kr"
+                  placeholder="Ange belopp"
                   className="bg-background/50"
                 />
               </div>
@@ -605,35 +643,35 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C6: Summa, värde av arbete"
+                label="Summa, värde av arbete"
                 value={`${formatNumber(formData.totalWorkValue)} kr`}
-                info="Beräknas automatiskt som summan av C4 + C5"
+                info="Beräknas automatiskt som summan av personalkostnader och vinst"
               />
             </div>
           </div>
 
           <div className="form-card">
             <SectionHeader 
-              title="Stressnivå och produktionsbortfall" 
-              icon={<ArrowRight className="h-5 w-5 text-primary" />}
+              title="Produktionsbortfall på grund av stress" 
+              icon={<Brain className="h-5 w-5 text-primary" />}
             />
             
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">C7: Andel av personalen med hög stressnivå (%)</label>
-                <InfoLabel text="Enligt Arbetsmiljöverket rapporterar 10-20% av arbetstagare höga stressnivåer. Inom sjukvård, socialtjänst och utbildning är siffrorna ofta 20-25%, medan tillverkningsindustri och IT oftast har 8-15%" />
+                <label className="text-sm font-medium">Andel av personalen med hög stressnivå (%)</label>
+                <InfoLabel text="Detta är andelen anställda som upplever hög eller mycket hög stress, vanligtvis 15-30% i svenska organisationer." />
                 <FormattedNumberInput
-                  value={formData.percentHighStress}
+                  value={nullToUndefined(formData.percentHighStress)}
                   onChange={(value) => handleChange('percentHighStress', value)}
                   placeholder="Ange procent"
                   className="bg-background/50"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">C8: Produktionsbortfall vid hög stressnivå (%)</label>
-                <InfoLabel text="Enligt Myndigheten för arbetsmiljökunskap innebär stressrelaterad psykisk ohälsa i snitt ett produktionsbortfall på minst 9%. Detta är en låg uppskattning, vilket innebär att den faktiska kostnaden sannolikt är högre." />
+                <label className="text-sm font-medium">Produktionsbortfall vid hög stressnivå (%)</label>
+                <InfoLabel text="Standardvärde är 9% baserat på forskning. Detta är effektivitetsförlusten hos anställda med hög/mycket hög stress." />
                 <FormattedNumberInput
-                  value={formData.productionLossHighStress}
+                  value={nullToUndefined(formData.productionLossHighStress)}
                   onChange={(value) => handleChange('productionLossHighStress', value)}
                   placeholder="Ange procent"
                   className="bg-background/50"
@@ -643,17 +681,17 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C9: Totalt produktionsbortfall"
+                label="Totalt produktionsbortfall"
                 value={`${formatNumber(formData.totalProductionLoss)}%`}
-                info="Beräknas automatiskt baserat på värdet i C8"
+                info="Beräknas automatiskt baserat på andel av personalen med hög stressnivå"
               />
             </div>
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C10: Värde av produktionsbortfall (för över till ruta C18)"
+                label="Värde av produktionsbortfall"
                 value={`${formatNumber(formData.valueProductionLoss)} kr`}
-                info="Beräknas automatiskt som (C6 × C9 ÷ 100)"
+                info="Beräknas automatiskt baserat på värdet av arbete och produktionsbortfall"
                 highlight={true}
               />
             </div>
@@ -667,8 +705,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">C11: Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
-                <InfoLabel text="Detta fält hämtas automatiskt från formulär D17" />
+                <label className="text-sm font-medium">Total kostnad för kort sjukfrånvaro (dag 1–14), kr per år</label>
+                <InfoLabel text="Detta värde hämtas från Formulär 1 (kort sjukfrånvaro)" />
                 <AutoFilledField
                   value={`${formatNumber(formData.costShortSickLeave || 0)} kr`}
                   sourceFormName="D"
@@ -677,22 +715,22 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">C12: Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+                <label className="text-sm font-medium">Andel av kort sjukfrånvaro som beror på psykisk ohälsa (%)</label>
                 <InfoLabel text="Standardvärde är 6% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (8-10%), IT (5-7%), Finans (4-6%), Handel (3-5%). Kort sjukfrånvaro definieras som 1-14 dagar och inkluderar stressrelaterade symptom, utmattning och ångest." />
                 <AutoFilledField
                   value={`${formatNumber(formData.percentShortSickLeaveMentalHealth || 0)} %`}
                   sourceFormName="D"
                   onNavigate={navigateToForm}
-                  isEmpty={!autoFetchStatus.shortSickLeavePercent || !formData.percentShortSickLeaveMentalHealth}
+                  isEmpty={!autoFetchStatus.shortSickLeaveMentalHealthPercent || !formData.percentShortSickLeaveMentalHealth}
                 />
               </div>
             </div>
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C13: Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                label="Kostnad för kort sjukfrånvaro beroende på psykisk ohälsa, kr per år"
                 value={`${formatNumber(formData.costShortSickLeaveMentalHealth)} kr`}
-                info="Beräknas automatiskt som (C11 × C12 ÷ 100)"
+                info="Beräknas automatiskt baserat på total kort sjukfrånvaro och andel som beror på psykisk ohälsa"
               />
             </div>
           </div>
@@ -705,8 +743,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">C14: Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
-                <InfoLabel text="Detta fält hämtas automatiskt från formulär D22" />
+                <label className="text-sm font-medium">Total kostnad för lång sjukfrånvaro (dag 15–), kr per år</label>
+                <InfoLabel text="Detta värde hämtas från Formulär 1 (lång sjukfrånvaro)" />
                 <AutoFilledField
                   value={`${formatNumber(formData.costLongSickLeave || 0)} kr`}
                   sourceFormName="D"
@@ -715,30 +753,30 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">C15: Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
+                <label className="text-sm font-medium">Andel av lång sjukfrånvaro som beror på psykisk ohälsa (%)</label>
                 <InfoLabel text="Standardvärde är 40% baserat på forskning. Detta varierar mellan branscher: Vård & Omsorg (45-50%), IT (35-40%), Finans (30-35%), Handel (25-30%). Lång sjukfrånvaro definieras som 15+ dagar och inkluderar depression, utmattningssyndrom och andra psykiska diagnoser." />
                 <AutoFilledField
                   value={`${formatNumber(formData.percentLongSickLeaveMentalHealth || 0)} %`}
                   sourceFormName="D"
                   onNavigate={navigateToForm}
-                  isEmpty={!autoFetchStatus.longSickLeavePercent || !formData.percentLongSickLeaveMentalHealth}
+                  isEmpty={!autoFetchStatus.longSickLeaveMentalHealthPercent || !formData.percentLongSickLeaveMentalHealth}
                 />
               </div>
             </div>
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C16: Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                label="Kostnad för lång sjukfrånvaro beroende på psykisk ohälsa, kr per år"
                 value={`${formatNumber(formData.costLongSickLeaveMentalHealth)} kr`}
-                info="Beräknas automatiskt som (C14 × C15 ÷ 100)"
+                info="Beräknas automatiskt baserat på total lång sjukfrånvaro och andel som beror på psykisk ohälsa"
               />
             </div>
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C17: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                label="Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
                 value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
-                info="Beräknas automatiskt som summan av C13 + C16"
+                info="Beräknas automatiskt som summan av kort och lång sjukfrånvaro"
                 highlight={true}
               />
             </div>
@@ -752,25 +790,25 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             
             <div className="mt-4">
               <ReadOnlyField 
-                label="C18: Värde av produktionsbortfall, kr per år"
+                label="Värde av produktionsbortfall, kr per år"
                 value={`${formatNumber(formData.valueProductionLoss)} kr`}
-                info="Samma värde som C10, överförs automatiskt"
+                info="Samma värde som beräknat ovan, överförs automatiskt"
               />
             </div>
             
             <div className="mt-6">
               <ReadOnlyField 
-                label="C19: Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
+                label="Kostnad för sjukfrånvaro beroende på psykisk ohälsa, kr per år"
                 value={`${formatNumber(formData.totalCostSickLeaveMentalHealth)} kr`}
-                info="Samma värde som C17, överförs automatiskt"
+                info="Samma värde som beräknat ovan, överförs automatiskt"
               />
             </div>
             
             <div className="mt-6 pb-2">
               <ReadOnlyField 
-                label="C20: Total kostnad för psykisk ohälsa, kr per år"
+                label="Total kostnad för psykisk ohälsa, kr per år"
                 value={`${formatNumber(formData.totalCostMentalHealth)} kr`}
-                info="Beräknas automatiskt som summan av C18 + C19"
+                info="Beräknas automatiskt som summan av produktionsbortfall och sjukfrånvaro"
                 highlight={true}
               />
             </div>

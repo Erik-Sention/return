@@ -10,6 +10,33 @@ import { getInterventionColor } from '@/lib/utils/interventionColors';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 5 – Insatskostnader</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär summerar du kostnaderna för planerade insatser. Du kan lägga till 
+      olika insatstyper och specificera både externa kostnader och interna personalkostnader 
+      för att få en helhetsbild av investeringen.
+    </p>
+  </div>
+);
+
+// Uppdatera hjälpfunktion för att översätta formulärbokstäver till siffror
+const getFormNumber = (formId: string): string => {
+  const formMap: Record<string, string> = {
+    'D': '1',
+    'C': '2',
+    'A': '3',
+    'B': '4',
+    'G': '5',
+    'H': '6',
+    'I': '7',
+    'J': '8'
+  };
+  return formMap[formId] || formId;
+};
+
 // Enkel Textarea-komponent
 const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
   function Textarea({ className, style, ...props }, ref) {
@@ -414,7 +441,7 @@ const InterventionCard = ({
   );
 };
 
-// Lägg till FetchValueButton-komponenten för att hämta insatser från formulär H
+// Lägg till FetchValueButton-komponenten för att hämta insatser från formulär
 const FetchValueButton = ({ 
   onClick, 
   disabled,
@@ -425,26 +452,31 @@ const FetchValueButton = ({
   disabled?: boolean;
   message?: string | null;
   source?: 'H' | 'I';
-}) => (
-  <div className="flex items-center gap-2">
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      className="mt-1"
-    >
-      <ArrowDownIcon className="h-4 w-4 mr-2" />
-      Hämta insats från Formulär {source}
-    </Button>
-    {message && (
-      <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
-        {message}
-      </span>
-    )}
-  </div>
-);
+}) => {
+  // Översätt bokstav till nummer
+  const formNumber = source === 'H' ? '6' : '7';
+  
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onClick}
+        disabled={disabled}
+        className="mt-1"
+      >
+        <ArrowDownIcon className="h-4 w-4 mr-2" />
+        Hämta insats från Formulär {formNumber}
+      </Button>
+      {message && (
+        <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
+          {message}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const FORM_TYPE = 'G';
 
@@ -975,20 +1007,20 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
         
         // Visa ett informativt meddelande
         if (added > 0 && updated > 0) {
-          setFetchMessageFormH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär H.`);
+          setFetchMessageFormH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 6.`);
         } else if (added > 0) {
-          setFetchMessageFormH(`${added} nya delinsatser tillagda från Formulär H.`);
+          setFetchMessageFormH(`${added} nya delinsatser tillagda från Formulär 6.`);
         } else if (updated > 0) {
-          setFetchMessageFormH(`${updated} befintliga delinsatser uppdaterade från Formulär H.`);
+          setFetchMessageFormH(`${updated} befintliga delinsatser uppdaterade från Formulär 6.`);
         } else {
           setFetchMessageFormH('Inga ändringar behövdes, allt är redan uppdaterat.');
         }
       } else {
-        setFetchMessageFormH('Alla insatser från Formulär H har redan hämtats.');
+        setFetchMessageFormH('Alla insatser från Formulär 6 har redan hämtats.');
       }
     } catch (error) {
       console.error('Error fetching data from Form H:', error);
-      setError('Kunde inte hämta data från Formulär H.');
+      setError('Kunde inte hämta data från Formulär 6.');
     }
   };
 
@@ -1004,7 +1036,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       const formIData = await loadFormData<FormIData>(currentUser.uid, 'I');
       
       if (!formIData || !formIData.internalCosts || formIData.internalCosts.length === 0) {
-        setFetchMessageFormI('Inga insatser hittades i Formulär I.');
+        setFetchMessageFormI('Inga insatser hittades i Formulär 7.');
         return;
       }
 
@@ -1164,20 +1196,20 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
         
         // Visa ett informativt meddelande
         if (added > 0 && updated > 0) {
-          setFetchMessageFormI(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär I.`);
+          setFetchMessageFormI(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 7.`);
         } else if (added > 0) {
-          setFetchMessageFormI(`${added} nya delinsatser tillagda från Formulär I.`);
+          setFetchMessageFormI(`${added} nya delinsatser tillagda från Formulär 7.`);
         } else if (updated > 0) {
-          setFetchMessageFormI(`${updated} befintliga delinsatser uppdaterade från Formulär I.`);
+          setFetchMessageFormI(`${updated} befintliga delinsatser uppdaterade från Formulär 7.`);
         } else {
           setFetchMessageFormI('Inga ändringar behövdes, allt är redan uppdaterat.');
         }
       } else {
-        setFetchMessageFormI('Alla insatser från Formulär I har redan hämtats.');
+        setFetchMessageFormI('Alla insatser från Formulär 7 har redan hämtats.');
       }
     } catch (error) {
       console.error('Error fetching data from Form I:', error);
-      setError('Kunde inte hämta data från Formulär I.');
+      setError('Kunde inte hämta data från Formulär 7.');
     }
   };
 
@@ -1204,6 +1236,9 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
@@ -1229,7 +1264,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
               </div>
             </div>
           )}
-          
+
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2 rounded-full">
@@ -1295,7 +1330,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
             {(!safeFormData.interventions || safeFormData.interventions.length === 0) ? (
               <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
                 <p className="text-muted-foreground mb-4">
-                  Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär H eller I.
+                  Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär 6 eller 7.
                 </p>
                 <div className="flex justify-center gap-3">
                   <Button 
@@ -1306,7 +1341,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                     disabled={!currentUser?.uid}
                   >
                     <ArrowDownIcon className="h-4 w-4" />
-                    Hämta från Formulär H
+                    Hämta från Formulär 6
                   </Button>
                   <Button 
                     type="button" 
@@ -1316,7 +1351,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                     disabled={!currentUser?.uid}
                   >
                     <ArrowDownIcon className="h-4 w-4" />
-                    Hämta från Formulär I
+                    Hämta från Formulär 7
                   </Button>
                   <Button 
                     type="button" 
@@ -1367,7 +1402,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 info="Summa av alla interna kostnader"
               />
               <ReadOnlyField 
-                label="G34: Total insatskostnad"
+                label="Total insatskostnad"
                 value={formatCurrency(safeFormData.totalInterventionCost || 0)}
                 info="Beräknas automatiskt som summan av alla insatskostnader"
                 highlight={true}

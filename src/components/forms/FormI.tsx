@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Download, Calculator, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
+import { Save, Info, Download, Calculator, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, FileText, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -270,6 +270,18 @@ const CostCategorySection = ({
   );
 };
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 7 – Interna kostnader</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär beräknar du interna personalkostnader för genomförandet av insatserna.
+      Här specificerar du tid för medarbetare, chefer och administration som behövs för
+      varje insats, vilket omvandlas till kostnader.
+    </p>
+  </div>
+);
+
 // Knapp för att hämta insatser från Form G
 const FetchFromFormGButton = ({ 
   onClick, 
@@ -280,24 +292,17 @@ const FetchFromFormGButton = ({
   disabled?: boolean;
   message?: string | null;
 }) => (
-  <div className="flex items-center gap-2">
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      className="gap-2"
-    >
-      <Download className="h-4 w-4" />
-      Hämta från Formulär G
-    </Button>
-    {message && (
-      <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'}`}>
-        {message}
-      </span>
-    )}
-  </div>
+  <Button
+    onClick={onClick}
+    variant="outline"
+    size="sm"
+    disabled={disabled}
+    className="flex items-center gap-2 mt-2"
+  >
+    <Download className="h-4 w-4" />
+    <span>Hämta insatser från Formulär 5</span>
+    {message && <span className="text-xs italic ml-2">({message})</span>}
+  </Button>
 );
 
 // Komponent för ett internt kostnadskort (en insats med dess kostnader)
@@ -959,6 +964,9 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">

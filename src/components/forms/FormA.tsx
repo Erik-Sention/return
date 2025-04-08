@@ -124,6 +124,17 @@ const AutoFilledField = ({
   </div>
 );
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 3 – Info Organisation</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär samlar du ihop information om organisationens nuläge gällande psykisk hälsa
+      och definierar verksamhetens behov. Formuläret lägger grunden för att kunna planera lämpliga insatser.
+    </p>
+  </div>
+);
+
 // Gör FormA till en forwardRef component
 const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const { currentUser } = useAuth();
@@ -309,7 +320,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   };
   
-  // Ny useEffect för att automatiskt hämta data från Formulär C vid inladdning
+  // Ny useEffect för att automatiskt hämta data från Formulär 2 vid inladdning
   useEffect(() => {
     const autoFetchFromFormC = async () => {
       if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
@@ -330,7 +341,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
             updatedStatus.stressLevel = true;
           }
           
-          // Hämta produktionsbortfall om tillgänglig och C8 (productionLossHighStress) har ett värde
+          // Hämta produktionsbortfall om tillgänglig och produktionsbortfall har ett värde
           if (formCData.valueProductionLoss !== undefined && 
               typeof formCData.productionLossHighStress === 'number' && 
               formCData.productionLossHighStress > 0) {
@@ -354,11 +365,11 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           setAutoFetchStatus(updatedStatus);
         }
       } catch (error) {
-        console.error('Fel vid automatisk hämtning från Formulär C:', error);
+        console.error('Fel vid automatisk hämtning från Formulär 2:', error);
         setAutoFetchStatus(prev => ({ 
           ...prev, 
           hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från Formulär C. Gå till Formulär C för att fylla i data.' 
+          errorMessage: 'Kunde inte automatiskt hämta data från Formulär 2. Gå till Formulär 2 för att fylla i data.' 
         }));
       }
     };
@@ -384,6 +395,9 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
@@ -443,7 +457,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           {/* Visa meddelande om automatisk hämtning av data */}
           {autoFetchStatus.hasFetched && (autoFetchStatus.stressLevel || autoFetchStatus.productionLoss || autoFetchStatus.sickLeaveCost) && (
             <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
-              <p className="font-medium">Data har automatiskt hämtats från Formulär C:</p>
+              <p className="font-medium">Data har automatiskt hämtats från Formulär 2:</p>
               <ul className="list-disc list-inside mt-1">
                 {autoFetchStatus.stressLevel && <li>Andel personalen med hög stressnivå</li>}
                 {autoFetchStatus.productionLoss && <li>Värde av produktionsbortfall</li>}

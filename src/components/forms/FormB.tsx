@@ -58,6 +58,17 @@ type FormBProps = React.ComponentProps<'div'>;
 
 const FORM_TYPE = 'B';
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 4 – Planering av insatser</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär planerar du insatserna som ska genomföras baserat på den information 
+      som samlats in i tidigare formulär. Här definieras insatsens mål, målgrupp och genomförandeplan.
+    </p>
+  </div>
+);
+
 // Gör FormB till en forwardRef component
 const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const { currentUser } = useAuth();
@@ -225,6 +236,9 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
       
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
@@ -289,7 +303,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             />
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">B1: Insatsnamn</label>
+              <label className="text-sm font-medium">Insatsnamn</label>
               <InfoLabel text="Ange namnet på den insats som ska analyseras" />
               <Input
                 value={formData.initiativeName}

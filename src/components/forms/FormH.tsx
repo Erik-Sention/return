@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
+import { Info, Wallet, CreditCard, PlusCircle, X, ArrowDown, Calculator as CalculatorIcon, FileText, ShoppingCart, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -391,6 +391,18 @@ const InterventionCard = ({
   );
 };
 
+// Formulärinformationskomponent
+const FormInfo = () => (
+  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+    <h3 className="text-lg font-semibold mb-2">Formulär 6 – Externa kostnader</h3>
+    <p className="text-sm text-slate-700 dark:text-slate-300">
+      I detta formulär specificerar du externa kostnader för genomförandet av insatserna.
+      Externa kostnader inkluderar konsulter, utbildningar, material och andra direkta utgifter 
+      som krävs för insatserna.
+    </p>
+  </div>
+);
+
 // Lägg till FetchValueButton-komponenten för att hämta insatser från formulär G
 const FetchValueButton = ({ 
   onClick, 
@@ -401,24 +413,17 @@ const FetchValueButton = ({
   disabled?: boolean;
   message?: string | null;
 }) => (
-  <div className="flex items-center gap-2">
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onClick}
-      disabled={disabled}
-      className="mt-1"
-    >
-      <ArrowDown className="h-4 w-4 mr-2" />
-      Hämta insats från Formulär G
-    </Button>
-    {message && (
-      <span className={`text-sm ${message.includes('Inget') || message.includes('redan') ? 'text-amber-500' : 'text-green-500'} mt-1`}>
-        {message}
-      </span>
-    )}
-  </div>
+  <Button
+    onClick={onClick}
+    variant="outline"
+    size="sm"
+    disabled={disabled}
+    className="flex items-center gap-2 mt-2"
+  >
+    <Download className="h-4 w-4" />
+    <span>Hämta insatser från Formulär 5</span>
+    {message && <span className="text-xs italic ml-2">({message})</span>}
+  </Button>
 );
 
 const FORM_TYPE = 'H';
@@ -870,6 +875,9 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
       
       <FadeIn show={isContentReady} duration={500}>
         <div className="space-y-4">
+          {/* Lägg till formulärinformation */}
+          <FormInfo />
+          
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
             <div className="bg-primary/5 border border-primary/20 p-3 rounded-md mb-4">
@@ -899,9 +907,9 @@ const FormH = forwardRef<FormHRef, FormHProps>(function FormH(props, ref) {
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2 rounded-full">
-                <FileText className="h-5 w-5 text-primary" />
+                <ShoppingCart className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">6 – Externa Kostnader</h2>
+              <h2 className="text-2xl font-bold">6 – Externa kostnader</h2>
             </div>
             
           </div>

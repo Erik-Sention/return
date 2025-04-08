@@ -345,7 +345,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         setAutoFetchStatus(prev => ({ 
           ...prev, 
           hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från formulär C och G.' 
+          errorMessage: 'Kunde inte automatiskt hämta data från formulär 2 och 5.' 
         }));
       }
     };
@@ -387,9 +387,9 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           // Avrunda värdet till heltal för att undvika decimalproblem
           const roundedValue = Math.round(data.totalCostMentalHealth);
           handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
-          setMessage(`Värde hämtat från Formulär ${formType}!`);
+          setMessage(`Värde hämtat från Formulär 2!`);
         } else {
-          setMessage(`Inget värde hittades i Formulär ${formType}.`);
+          setMessage(`Inget värde hittades i Formulär 2.`);
         }
       } else if (formType === 'G') {
         const data = await loadFormData<FormGData>(currentUser.uid, formType);
@@ -397,14 +397,14 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           // Avrunda värdet till heltal för att undvika decimalproblem
           const roundedValue = Math.round(data.totalInterventionCost);
           handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
-          setMessage(`Värde hämtat från Formulär ${formType}!`);
+          setMessage(`Värde hämtat från Formulär 5!`);
         } else {
-          setMessage(`Inget värde hittades i Formulär ${formType}.`);
+          setMessage(`Inget värde hittades i Formulär 5.`);
         }
       }
     } catch (error) {
       console.error(`Error fetching data from Form ${formType}:`, error);
-      setMessage(`Ett fel uppstod när data skulle hämtas från Formulär ${formType}.`);
+      setMessage(`Ett fel uppstod när data skulle hämtas från Formulär ${getFormNumber(formType)}.`);
     }
 
     // Rensa meddelandet efter 3 sekunder
@@ -531,6 +531,18 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     setIsOrgInfoLoading(isLoading);
   };
   
+  // FormInfo-komponenten för att visa information om formuläret
+  const FormInfo = () => (
+    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
+      <h3 className="text-lg font-semibold mb-2">Formulär 8 – Return on investment (ROI)</h3>
+      <p className="text-sm text-slate-700 dark:text-slate-300">
+        Detta formulär sammanställer alla kostnader och beräknar avkastningen på investeringen (ROI).
+        Här kan du se hur mycket ekonomisk nytta insatserna ger, baserat på minskad stress och 
+        sjukfrånvaro. Formuläret presenterar tre olika beräkningsalternativ beroende på vilken information du har tillgänglig.
+      </p>
+    </div>
+  );
+  
   // Huvudinnehåll
   return (
     <div className="space-y-6">
@@ -543,6 +555,9 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       </div>
       
       <FadeIn show={isContentReady} duration={500}>
+        {/* Lägg till FormInfo-komponenten först av allt */}
+        <FormInfo />
+        
         <div className="space-y-4">
           {/* Visa organizationInfo direkt istället för att förlita sig på OrganizationHeader-komponentens rendering */}
           {orgData && (orgData.organizationName || orgData.contactPerson || orgData.startDate || orgData.endDate) && (
@@ -593,11 +608,11 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                 {(autoFetchStatus.costMentalHealthAlt1 || 
                   autoFetchStatus.costMentalHealthAlt2 || 
                   autoFetchStatus.costMentalHealthAlt3) && 
-                    <li>Total kostnad för psykisk ohälsa från Formulär C</li>
+                    <li>Total kostnad för psykisk ohälsa från Formulär 2</li>
                 }
                 {(autoFetchStatus.interventionCostAlt1 || 
                   autoFetchStatus.interventionCostAlt3) && 
-                    <li>Total kostnad för insatsen från Formulär G</li>
+                    <li>Total kostnad för insatsen från Formulär 5</li>
                 }
               </ul>
             </div>
@@ -622,14 +637,14 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               icon={<Calculator className="h-5 w-5 text-primary" />}
             />
             <div className="text-sm text-muted-foreground mb-4">
-              (investeringen är känd, effekten är känd, beräkna ROI)
+              Investeringen är känd, effekten är känd
             </div>
             
             <div className="space-y-4">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
-                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt1 ? (
                     <AutoFilledField
                       value={`${formatNumber(safeFormData.totalCostMentalHealthAlt1 || 0)} kr`}
@@ -680,7 +695,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               <div className="grid gap-6 md:grid-cols-1">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">J8: Total kostnad för insatsen, kr</label>
-                  <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär 5" />
                   {autoFetchStatus.interventionCostAlt1 ? (
                     <AutoFilledField
                       value={`${formatNumber(safeFormData.totalInterventionCostAlt1 || 0)} kr`}
@@ -745,7 +760,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">J12: Total kostnad för psykisk ohälsa, kr per år</label>
-                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt2 ? (
                     <AutoFilledField
                       value={`${formatNumber(safeFormData.totalCostMentalHealthAlt2 || 0)} kr`}
@@ -809,7 +824,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">J15: Total kostnad för insatsen, kr</label>
-                  <InfoLabel text="Detta fält hämtas automatiskt från formulär G34" />
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär 5" />
                   {autoFetchStatus.interventionCostAlt3 ? (
                     <AutoFilledField
                       value={`${formatNumber(safeFormData.totalInterventionCostAlt3 || 0)} kr`}
@@ -837,7 +852,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">J16: Total kostnad för psykisk ohälsa, kr per år</label>
-                  <InfoLabel text="Detta fält hämtas automatiskt från formulär C20" />
+                  <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt3 ? (
                     <AutoFilledField
                       value={`${formatNumber(safeFormData.totalCostMentalHealthAlt3 || 0)} kr`}
