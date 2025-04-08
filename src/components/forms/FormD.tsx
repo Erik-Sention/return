@@ -99,13 +99,13 @@ const FORM_TYPE = 'D';
 
 // Definiera en typ för komponentens props
 export type FormDProps = React.ComponentProps<'div'> & {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onNavigateToForm?: (formName: string) => void;
 };
 
 // Gör FormD till en forwardRef component
 const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm: _onNavigateToForm } = props;
   const [formData, setFormData] = useState<FormDData>({
     organizationName: '',
     contactPerson: '',
