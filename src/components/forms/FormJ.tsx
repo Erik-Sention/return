@@ -10,7 +10,7 @@ import { FadeIn } from '@/components/ui/fade-in';
 
 // Interface för data från formulär C
 interface FormCData {
-  totalCostMentalHealth?: number;
+  totalCostMentalHealth: number;
   [key: string]: unknown;
 }
 
@@ -312,8 +312,11 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         // Hämta data från Form C (totalCostMentalHealth)
         const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
         
-        if (formCData && formCData.totalCostMentalHealth !== undefined) {
+        console.log('Fetched FormC data:', formCData); // Debug log
+        
+        if (formCData && typeof formCData.totalCostMentalHealth === 'number') {
           const roundedValue = Math.round(formCData.totalCostMentalHealth);
+          console.log('Using value from FormC:', roundedValue); // Debug log
           
           // Uppdatera alla fält som använder totalCostMentalHealth
           handleChange('totalCostMentalHealthAlt1', roundedValue);
@@ -323,6 +326,8 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           currentStatus.costMentalHealthAlt1 = true;
           currentStatus.costMentalHealthAlt2 = true;
           currentStatus.costMentalHealthAlt3 = true;
+        } else {
+          console.warn('No totalCostMentalHealth value found in FormC data:', formCData);
         }
         
         // Hämta data från Form G (totalInterventionCost)
@@ -383,12 +388,17 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       
       if (formType === 'C') {
         const data = await loadFormData<FormCData>(currentUser.uid, formType);
-        if (data && data.totalCostMentalHealth !== undefined) {
+        console.log('Fetched FormC data in manual fetch:', data); // Debug log
+        
+        if (data && typeof data.totalCostMentalHealth === 'number') {
           // Avrunda värdet till heltal för att undvika decimalproblem
           const roundedValue = Math.round(data.totalCostMentalHealth);
+          console.log('Using value in manual fetch:', roundedValue); // Debug log
+          
           handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
           setMessage(`Värde hämtat från Formulär 2!`);
         } else {
+          console.warn('No totalCostMentalHealth value found in manually fetched FormC data:', data);
           setMessage(`Inget värde hittades i Formulär 2.`);
         }
       } else if (formType === 'G') {
@@ -411,6 +421,12 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     setTimeout(() => setMessage(null), 3000);
   };
   
+  // Lägg till state för valideringsfel
+  const [validationWarnings, setValidationWarnings] = useState<{
+    reducedStressPercentageAlt1?: string;
+    reducedStressPercentageAlt2?: string;
+  }>({});
+  
   // Spara data till Firebase
   const handleSave = async () => {
     if (!currentUser?.uid) {
@@ -421,13 +437,36 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     try {
       setTransferMessage(null);
       
+      // Kontrollera efter saknade värden men tillåt fortfarande sparande
+      const warnings: {
+        reducedStressPercentageAlt1?: string;
+        reducedStressPercentageAlt2?: string;
+      } = {};
+      
+      if (safeFormData.totalCostMentalHealthAlt1 && safeFormData.reducedStressPercentageAlt1 === undefined) {
+        warnings.reducedStressPercentageAlt1 = "Fyll i detta fält för att få korrekta beräkningar";
+      }
+      
+      if (safeFormData.totalCostMentalHealthAlt2 && safeFormData.reducedStressPercentageAlt2 === undefined) {
+        warnings.reducedStressPercentageAlt2 = "Fyll i detta fält för att få korrekta beräkningar";
+      }
+      
+      setValidationWarnings(warnings);
+      
+      // Visa en varning om det finns validering som farit men fortsätt ändå
+      if (Object.keys(warnings).length > 0) {
+        setTransferMessage('Formuläret sparades, men vissa värden saknas för beräkningarna');
+      }
+      
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
       
       // Save to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
       
-      setTransferMessage('Formuläret har sparats!');
+      if (Object.keys(warnings).length === 0) {
+        setTransferMessage('Formuläret har sparats!');
+      }
       setTimeout(() => setTransferMessage(null), 3000);
       return Promise.resolve();
     } catch (error) {
@@ -643,7 +682,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
             <div className="space-y-4">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J5: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <label className="text-sm font-medium">Total kostnad för psykisk ohälsa, kr per år</label>
                   <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt1 ? (
                     <AutoFilledField
@@ -671,22 +710,25 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J6: Minskad andel av personal med hög stressnivå</label>
+                  <label className="text-sm font-medium">Minskad andel av personal med hög stressnivå</label>
                   <div className="flex items-center gap-2">
                     <FormattedNumberInput
                       value={safeFormData.reducedStressPercentageAlt1}
                       onChange={(value) => handleChange('reducedStressPercentageAlt1', value)}
                       allowDecimals={true}
                       placeholder="0"
-                      className="bg-background/50"
+                      className={`bg-background/50 ${validationWarnings.reducedStressPercentageAlt1 ? 'border-amber-400' : ''}`}
                     />
                     <span className="text-sm">%</span>
                   </div>
+                  {validationWarnings.reducedStressPercentageAlt1 && (
+                    <p className="text-amber-500 text-xs mt-1">{validationWarnings.reducedStressPercentageAlt1}</p>
+                  )}
                 </div>
               </div>
               
               <div className="flex items-center justify-between py-2 border-t border-dashed">
-                <label className="text-sm font-medium">J7: Ekonomisk nytta av insatsen, kr per år</label>
+                <label className="text-sm font-medium">Ekonomisk nytta av insatsen, kr per år</label>
                 <div className="text-xl font-semibold">
                   {formatCurrency(safeFormData.economicBenefitAlt1)}
                 </div>
@@ -694,7 +736,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               
               <div className="grid gap-6 md:grid-cols-1">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J8: Total kostnad för insatsen, kr</label>
+                  <label className="text-sm font-medium">Total kostnad för insatsen, kr</label>
                   <InfoLabel text="Detta fält hämtas automatiskt från formulär 5" />
                   {autoFetchStatus.interventionCostAlt1 ? (
                     <AutoFilledField
@@ -724,21 +766,21 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               </div>
               
               <div className="flex items-center justify-between py-2 border-t border-dashed">
-                <label className="text-sm font-medium">J9: Ekonomiskt överskott av insatsen (kr)</label>
+                <label className="text-sm font-medium">Ekonomiskt överskott av insatsen (kr)</label>
                 <div className="text-xl font-semibold">
                   {formatCurrency(safeFormData.economicSurplusAlt1)}
                 </div>
               </div>
               
               <div className="flex items-center justify-between py-2 border-dashed border-t border-b">
-                <label className="text-sm font-medium">J10: Total kostnad för insatsen, kr</label>
+                <label className="text-sm font-medium">Total kostnad för insatsen, kr</label>
                 <div className="text-xl font-semibold">
                   {formatCurrency(safeFormData.totalInterventionCostAlt1 || 0)}
                 </div>
               </div>
               
               <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-                <label className="text-base font-bold">J11: Return on investment (ROI), %, alt 1.</label>
+                <label className="text-base font-bold">Return on investment (ROI), %, alt 1.</label>
                 <div className="text-2xl font-bold text-primary">
                   {formatPercentage(safeFormData.roiPercentageAlt1)}
                 </div>
@@ -759,7 +801,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
             <div className="space-y-4">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J12: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <label className="text-sm font-medium">Total kostnad för psykisk ohälsa, kr per år</label>
                   <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt2 ? (
                     <AutoFilledField
@@ -787,22 +829,25 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J13: Minskad andel av personal med hög stressnivå</label>
+                  <label className="text-sm font-medium">Minskad andel av personal med hög stressnivå</label>
                   <div className="flex items-center gap-2">
                     <FormattedNumberInput
                       value={safeFormData.reducedStressPercentageAlt2}
                       onChange={(value) => handleChange('reducedStressPercentageAlt2', value)}
                       allowDecimals={true}
                       placeholder="0"
-                      className="bg-background/50"
+                      className={`bg-background/50 ${validationWarnings.reducedStressPercentageAlt2 ? 'border-amber-400' : ''}`}
                     />
                     <span className="text-sm">%</span>
                   </div>
+                  {validationWarnings.reducedStressPercentageAlt2 && (
+                    <p className="text-amber-500 text-xs mt-1">{validationWarnings.reducedStressPercentageAlt2}</p>
+                  )}
                 </div>
               </div>
               
               <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-                <label className="text-base font-bold">J14: Maximal kostnad för insatsen, alt 2.</label>
+                <label className="text-base font-bold">Maximal kostnad för insatsen, alt 2.</label>
                 <div className="text-2xl font-bold text-primary">
                   {formatCurrency(safeFormData.maxInterventionCostAlt2)}
                 </div>
@@ -823,7 +868,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
             <div className="space-y-4">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J15: Total kostnad för insatsen, kr</label>
+                  <label className="text-sm font-medium">Total kostnad för insatsen, kr</label>
                   <InfoLabel text="Detta fält hämtas automatiskt från formulär 5" />
                   {autoFetchStatus.interventionCostAlt3 ? (
                     <AutoFilledField
@@ -851,7 +896,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">J16: Total kostnad för psykisk ohälsa, kr per år</label>
+                  <label className="text-sm font-medium">Total kostnad för psykisk ohälsa, kr per år</label>
                   <InfoLabel text="Detta fält hämtas automatiskt från formulär 2" />
                   {autoFetchStatus.costMentalHealthAlt3 ? (
                     <AutoFilledField
@@ -881,7 +926,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               </div>
               
               <div className="flex items-center justify-between py-2 bg-primary/5 rounded-md px-3">
-                <label className="text-base font-bold">J17: Minskad andel av personal med hög stressnivå för break even, %, alt 3.</label>
+                <label className="text-base font-bold">Minskad andel av personal med hög stressnivå för break even, %, alt 3.</label>
                 <div className="text-2xl font-bold text-primary">
                   {formatPercentage(safeFormData.minEffectForBreakEvenAlt3)}
                 </div>

@@ -244,6 +244,14 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           const data = await loadFormData<FormCData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
+            console.log('Loaded totalCostMentalHealth value:', data.totalCostMentalHealth);
+            
+            // Ensure we have a valid totalCostMentalHealth value
+            if (typeof data.totalCostMentalHealth === 'undefined' || data.totalCostMentalHealth === null) {
+              console.warn('Loaded data has undefined or null totalCostMentalHealth, setting to 0');
+              data.totalCostMentalHealth = 0;
+            }
+            
             setFormData(data);
           }
         } catch (error) {
@@ -352,6 +360,12 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
     const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
+    
+    console.log('FormC calculated values:', {
+      valueProductionLoss,
+      totalCostSickLeaveMentalHealth,
+      totalCostMentalHealth
+    });
   
     setFormData(prev => ({
       ...prev,
@@ -383,10 +397,14 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
 
     // Only autosave if user is logged in and form has been interacted with
     if (currentUser?.uid) {
+      // Ensure we're saving data with proper totalCostMentalHealth
+      const dataToAutosave = prepareDataForSave(formData);
+      console.log('[Autosave] Preparing data for autosave, totalCostMentalHealth =', dataToAutosave.totalCostMentalHealth);
+      
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
-        formData,
+        dataToAutosave,
         setIsSaving,
         setSaveMessage
       );
@@ -426,6 +444,11 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const prepareDataForSave = (data: FormCData): FormCData => {
     const preparedData = { ...data };
     
+    // Säkerställ att totalCostMentalHealth aldrig är undefined innan vi sparar
+    if (typeof preparedData.totalCostMentalHealth === 'undefined') {
+      preparedData.totalCostMentalHealth = 0;
+    }
+    
     // Ersätt undefined med null för alla fält
     Object.keys(preparedData).forEach(key => {
       const typedKey = key as keyof FormCData;
@@ -434,6 +457,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
       }
     });
     
+    console.log('FormC data prepared for save, totalCostMentalHealth =', preparedData.totalCostMentalHealth);
     return preparedData;
   };
 
@@ -452,6 +476,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(formData);
       console.log('Saving form data to Firebase:', dataToSave);
+      console.log('totalCostMentalHealth value being saved:', dataToSave.totalCostMentalHealth);
       
       // Save only to Firebase
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
@@ -565,14 +590,14 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
                                           autoFetchStatus.longSickLeavePercent ||
                                           autoFetchStatus.longSickLeaveMentalHealthPercent) && (
             <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-sm mb-4">
-              <p className="font-medium">Följande data har automatiskt hämtats från Formulär D:</p>
+              <p className="font-medium">Följande data har automatiskt hämtats från Formulär 1:</p>
               <ul className="list-disc list-inside mt-1">
-                {autoFetchStatus.personnelCosts && <li>Totala personalkostnader (D9)</li>}
-                {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro (D17)</li>}
-                {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro (D15)</li>}
+                {autoFetchStatus.personnelCosts && <li>Totala personalkostnader </li>}
+                {autoFetchStatus.shortSickLeaveCosts && <li>Kostnader för kort sjukfrånvaro </li>}
+                {autoFetchStatus.shortSickLeavePercent && <li>Procent kort sjukfrånvaro </li>}
                 {autoFetchStatus.shortSickLeaveMentalHealthPercent && <li>Andel kort sjukfrånvaro pga psykisk ohälsa</li>}
-                {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro (D22)</li>}
-                {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro (D20)</li>}
+                {autoFetchStatus.longSickLeaveCosts && <li>Kostnader för lång sjukfrånvaro </li>}
+                {autoFetchStatus.longSickLeavePercent && <li>Procent lång sjukfrånvaro </li>}
                 {autoFetchStatus.longSickLeaveMentalHealthPercent && <li>Andel lång sjukfrånvaro pga psykisk ohälsa</li>}
               </ul>
             </div>
@@ -584,34 +609,6 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
             </div>
           )}
           
-          <div className="form-card">
-            <SectionHeader 
-              title="Tidsperiod" 
-              icon={<Info className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tidsperiod (12 månader)</label>
-              <InfoLabel text="Ange tidsperiod i formatet ÅÅÅÅ-MM-DD - ÅÅÅÅ-MM-DD" />
-              <Input
-                value={formData.timePeriod}
-                onChange={(e) => handleChange('timePeriod', e.target.value)}
-                placeholder="Ange tidsperiod"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-              />
-            </div>
-          </div>
-
           <div className="form-card">
             <SectionHeader 
               title="Beräkning av kostnad för produktionsbortfall pga psykisk ohälsa" 
