@@ -99,13 +99,11 @@ const FORM_TYPE = 'D';
 
 // Definiera en typ för komponentens props
 type FormDProps = React.ComponentProps<'div'> & {
-  onNavigateToForm?: (formName: string) => void;
 };
 
 // Gör FormD till en forwardRef component
 const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm } = props;
   const [formData, setFormData] = useState<FormDData>({
     organizationName: '',
     contactPerson: '',
