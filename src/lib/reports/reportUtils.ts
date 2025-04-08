@@ -50,6 +50,7 @@ export interface ROIReportData {
   
   // Interventionsbeskrivning
   interventionDescription?: string;
+  interventionsArray?: string[];           // Behåll original array med interventioner
   interventionCosts?: CostItem[];
   
   // Nuläge, mål och resultat
@@ -62,6 +63,7 @@ export interface ROIReportData {
   interventionPurpose?: string;    // Från Form B: Syfte med insatserna
   targetGroup?: string;            // Från Form B: Målgrupp
   implementationPlan?: string;     // Från Form B: Genomförandeplan
+  implementationPlanArray?: string[]; // Behåll original array för genomförandeplan
   
   // Kostnader och fördelar
   benefitAreas?: BenefitItem[];
@@ -172,6 +174,7 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
         const filteredInterventions = formAData.interventions.filter(i => !!i);
         if (filteredInterventions.length > 0) {
           reportData.interventionDescription = filteredInterventions.join(', ');
+          reportData.interventionsArray = [...filteredInterventions]; // Spara den ursprungliga arrayen
         }
       }
     }
@@ -192,7 +195,17 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
       // Lägg till de nya fälten
       reportData.interventionPurpose = formBData.purpose || '';
       reportData.targetGroup = formBData.targetGroup || '';
-      reportData.implementationPlan = formBData.implementationPlan ? formBData.implementationPlan.join(', ') : '';
+      
+      // Spara både kommaseparerad sträng och array för genomförandeplan
+      if (formBData.implementationPlan && Array.isArray(formBData.implementationPlan)) {
+        const filteredPlan = formBData.implementationPlan.filter(step => !!step);
+        if (filteredPlan.length > 0) {
+          reportData.implementationPlan = filteredPlan.join(', ');
+          reportData.implementationPlanArray = [...filteredPlan]; // Spara originalarrayen
+        }
+      } else {
+        reportData.implementationPlan = '';
+      }
       
       // Lägg till kostnadsdata
       if (formBData.costs && Array.isArray(formBData.costs)) {

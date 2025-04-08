@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { exportROIToPdf } from '@/lib/reports/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { database } from '@/lib/firebase/config';
+import { ref, get, child } from 'firebase/database';
 
 // Hjälpfunktion för att generera slutsats
 function generateConclusion(data: ROIReportData | null): string {
@@ -88,6 +90,12 @@ export default function ExekutivSammanfattningPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>("roi");
+  const [formDData, setFormDData] = useState<{
+    organizationName?: string;
+    contactPerson?: string;
+    startDate?: string;
+    endDate?: string;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -125,13 +133,43 @@ export default function ExekutivSammanfattningPage() {
       fetchReportData();
     }
   }, [currentUser, mounted]);
+  
+  // Ladda FormD-data separat för att säkerställa att vi alltid har senaste informationen
+  useEffect(() => {
+    const fetchFormDData = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        const dbRef = ref(database);
+        const formDPath = `users/${currentUser.uid}/forms/D`;
+        const formDSnapshot = await get(child(dbRef, formDPath));
+        
+        if (formDSnapshot.exists()) {
+          const data = formDSnapshot.val();
+          setFormDData({
+            organizationName: data.organizationName,
+            contactPerson: data.contactPerson,
+            startDate: data.startDate,
+            endDate: data.endDate
+          });
+        }
+      } catch (error) {
+        console.error('Error loading FormD data:', error);
+        // Fallera tyst - använd reportData om FormD inte kan laddas
+      }
+    };
+    
+    if (mounted && currentUser) {
+      fetchFormDData();
+    }
+  }, [currentUser, mounted]);
 
   // Funktion för att hantera PDF-export
-  const handleExportPdf = () => {
-    if (!reportData) return;
+  const handleExportPdf = async () => {
+    if (!reportData || !currentUser) return;
     
     try {
-      exportROIToPdf(reportData);
+      await exportROIToPdf(reportData, currentUser.uid);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Ett fel uppstod vid export till PDF. Försök igen senare.');
@@ -158,6 +196,26 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
       default:
         return generateConclusion(reportData);
     }
+  };
+
+  // Hjälpfunktion för att kombinera data från FormD och reportData
+  const getOrganizationInfo = () => {
+    // Om vi har data från FormD, använd den först
+    const organizationName = formDData?.organizationName || 
+                           reportData?.sharedFields?.organizationName || 
+                           'Organisationsnamn saknas';
+    
+    const contactPerson = formDData?.contactPerson || 
+                         reportData?.sharedFields?.contactPerson || 
+                         'Kontaktperson saknas';
+    
+    // Skapa tidsperiod från FormD om det finns
+    let timePeriod = reportData?.timePeriod;
+    if (formDData?.startDate && formDData?.endDate) {
+      timePeriod = `${formDData.startDate} - ${formDData.endDate}`;
+    }
+    
+    return { organizationName, contactPerson, timePeriod };
   };
 
   if (!mounted || loading) {
@@ -275,9 +333,10 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
           <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold">{reportData.sharedFields.organizationName}</h2>
-                <p className="text-muted-foreground">Kontaktperson: {reportData.sharedFields.contactPerson}</p>
-                {reportData.timePeriod && <p className="text-muted-foreground">Period: {reportData.timePeriod}</p>}
+                {/* Använd kombinerad data från FormD och reportData */}
+                <h2 className="text-2xl font-bold">{getOrganizationInfo().organizationName}</h2>
+                <p className="text-muted-foreground">Kontaktperson: {getOrganizationInfo().contactPerson}</p>
+                {getOrganizationInfo().timePeriod && <p className="text-muted-foreground">Period: {getOrganizationInfo().timePeriod}</p>}
               </div>
               <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex items-center gap-2 text-xl font-semibold rounded-full px-4 py-1 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400">
@@ -383,7 +442,6 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                   </ChartCard>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  ROI-beräkning baserad på förväntad minskning av stressnivå
                 </p>
               </TabsContent>
               
@@ -572,7 +630,24 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               variant="purple"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.interventionDescription || 'Ingen beskrivning av interventionen.'}</p>
+                {(!reportData.interventionDescription && !reportData.interventionsArray) || 
+                  (reportData.interventionDescription?.trim() === '' && (!reportData.interventionsArray || reportData.interventionsArray.length === 0)) ? (
+                  <p>Ingen beskrivning av interventionen.</p>
+                ) : (
+                  <ol className="list-decimal pl-4 space-y-1">
+                    {reportData.interventionsArray ? 
+                      // Om vi har den ursprungliga arrayen, använd den
+                      reportData.interventionsArray.map((intervention, index) => (
+                        <li key={index} className="text-sm">{intervention}</li>
+                      ))
+                      : 
+                      // Annars, försök dela upp kommaseparerad sträng
+                      reportData.interventionDescription?.split(',').map((intervention, index) => (
+                        <li key={index} className="text-sm">{intervention.trim()}</li>
+                      ))
+                    }
+                  </ol>
+                )}
                 
                 {reportData.interventionCosts && reportData.interventionCosts.length > 0 && (
                   <div className="mt-4">
@@ -599,7 +674,24 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.implementationPlan || 'Ingen genomförandeplan specificerad.'}</p>
+                {(!reportData.implementationPlan && !reportData.implementationPlanArray) || 
+                  (reportData.implementationPlan?.trim() === '' && (!reportData.implementationPlanArray || reportData.implementationPlanArray.length === 0)) ? (
+                  <p>Ingen genomförandeplan specificerad.</p>
+                ) : (
+                  <ol className="list-decimal pl-4 space-y-1">
+                    {reportData.implementationPlanArray ? 
+                      // Om vi har den ursprungliga arrayen, använd den
+                      reportData.implementationPlanArray.map((step, index) => (
+                        <li key={index} className="text-sm">{step}</li>
+                      ))
+                      : 
+                      // Annars, försök dela upp kommaseparerad sträng
+                      reportData.implementationPlan?.split(',').map((step, index) => (
+                        <li key={index} className="text-sm">{step.trim()}</li>
+                      ))
+                    }
+                  </ol>
+                )}
               </div>
             </ChartCard>
             
