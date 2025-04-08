@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import FormA, { FormARef } from '@/components/forms/FormA';
 import FormB, { FormBRef } from '@/components/forms/FormB';
 import FormC, { FormCRef } from '@/components/forms/FormC';
-import FormD, { FormDRef } from '@/components/forms/FormD';
+import FormD, { FormDRef, FormDProps } from '@/components/forms/FormD';
 import FormG, { FormGRef } from '@/components/forms/FormG';
 import FormH, { FormHRef } from '@/components/forms/FormH';
 import FormI, { FormIRef } from '@/components/forms/FormI';
@@ -156,7 +156,7 @@ export default function ROIPage() {
           />}
           {currentForm === 'D' && <FormD 
             ref={formDRef}
-            onNavigateToForm={(formName) => {
+            onNavigateToForm={(formName: string) => {
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
