@@ -105,7 +105,7 @@ export type FormDProps = React.ComponentProps<'div'> & {
 // Gör FormD till en forwardRef component
 const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm } = props;
+  const { onNavigateToForm: _onNavigateToForm } = props;
   const [formData, setFormData] = useState<FormDData>({
     organizationName: '',
     contactPerson: '',
