@@ -50,11 +50,91 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
   });
   
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   
   // Konfigurera fonter och färger
   doc.setFont('helvetica');
+  
+  // ========== LÄGG TILL FÖRSÄTTSSIDA ==========
+  
+  // Bakgrund till försättssidan (ljusgrå)
+  doc.setFillColor(248, 249, 250);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+  
+  // Lägga till SENTION logotypen
+  try {
+    // Använd den svarta loggan med transparant bakgrund istället
+    doc.addImage(
+      'https://i.postimg.cc/FRwbMSBN/SENTION-logo-Black-Transparent-BG.png',
+      'PNG',
+      (pageWidth - 100) / 2, // Centrerad horisontellt
+      10, // Placering från toppen
+      100, // Bredd (justerad för bättre proportioner)
+      100, // Höjd (justerad för bättre proportioner)
+      undefined,
+      'FAST'
+    );
+  } catch (error) {
+    console.error('Kunde inte lägga till logotypen:', error);
+    // Fallback om bilden inte kunde laddas
+    doc.setFontSize(24);
+    doc.setTextColor(0, 51, 102);
+    doc.text('SENTION', pageWidth / 2, 60, { align: 'center' });
+  }
+  
+  // Huvudtitel
+  doc.setFontSize(24);
+  doc.setTextColor(0, 51, 102);
+  doc.text('ROI-rapport', pageWidth / 2, 115, { align: 'center' });
+  
+  doc.setFontSize(16);
+  doc.text('Avkastning på hälsofrämjande investeringar', pageWidth / 2, 130, { align: 'center' });
+  
+  // Informationsruta - nu med ljus färg istället för svart
+  const infoBoxY = 140;
+  const infoBoxHeight = 80;
+  
+  // Ljus inforuta med subtil skugga
+  doc.setFillColor(252, 252, 252); // Nästan vit bakgrund
+  doc.roundedRect(margin + 10, infoBoxY, contentWidth - 20, infoBoxHeight, 5, 5, 'F');
+  doc.setDrawColor(230, 230, 240); // Ljus kantlinje
+  doc.roundedRect(margin + 10, infoBoxY, contentWidth - 20, infoBoxHeight, 5, 5, 'S');
+  
+  // Information i rutan - mörkare text på ljus bakgrund
+  doc.setFontSize(12);
+  doc.setTextColor(80, 80, 100);
+  doc.text('Organisation:', margin + 20, infoBoxY + 20);
+  doc.text('Kontaktperson:', margin + 20, infoBoxY + 35);
+  doc.text('Tidsperiod:', margin + 20, infoBoxY + 50);
+  doc.text('Datum:', margin + 20, infoBoxY + 65);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(10, 10, 10); // Mörkare text för bättre läsbarhet
+  doc.text(enhancedData.sharedFields.organizationName || 'Ej angiven', margin + 70, infoBoxY + 20);
+  doc.text(enhancedData.sharedFields.contactPerson || 'Ej angiven', margin + 70, infoBoxY + 35);
+  doc.text(enhancedData.timePeriod || 'Ej angiven', margin + 70, infoBoxY + 50);
+  
+  const today = new Date().toLocaleDateString('sv-SE');
+  doc.text(today, margin + 70, infoBoxY + 65);
+  
+  // Sidfot
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 120);
+  doc.text('© SENTION ' + new Date().getFullYear().toString(), pageWidth / 2, pageHeight - 20, { align: 'center' });
+  
+  // Lägg till en beskrivning
+  doc.setFontSize(12);
+  doc.setTextColor(60, 60, 70);
+  const descriptionText = "Denna rapport presenterar en analys av avkastningen på investering (ROI) för hälsofrämjande insatser inom organisationen. Den innehåller en sammanfattning av nuläge, orsaker, insatser, kostnader och förväntade ekonomiska fördelar.";
+  const descriptionLines = doc.splitTextToSize(descriptionText, contentWidth - 40);
+  doc.text(descriptionLines, pageWidth / 2, infoBoxY + 100, { align: 'center' });
+  
+  // Lägg till en ny sida för den exekutiva sammanfattningen
+  doc.addPage();
+  
+  // ========== FORTSÄTT MED EXEKUTIV SAMMANFATTNING ==========
   
   // Lägg till en toppbanner med titeln - mer visuellt lik webbgränssnittet
   doc.setFillColor(240, 240, 245); // Ljusgrå bakgrund som matchar UI
@@ -84,7 +164,6 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
   doc.text(periodText, margin + 5, 52);
   
   // Datum för rapporten (högerjusterad)
-  const today = new Date().toLocaleDateString('sv-SE');
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
   doc.text(`Rapport genererad: ${today}`, pageWidth - margin - 5, 52, { align: 'right' });
