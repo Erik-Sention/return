@@ -380,10 +380,18 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
 }
 
 /**
- * Formatera valutor med svenska format
+ * Formatera en siffra som SEK
  */
-export function formatCurrency(value: number | undefined): string {
-  if (value === undefined) return "0 kr";
+export function formatCurrency(value: number | undefined, abbreviated: boolean = false): string {
+  if (value === undefined) return '0 kr';
+  
+  if (abbreviated) {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)} Mkr`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)} tkr`;
+    }
+  }
   
   return new Intl.NumberFormat('sv-SE', {
     style: 'currency',
