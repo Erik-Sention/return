@@ -2,7 +2,7 @@
 
 import { useContext, useState, useEffect, useRef } from 'react';
 import { FadeIn } from '@/components/ui/fade-in';
-import { ReportContext } from '../layout';
+import { ReportContext } from './ReportContext';
 import { ROIReportData } from '@/lib/reports/reportUtils';
 
 interface TabContentProps {

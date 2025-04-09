@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -8,19 +8,7 @@ import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, ROIReportData } from '@/lib/reports/reportUtils';
 import { exportROIToPdf } from '@/lib/reports/pdfExport';
-
-// Skapa context för att hålla rapportdata
-export interface ReportContextType {
-  reportData: ROIReportData | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-export const ReportContext = createContext<ReportContextType>({
-  reportData: null,
-  isLoading: true,
-  error: null
-});
+import { ReportContext } from './components/ReportContext';
 
 export default function DetaljeradRapportLayout({
   children,
