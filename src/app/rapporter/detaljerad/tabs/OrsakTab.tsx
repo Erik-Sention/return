@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  AlertTriangle, 
   BookOpen, 
   CheckCircle 
 } from 'lucide-react';
@@ -167,7 +166,7 @@ export const OrsakTab: React.FC<OrsakTabProps> = ({ reportData }) => {
                 </div>
               </div>
               <div className="text-xs text-muted-foreground mt-2">
-                Källa: SBU (2019) "Arbetsrelaterad stress"
+                Källa: SBU (2019) &quot;Arbetsrelaterad stress&quot;
               </div>
             </div>
           </div>
@@ -193,7 +192,7 @@ export const OrsakTab: React.FC<OrsakTabProps> = ({ reportData }) => {
               </div>
             </div>
             <div className="text-xs text-muted-foreground mt-3">
-              Källa: Prevent (2022), "Hälsofrämjande arbetsmiljö"
+              Källa: Prevent (2022), &quot;Hälsofrämjande arbetsmiljö&quot;
             </div>
           </div>
         </div>

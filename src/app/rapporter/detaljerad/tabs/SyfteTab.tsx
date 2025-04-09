@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   Target, 
   Calendar, 
-  BookOpen,
   Star,
   CheckCircle
 } from 'lucide-react';
@@ -90,7 +89,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
               
               <div className="text-xs text-muted-foreground mt-4">
                 Staplarnas bredd visar hur ofta respektive effekt framträder i vetenskapliga utvärderingar.
-                <div className="mt-1">Källa: Arbetsmiljöverket (2022), "Effekter av arbetsmiljöinsatser"</div>
+                <div className="mt-1">Källa: Arbetsmiljöverket (2022), &quot;Effekter av arbetsmiljöinsatser&quot;</div>
               </div>
             </div>
             
@@ -164,7 +163,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4">
-                Källa: Richardson & Rothstein (2018), "Meta-analys av stressinterventioner"
+                Källa: Richardson & Rothstein (2018), &quot;Meta-analys av stressinterventioner&quot;
               </div>
             </div>
           </div>
@@ -337,7 +336,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
               </div>
             </div>
             <div className="text-xs text-muted-foreground mt-3">
-              Källa: Nielsen & Noblet (2018), "Organizational interventions for health and well-being"
+              Källa: Nielsen & Noblet (2018), &quot;Organizational interventions for health and well-being&quot;
             </div>
           </div>
         </div>

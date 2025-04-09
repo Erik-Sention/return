@@ -179,7 +179,7 @@ export const RekommendationTab: React.FC<RekommendationTabProps> = ({ reportData
                 <li>Stärkt arbetsgivarvarumärke</li>
               </ul>
               <div className="text-xs text-muted-foreground mt-3">
-                Källa: OECD (2021), "Mental Health and Work: Sweden"
+                Källa: OECD (2021), &quot;Mental Health and Work: Sweden&quot;
               </div>
             </div>
             
@@ -195,7 +195,7 @@ export const RekommendationTab: React.FC<RekommendationTabProps> = ({ reportData
                 <li>Kräver uthållighet i implementeringen</li>
               </ul>
               <div className="text-xs text-muted-foreground mt-3">
-                Källa: Nielsen & Randall (2018), "Implementeringskvalitet"
+                Källa: Nielsen & Randall (2018), &quot;Implementeringskvalitet&quot;
               </div>
             </div>
           </div>

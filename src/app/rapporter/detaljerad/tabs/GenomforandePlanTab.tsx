@@ -87,7 +87,7 @@ export const GenomforandePlanTab: React.FC<GenomforandePlanTabProps> = ({ report
             </div>
             
             <div className="text-xs text-muted-foreground mt-4 text-center">
-              Källa: Nielsen et al. (2021), "Interventioner för psykosocial arbetsmiljö"
+              Källa: Nielsen et al. (2021), &quot;Interventioner för psykosocial arbetsmiljö&quot;
             </div>
           </div>
           

@@ -212,7 +212,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
                 </div>
                 
                 <div className="text-xs text-muted-foreground mt-3">
-                  Källa: Previa (2020), "Effekter av arbetsmiljöinsatser"
+                  Källa: Previa (2020), &quot;Effekter av arbetsmiljöinsatser&quot;
                 </div>
               </div>
               
@@ -255,7 +255,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
                 </div>
                 
                 <div className="text-xs text-muted-foreground mt-3">
-                  Källa: Richardson & Rothstein (2018), "Effekter av stressinterventioner"
+                  Källa: Richardson & Rothstein (2018), &quot;Effekter av stressinterventioner&quot;
                 </div>
               </div>
             </div>

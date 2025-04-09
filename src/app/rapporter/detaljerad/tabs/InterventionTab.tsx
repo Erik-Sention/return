@@ -190,8 +190,8 @@ export const InterventionTab: React.FC<InterventionTabProps> = ({ reportData }) 
                 </div>
               </div>
               
-              <div className="text-xs text-muted-foreground mt-4 text-center">
-                Källa: SBU (2020), "Tidsförlopp för olika interventionstyper"
+              <div className="text-xs text-muted-foreground mt-2">
+                Källa: SBU (2020), &quot;Tidsförlopp för olika interventionstyper&quot;
               </div>
             </div>
           </div>

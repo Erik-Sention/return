@@ -199,7 +199,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                     ></div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-2">
-                    Källa: OECD (2021), "Mental Health and Work: Sweden"
+                    Källa: OECD (2021), &quot;Mental Health and Work: Sweden&quot;
                 </div>
               </div>
             </div>
@@ -209,7 +209,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                 <div className="text-3xl font-bold mb-1">70 Mdr SEK</div>
                 <div className="text-xs text-muted-foreground">
                   Stressrelaterad psykisk ohälsa kostar svenska samhället cirka 70 miljarder kronor årligen. 
-                  <div className="mt-1">Källa: OECD (2021), "Mental Health and Work: Sweden"</div>
+                  <div className="mt-1">Källa: OECD (2021), &quot;Mental Health and Work: Sweden&quot;</div>
                 </div>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                   Om inga åtgärder vidtas visar forskning att stressrelaterad ohälsa tenderar att öka med 5-10% årligen.
                 </p>
                 <div className="text-xs text-muted-foreground">
-                  Källa: Arbetsmiljöverket (2020), "Förebyggande insatser"
+                  Källa: Arbetsmiljöverket (2020), &quot;Förebyggande insatser&quot;
                 </div>
               </div>
               <div>

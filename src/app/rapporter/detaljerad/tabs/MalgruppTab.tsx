@@ -93,7 +93,7 @@ export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
                 </div>
                 
                 <div className="text-xs text-muted-foreground mt-4">
-                  Källa: Biron & Karanika-Murray (2020), "Preventing stress at work: Process and intervention design"
+                  Källa: Biron & Karanika-Murray (2020), &quot;Preventing stress at work: Process and intervention design&quot;
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4 text-center">
-                Källa: Eurofound & EU-OSHA (2021), "Förebyggande och hantering av arbetsrelaterad stress"
+                Källa: Eurofound & EU-OSHA (2021), &quot;Förebyggande och hantering av arbetsrelaterad stress&quot;
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
               </ul>
             </div>
             <div className="text-xs text-muted-foreground mt-3">
-              Källa: Havermans et al. (2018), "Process evaluation of workplace interventions"
+              Källa: Havermans et al. (2018), &quot;Process evaluation of workplace interventions&quot;
             </div>
           </div>
         </div>
