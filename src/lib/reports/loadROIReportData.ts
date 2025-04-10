@@ -3,6 +3,13 @@ import { ref, get, child } from 'firebase/database';
 import { ROIReportData } from './reportUtils';
 import { loadSharedFields } from '@/lib/firebase/sharedFields';
 
+// Utöka ROIReportData typen för att inkludera extraegenskaper från formD
+interface EnhancedROIReportData extends ROIReportData {
+  numberOfEmployees?: number;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
 export async function loadROIReportData(userId: string): Promise<ROIReportData | null> {
   try {
     // Make sure we have a valid database reference
@@ -20,7 +27,7 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
     }
     
     // Skapa en grundläggande rapportdatastruktur med gemensamma fält
-    const reportData: ROIReportData = {
+    const reportData: EnhancedROIReportData = {
       sharedFields,
       totalCost: 0,
       totalBenefit: 0,
@@ -96,6 +103,33 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
     if (formCSnapshot.exists()) {
       const formCData = formCSnapshot.val();
       reportData.timePeriod = formCData.timePeriod || '';
+    }
+    
+    // Hämta data från Form D (kontaktuppgifter och antal anställda)
+    const formDPath = `users/${userId}/forms/D`;
+    const formDSnapshot = await get(child(dbRef, formDPath));
+    
+    if (formDSnapshot.exists()) {
+      const formDData = formDSnapshot.val();
+      
+      // Lägga till dessa fält på reportData objektet med korrekt typning
+      reportData.numberOfEmployees = formDData.numberOfEmployees;
+      reportData.contactEmail = formDData.contactEmail;
+      reportData.contactPhone = formDData.contactPhone;
+      
+      // Använd startDate och endDate från FormD om de är tillgängliga
+      if (formDData.startDate) {
+        reportData.sharedFields.startDate = formDData.startDate;
+      }
+      
+      if (formDData.endDate) {
+        reportData.sharedFields.endDate = formDData.endDate;
+      }
+
+      // Uppdatera contactPerson om det finns i FormD
+      if (formDData.contactPerson) {
+        reportData.sharedFields.contactPerson = formDData.contactPerson;
+      }
     }
     
     // Hämta data från Form J (ROI-beräkningar för alla tre alternativen)

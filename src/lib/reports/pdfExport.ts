@@ -4,12 +4,18 @@ import { formatCurrency, formatPercent, formatMonths, ROIReportData } from './re
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
 
+// Utöka ROIReportData typen med de extra fält som vi använder i exportROIToPdf
+interface EnhancedROIReportData extends ROIReportData {
+  isAggregatedReport?: boolean;
+  hideInPdf?: boolean;
+}
+
 /**
  * Exporterar ROI-data till en välformaterad PDF-fil som liknar webbgränssnittet
  */
 export async function exportROIToPdf(data: ROIReportData, currentUserId?: string): Promise<void> {
   // Hämta eventuell ytterligare information om organisation och tidsperiod från Form D
-  let enhancedData = { ...data };
+  let enhancedData = { ...data } as EnhancedROIReportData;
   
   try {
     // Använd currentUserId om det finns, annars fortsätt med befintlig data
@@ -29,7 +35,7 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
             organizationName: formDData.organizationName || data.sharedFields.organizationName,
             contactPerson: formDData.contactPerson || data.sharedFields.contactPerson,
           }
-        };
+        } as EnhancedROIReportData;
         
         // Om vi har startDate och endDate från FormD, skapa en tidsperiod-sträng
         if (formDData.startDate && formDData.endDate) {
@@ -87,10 +93,16 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
   // Huvudtitel
   doc.setFontSize(24);
   doc.setTextColor(0, 51, 102);
-  doc.text('ROI-rapport', pageWidth / 2, 115, { align: 'center' });
   
-  doc.setFontSize(16);
-  doc.text('Avkastning på hälsofrämjande investeringar', pageWidth / 2, 130, { align: 'center' });
+  // Kontrollera om det är den aggregerade rapporten
+  if (enhancedData.isAggregatedReport) {
+    doc.text('Avkastning på hälsofrämjande investeringar', pageWidth / 2, 115, { align: 'center' });
+  } else {
+    doc.text('ROI-rapport', pageWidth / 2, 115, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.text('Avkastning på hälsofrämjande investeringar', pageWidth / 2, 130, { align: 'center' });
+  }
   
   // Informationsruta - nu med ljus färg istället för svart
   const infoBoxY = 140;
@@ -143,32 +155,90 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
   // Lägg till logo och rubrik
   doc.setFontSize(20);
   doc.setTextColor(0, 51, 102); // Mörkblå färg för rubriker
-  doc.text('Exekutiv sammanfattning', margin, 17);
+  
+  let currentY = 30; // Standard Y-position för nästa element
+  
+  // Kontrollera om det är den aggregerade rapporten
+  if (enhancedData.isAggregatedReport) {
+    // För aggregerade rapporter visar vi "Komplett ROI-rapport" istället
+    doc.text('Komplett ROI-rapport', margin + 2, 17);
+    
+    // Lägg till en innehållsförteckning som matchar webbsidan
+    doc.setFillColor(255, 255, 255); // Vit bakgrund
+    doc.setDrawColor(200, 200, 200); // Grå ram, mer likt bilden
+    doc.roundedRect(margin, 35, contentWidth, 55, 2, 2, 'FD'); // FD = fill and draw
+    
+    // Lägg till rubriken
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0); // Svart text
+    doc.text('Innehållsförteckning', margin + 10, 45);
+    
+    // Definiera innehållssektionerna
+    const sections = [
+      "1. Nuläge", 
+      "2. Orsaksanalys", 
+      "3. Syfte med insatserna",
+      "4. Målsättning", 
+      "5. Målgrupp", 
+      "6. Intervention",
+      "7. Genomförandeplan", 
+      "8. Rekommendation", 
+      "9. Nyckeltal"
+    ];
+    
+    // Sätt upp kolumner
+    doc.setFontSize(10);
+    const colWidth = contentWidth / 3;
+    const startY = 55;
+    
+    // Första kolumnen (index 0-2)
+    for (let i = 0; i < 3; i++) {
+      doc.text(sections[i], margin + 10, startY + (i * 7));
+    }
+    
+    // Andra kolumnen (index 3-5)
+    for (let i = 3; i < 6; i++) {
+      doc.text(sections[i], margin + 10 + colWidth, startY + ((i-3) * 7));
+    }
+    
+    // Tredje kolumnen (index 6-8)
+    for (let i = 6; i < 9; i++) {
+      doc.text(sections[i], margin + 10 + (colWidth * 2), startY + ((i-6) * 7));
+    }
+    
+    // Placera nästa element efter innehållsförteckningen
+    currentY = 100;
+    
+    // Lägg till speciell behandling för aggregerade rapporter
+    enhancedData.hideInPdf = true;
+  } else {
+    doc.text('Exekutiv sammanfattning', margin, 17);
+  }
   
   // Visa alltid organisation, kontaktperson och tidsperiod i en inforuta
   doc.setFillColor(250, 250, 255); // Ljus bakgrund för inforuta
-  doc.roundedRect(margin, 30, contentWidth, 30, 2, 2, 'F');
+  doc.roundedRect(margin, currentY, contentWidth, 30, 2, 2, 'F');
   doc.setDrawColor(220, 220, 230); // Kantlinje
-  doc.roundedRect(margin, 30, contentWidth, 30, 2, 2, 'S');
+  doc.roundedRect(margin, currentY, contentWidth, 30, 2, 2, 'S');
   
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
-  doc.text(enhancedData.sharedFields.organizationName || 'Organisation inte angiven', margin + 5, 38);
+  doc.text(enhancedData.sharedFields.organizationName || 'Organisation inte angiven', margin + 5, currentY + 8);
   
   doc.setFontSize(10);
   doc.setTextColor(80, 80, 100);
-  doc.text(`Kontaktperson: ${enhancedData.sharedFields.contactPerson || 'Ej angiven'}`, margin + 5, 45);
+  doc.text(`Kontaktperson: ${enhancedData.sharedFields.contactPerson || 'Ej angiven'}`, margin + 5, currentY + 15);
   
   // Visa tidsperiod om den finns
   const periodText = enhancedData.timePeriod ? `Period: ${enhancedData.timePeriod}` : 'Period: Ej angiven';
-  doc.text(periodText, margin + 5, 52);
+  doc.text(periodText, margin + 5, currentY + 22);
   
   // Datum för rapporten (högerjusterad)
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
-  doc.text(`Rapport genererad: ${today}`, pageWidth - margin - 5, 52, { align: 'right' });
+  doc.text(`Rapport genererad: ${today}`, pageWidth - margin - 5, currentY + 22, { align: 'right' });
   
-  let currentY = 70; // Startvärde för Y-positionen efter headern
+  currentY += 40; // Uppdatera y-positionen för nästa element
   
   // Nyckeltal i färgade kort - likt webbgränssnittet
   const cardWidth = contentWidth / 2 - 5;
@@ -761,7 +831,7 @@ export function printToPdf(): void {
       }
       
       /* Dölj element som inte behövs i utskriften */
-      .no-print, .no-print * {
+      .no-print, .no-print *, .hide-in-pdf, .hide-in-pdf * {
         display: none !important;
       }
       nav, footer, header, button, [role="navigation"], 

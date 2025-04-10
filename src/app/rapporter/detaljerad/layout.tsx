@@ -170,10 +170,14 @@ export default function DetaljeradRapportLayout({
                 Tillbaka till rapporter
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold">Detaljerad forskningsbaserad rapport</h1>
-            <p className="text-muted-foreground mt-1">
-              Djupgående analys av ROI för {reportData.sharedFields?.organizationName || 'din organisation'}
-            </p>
+            {!pathname?.includes('aggregerad') && (
+              <>
+                <h1 className="text-3xl font-bold">Detaljerad forskningsbaserad rapport</h1>
+                <p className="text-muted-foreground mt-1">
+                  Djupgående analys av ROI för {reportData.sharedFields?.organizationName || 'din organisation'}
+                </p>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={handleExportPdf} className="gap-2">
@@ -228,6 +232,11 @@ export default function DetaljeradRapportLayout({
             <Link href="/rapporter/detaljerad/nyckeltal">
               <Button variant={activeTab === 'nyckeltal' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Nyckeltal
+              </Button>
+            </Link>
+            <Link href="/rapporter/detaljerad/aggregerad">
+              <Button variant={activeTab === 'aggregerad' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4 ml-4 bg-primary/10">
+                Komplett rapport
               </Button>
             </Link>
           </nav>
