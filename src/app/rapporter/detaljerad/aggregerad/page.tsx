@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileDown, ArrowUp } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { NulageTab } from '../tabs/NulageTab';
 import { OrsakTab } from '../tabs/OrsakTab';
 import { SyfteTab } from '../tabs/SyfteTab';
@@ -13,45 +13,9 @@ import { GenomforandePlanTab } from '../tabs/GenomforandePlanTab';
 import { RekommendationTab } from '../tabs/RekommendationTab';
 import { NyckeltalsTab } from '../tabs/NyckeltalsTab';
 import { TabContent } from '../components/TabContent';
-import { exportROIToPdf } from '@/lib/reports/pdfExport';
-import { useAuth } from '@/contexts/AuthContext';
-import { ROIReportData } from '@/lib/reports/reportUtils';
 import Image from 'next/image';
 
 export default function AggregatedReportPage() {
-  const { currentUser } = useAuth();
-
-  // Specialversion av PDF-exportfunktionen för aggregerad rapport
-  const handleExportAggregatedPdf = async (reportData: ROIReportData) => {
-    try {
-      if (!reportData) {
-        alert('Ingen rapport-data tillgänglig. Försök igen senare.');
-        return;
-      }
-      
-      // Skapa en kopia av report data med speciellt anpassad data för den aggregerade versionen
-      const aggregatedReportData = {
-        ...reportData,
-        // Lägger till speciella flaggor för att hantera aggregerad rapport i PDF-exporten
-        isAggregatedReport: true,
-        // Överskrider delar av sharedFields om det behövs
-        sharedFields: {
-          ...reportData.sharedFields,
-          organizationName: 'Demo Alltjänst',
-          contactPerson: 'Erik Helsing'
-        },
-        // Sätt explicit tidsperiod
-        timePeriod: '2025-01-01 - 2026-01-01'
-      };
-      
-      // Använd den vanliga exportfunktionen med vår anpassade data
-      await exportROIToPdf(aggregatedReportData, currentUser?.uid);
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-      alert('Ett fel uppstod vid export till PDF. Försök igen senare.');
-    }
-  };
-
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
