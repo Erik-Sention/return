@@ -151,16 +151,8 @@ export default function AggregatedReportPage() {
 
           {/* Innehållsförteckning */}
           <div className="bg-card border rounded-lg p-6" id="top">
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6">
               <h1 className="text-3xl font-bold">Komplett ROI-rapport</h1>
-              <Button 
-                variant="outline" 
-                className="gap-2" 
-                onClick={() => handleExportAggregatedPdf(reportData)}
-              >
-                <FileDown className="h-4 w-4" />
-                Ladda ner PDF
-              </Button>
             </div>
             <p className="text-muted-foreground mb-6">
               Denna rapport sammanställer alla delar från den detaljerade rapporteringen 
