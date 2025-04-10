@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, ROIReportData } from '@/lib/reports/reportUtils';
-import { exportROIToPdf } from '@/lib/reports/pdfExport';
+import { exportROIToPdf, printToPdf } from '@/lib/reports/pdfExport';
 import { ReportContext } from './components/ReportContext';
 
 export default function DetaljeradRapportLayout({
@@ -67,7 +67,7 @@ export default function DetaljeradRapportLayout({
     if (!reportData) return;
     
     try {
-      exportROIToPdf(reportData);
+      printToPdf();
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Ett fel uppstod vid export till PDF. Försök igen senare.');

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
-import { exportROIToPdf } from '@/lib/reports/pdfExport';
+import { exportROIToPdf, printToPdf } from '@/lib/reports/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
@@ -169,7 +169,7 @@ export default function ExekutivSammanfattningPage() {
     if (!reportData || !currentUser) return;
     
     try {
-      await exportROIToPdf(reportData, currentUser.uid);
+      printToPdf();
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Ett fel uppstod vid export till PDF. Försök igen senare.');
