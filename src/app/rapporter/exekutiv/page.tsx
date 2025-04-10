@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
-import { exportROIToPdf, printToPdf } from '@/lib/reports/pdfExport';
+import { printToPdf } from '@/lib/reports/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';

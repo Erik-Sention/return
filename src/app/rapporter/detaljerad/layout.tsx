@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, ROIReportData } from '@/lib/reports/reportUtils';
-import { exportROIToPdf, printToPdf } from '@/lib/reports/pdfExport';
+import { printToPdf } from '@/lib/reports/pdfExport';
 import { ReportContext } from './components/ReportContext';
 
 export default function DetaljeradRapportLayout({
