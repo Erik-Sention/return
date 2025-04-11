@@ -43,8 +43,8 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
               />
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Nationellt genomsnitt: 16%</span>
-                  <span className="text-xs">Källa: Folkhälsomyndigheten (2021)</span>
+                  <span>Nationellt genomsnitt: 31,7%</span>
+                  <span className="text-xs">Källa: Stress i arbetslivet Falck Sverige (2025)</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5 mt-1">
                   <div 
@@ -53,7 +53,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                   ></div>
                   <div 
                     className="bg-blue-500 h-1.5 rounded-full mt-1" 
-                    style={{ width: `16%` }}
+                    style={{ width: `31.7%` }}
                   ></div>
                 </div>
               </div>
@@ -67,11 +67,11 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
               <StatItem 
                 label="Kostnad per år"
                 value={formatCurrency(reportData.productionLossValue || 0)}
-                description="Pga. stressrelaterad ohälsa"
+                description="Till följd av stress inom riskzonen hög stressnivå"
                 variant="blue"
               />
               <div className="mt-3 text-xs text-muted-foreground">
-                <p>Enligt Myndigheten för arbetsmiljökunskap (2020) innebär stressrelaterad psykisk ohälsa ett produktionsbortfall på minst 9%.</p>
+                <p> Stress inom arbetslivet beräknas leda till minst 9 % produktionsbortfall (MYNAK, 2019). Den största delen beror på presenteeism – när medarbetare är på jobbet men presterar sämre p.g.a. ohälsa. Enligt Journal of Occupational and Environmental Medicine (2013) står presenteeism för 77 % av den totala produktivitetsförlusten, jämfört med 23 % från frånvaro.</p>
               </div>
             </ChartCard>
             
@@ -87,7 +87,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                 variant="purple"
               />
               <div className="mt-3 text-xs text-muted-foreground">
-                <p>Psykisk ohälsa står för cirka 45% av samtliga sjukskrivningar (Försäkringskassan, 2020)</p>
+                <p>Psykisk ohälsa står för 42% av samtliga sjukskrivningar (Källa: Psykisk ohälsa i dagens arbetsliv, Försäkringskassans lägesrapport (2023:1))</p>
               </div>
             </ChartCard>
           </div>
@@ -169,22 +169,21 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
             <div className="bg-card border rounded-lg p-6">
               <h4 className="font-medium mb-4 flex items-center">
                 <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                Forskningsbaserade jämförelser
+                Kostnad per anställd med sjukfrånvaro pga. psykisk ohälsa
               </h4>
               
               <div className="mb-4">
-                <h5 className="text-sm font-medium mb-2">Kostnad per anställd med psykisk ohälsa</h5>
                 <div className="relative pt-1">
                   <div className="flex justify-between text-xs mb-1">
-                    <span>Er organisation</span>
+                    <span>Er organisation (sjukfrånvaro)</span>
                     <span className="font-medium">
-                      {formatCurrency((reportData.totalMentalHealthCost || 0) / (((reportData.stressPercentage || 0) / 100) * 100))}
+                      {formatCurrency((reportData.sickLeaveValue || 0) / (((reportData.stressPercentage || 0) / 100) * 100))}
                     </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-primary h-2 rounded-full" 
-                      style={{ width: `${Math.min(100, ((reportData.totalMentalHealthCost || 0) / (((reportData.stressPercentage || 0) / 100) * 100)) / 100000 * 100)}%` }}
+                      style={{ width: `${Math.min(100, ((reportData.sickLeaveValue || 0) / (((reportData.stressPercentage || 0) / 100) * 100)) / 100000 * 100)}%` }}
                     ></div>
                   </div>
                   
@@ -199,87 +198,20 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
                     ></div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-2">
-                    Källa: OECD (2021), &quot;Mental Health and Work: Sweden&quot;
+                    Källa: Försäkringskassan (2023)
                 </div>
               </div>
             </div>
             
               <div className="mt-6">
                 <h5 className="text-sm font-medium mb-2">Nationell kostnad per år</h5>
-                <div className="text-3xl font-bold mb-1">70 Mdr SEK</div>
+                <div className="text-3xl font-bold mb-1">16,6 Mdr SEK</div>
                 <div className="text-xs text-muted-foreground">
-                  Stressrelaterad psykisk ohälsa kostar svenska samhället cirka 70 miljarder kronor årligen. 
-                  <div className="mt-1">Källa: OECD (2021), &quot;Mental Health and Work: Sweden&quot;</div>
+                  Sjukpenning för stressrelaterad psykisk ohälsa och depressioner kostar svenska samhället cirka 16,6 miljarder kronor årligen.
+                  <div className="mt-1">Källa: Psykisk ohälsa i dagens arbetsliv, Försäkringskassans lägesrapport (2023:1)</div>
                 </div>
                 </div>
               </div>
-          </div>
-          
-          <div className="bg-card border rounded-lg p-6 mb-6">
-            <h4 className="font-medium mb-4">Konsekvenser av stressrelaterad psykisk ohälsa</h4>
-            
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="bg-muted/40 p-4 rounded-lg">
-                <h5 className="text-sm font-medium mb-3 flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-red-500" /> Sjukfrånvaro
-                </h5>
-                <p className="text-xs mb-2">
-                  Psykisk ohälsa står för 45% av sjukskrivningar i Sverige.
-                </p>
-                <div className="text-xs text-muted-foreground">
-                  Källa: Försäkringskassan (2020)
-            </div>
-          </div>
-          
-              <div className="bg-muted/40 p-4 rounded-lg">
-                <h5 className="text-sm font-medium mb-3 flex items-center">
-                  <Activity className="h-4 w-4 mr-2 text-amber-500" /> Presenteeism
-                </h5>
-                <p className="text-xs mb-2">
-                  Närvaro trots sjukdom kostar 2-3 gånger mer än sjukfrånvaro.
-                </p>
-                <div className="text-xs text-muted-foreground">
-                  Källa: SBU (2021)
-                </div>
-              </div>
-              
-              <div className="bg-muted/40 p-4 rounded-lg">
-                <h5 className="text-sm font-medium mb-3 flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-blue-500" /> Personalomsättning
-                </h5>
-                <p className="text-xs mb-2">
-                  Upp till 50% högre vid hög andel stressad personal.
-                </p>
-                <div className="text-xs text-muted-foreground">
-                  Källa: Prevent (2022)
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <h4 className="font-medium mb-2 flex items-center text-yellow-800 dark:text-yellow-300">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Forskningsbaserad riskprognos
-            </h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-200 mb-2">
-                  Om inga åtgärder vidtas visar forskning att stressrelaterad ohälsa tenderar att öka med 5-10% årligen.
-                </p>
-                <div className="text-xs text-muted-foreground">
-                  Källa: Arbetsmiljöverket (2020), &quot;Förebyggande insatser&quot;
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-200 mb-2">
-                  Rehabiliteringskostnad för utmattningssyndrom: 600 000 - 1 000 000 kr per fall.
-                </p>
-                <div className="text-xs text-muted-foreground">
-                  Källa: Institutet för stressmedicin (2020)
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
