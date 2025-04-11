@@ -5,8 +5,7 @@ import {
   Users, 
   Activity, 
   Calendar, 
-  BookOpen,
-  AlertTriangle
+  BookOpen
 } from 'lucide-react';
 import { formatCurrency, formatPercent, ROIReportData } from '@/lib/reports/reportUtils';
 
