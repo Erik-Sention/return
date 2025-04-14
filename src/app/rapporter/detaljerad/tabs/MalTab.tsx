@@ -72,7 +72,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4">
-                Empiriskt stöd: Väldesignade interventioner minskar stress med 10-20%
+              Forskning visar att väldesignade stresshanteringsinterventioner har en betydande positiv effekt på att minska stress.
                 <div className="mt-1">Källa: Richardson & Rothstein (2018)</div>
               </div>
             </div>
@@ -117,8 +117,8 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4">
-                Empiriskt stöd: ROI på 1,5-5x investering för systematiska insatser
-                <div className="mt-1">Källa: SBU (2020)</div>
+              Förebyggande insatser i arbetslivet har visat sig vara kostnadseffektiva och kan ge en genomsnittlig avkastning (ROI) på 220 %. För individinriktade insatser mot arbetsrelaterad stress visar forskningen på en möjlig ROI upp till 700 %.
+                <div className="mt-1">Källa: MYNAK (2019)</div>
               </div>
             </div>
             
@@ -163,100 +163,8 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4">
-                Empiriskt stöd: Normalt 12-24 månaders återbetalningstid
-                <div className="mt-1">Källa: Arbetsmiljöverket (2019)</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-card border rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-medium mb-4">Förväntade sekundära effekter</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-sm font-medium mb-3 flex items-center">
-                  <Target className="h-4 w-4 mr-2 text-primary" />
-                  Organisationsnivå
-                </h4>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Minskad sjukfrånvaro</span>
-                      <span className="text-xs font-medium">15%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Minskad personalomsättning</span>
-                      <span className="text-xs font-medium">10%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '10%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Ökad produktivitet</span>
-                      <span className="text-xs font-medium">7%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '7%' }}></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground mt-3">
-                  Källa: Previa (2020), &quot;Effekter av arbetsmiljöinsatser&quot;
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-3 flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-primary" />
-                  Individuell nivå
-                </h4>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Ökad arbetsglädje</span>
-                      <span className="text-xs font-medium">20%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '20%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Förbättrad stresskompetens</span>
-                      <span className="text-xs font-medium">25%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '25%' }}></div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs">Ökat engagemang</span>
-                      <span className="text-xs font-medium">15%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground mt-3">
-                  Källa: Richardson & Rothstein (2018), &quot;Effekter av stressinterventioner&quot;
-                </div>
+              Ju kortare återbetalningstid — desto lönsammare är investeringen.
+                <div className="mt-1">Källa: MYNAK (2019)</div>
               </div>
             </div>
           </div>
@@ -289,8 +197,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
             </div>
             <div className="text-xs text-muted-foreground mt-3">
-              Systematisk uppföljning av SMART-mål ökar sannolikheten för framgång med 40-60%.
-              <div className="mt-1">Källa: Doran (1981); Institutet för stressmedicin (2021)</div>
+              <div className="mt-1"> Källa: George T. Doran (1981)</div>
             </div>
           </div>
         </div>
