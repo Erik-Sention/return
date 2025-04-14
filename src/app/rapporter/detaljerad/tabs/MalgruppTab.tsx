@@ -5,8 +5,7 @@ import {
   HeartPulse, 
   CheckCircle, 
   AlertTriangle,
-  Shield,
-  Bookmark
+  Shield
 } from 'lucide-react';
 import { ROIReportData } from '@/lib/reports/reportUtils';
 

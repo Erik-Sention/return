@@ -3,8 +3,6 @@ import {
   TrendingDown, 
   CreditCard, 
   Clock, 
-  Target, 
-  Users, 
   BookOpen 
 } from 'lucide-react';
 import { formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
@@ -117,7 +115,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
               
               <div className="text-xs text-muted-foreground mt-4">
-              Förebyggande insatser i arbetslivet har visat sig vara kostnadseffektiva och kan ge en genomsnittlig avkastning (ROI) på 220 %. För individinriktade insatser mot arbetsrelaterad stress visar forskningen på en möjlig ROI upp till 700 %.
+              Förebyggande insatser i arbetslivet har visat sig vara kostnadseffektiva och kan ge en genomsnittlig avkastning (ROI) på 220 %. För individinriktade insatser mot arbetsrelaterad stress visar forskningen på en möjlig ROI upp till 700 %.
                 <div className="mt-1">Källa: MYNAK (2019)</div>
               </div>
             </div>
