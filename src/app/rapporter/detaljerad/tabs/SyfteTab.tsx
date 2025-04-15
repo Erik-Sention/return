@@ -14,7 +14,7 @@ interface SyfteTabProps {
 export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Syfte med insatserna</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -27,7 +27,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
           <h3 className="text-xl font-medium mb-4">Syftets koppling till mätbara resultat</h3>
           
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="pb-4 mb-4 border-b border-border">
                 <h4 className="font-medium flex items-center">
                   <Target className="h-5 w-5 mr-2 text-primary" />
@@ -82,7 +82,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
               </div>
             </div>
             
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="pb-4 mb-4 border-b border-border">
                 <h4 className="font-medium flex items-center">
                   <Calendar className="h-5 w-5 mr-2 text-primary" />
@@ -206,7 +206,7 @@ export const SyfteTab: React.FC<SyfteTabProps> = ({ reportData }) => {
             </div>
           </div>
           
-          <div className="bg-card border rounded-lg p-6 mb-6">
+          <div className="bg-white border rounded-lg p-6 mb-6">
             <h3 className="text-lg font-medium mb-4">Systemteoretiskt ramverk för stressinterventioner</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

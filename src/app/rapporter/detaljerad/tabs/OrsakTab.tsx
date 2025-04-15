@@ -20,7 +20,7 @@ interface OrsakTabProps {
 export const OrsakTab: React.FC<OrsakTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Orsaksanalys</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -30,7 +30,7 @@ export const OrsakTab: React.FC<OrsakTabProps> = ({ reportData }) => {
             {reportData.causeAnalysis || 'Ingen orsaksanalys har angivits i formuläret.'}
           </p>
           
-          <div className="bg-card border rounded-lg p-6 mb-6">
+          <div className="bg-white border rounded-lg p-6 mb-6">
             <h3 className="text-lg font-medium mb-4">Forskningsbaserad orsaksanalys</h3>
             
             <div className="mb-6">
@@ -125,7 +125,7 @@ export const OrsakTab: React.FC<OrsakTabProps> = ({ reportData }) => {
                 <BookOpen className="h-5 w-5 mr-2 text-primary" />
                 Krav-kontroll-stödmodellen
               </h4>
-              <div className="relative border rounded-lg p-6 bg-card overflow-hidden max-w-3xl mx-auto mb-3">
+              <div className="relative border rounded-lg p-6 bg-white overflow-hidden max-w-3xl mx-auto mb-3">
                 {/* Remove top fixed labels */}
 
                 <div className="flex">

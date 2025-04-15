@@ -21,7 +21,7 @@ export const InterventionTab: React.FC<InterventionTabProps> = ({ reportData }) 
 
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Intervention</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -79,7 +79,7 @@ export const InterventionTab: React.FC<InterventionTabProps> = ({ reportData }) 
       
       {/* Visa kostnadsinformation om den finns tillgänglig */}
       {(hasInterventionCosts || hasFormGInterventions) && (
-        <div className="bg-card border rounded-lg p-6">
+        <div className="bg-white border rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="bg-primary/10 p-2 rounded-full">
               <Coins className="h-5 w-5 text-primary" />

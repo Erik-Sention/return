@@ -14,7 +14,7 @@ interface MalTabProps {
 export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Målsättning</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -27,7 +27,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
           <h3 className="text-xl font-medium mb-4">Nyckeltal och förväntade resultat</h3>
           
           <div className="grid gap-6 md:grid-cols-3 mb-8">
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="flex justify-between items-start mb-4">
                 <h4 className="font-medium flex items-center">
                   <TrendingDown className="h-4 w-4 mr-2 text-green-500" />
@@ -75,7 +75,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
             </div>
             
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="flex justify-between items-start mb-4">
                 <h4 className="font-medium flex items-center">
                   <CreditCard className="h-4 w-4 mr-2 text-blue-500" />
@@ -120,7 +120,7 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
               </div>
             </div>
             
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="flex justify-between items-start mb-4">
                 <h4 className="font-medium flex items-center">
                   <Clock className="h-4 w-4 mr-2 text-purple-500" />

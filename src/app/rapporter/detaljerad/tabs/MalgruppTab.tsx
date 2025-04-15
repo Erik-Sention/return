@@ -16,7 +16,7 @@ interface MalgruppTabProps {
 export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Målgrupp</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -29,7 +29,7 @@ export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
           <h3 className="text-xl font-medium mb-4">Målgruppsanalys</h3>
           
           <div className="grid gap-6 grid-cols-1 mb-8">
-            <div className="bg-card border rounded-lg p-5">
+            <div className="bg-white border rounded-lg p-5">
               <div className="pb-4 mb-4 border-b border-border">
                 <h4 className="font-medium flex items-center">
                   <Shield className="h-5 w-5 mr-2 text-primary" />
@@ -87,7 +87,7 @@ export const MalgruppTab: React.FC<MalgruppTabProps> = ({ reportData }) => {
           </div>
           
           <div className="grid gap-6 mb-8">
-            <div className="bg-card border rounded-lg p-6">
+            <div className="bg-white border rounded-lg p-6">
               <h3 className="text-lg font-medium mb-4">Anpassade insatser för olika målgrupper</h3>
               
               <div className="grid md:grid-cols-3 gap-4">

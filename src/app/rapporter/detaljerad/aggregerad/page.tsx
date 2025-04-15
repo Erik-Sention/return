@@ -15,6 +15,68 @@ import { NyckeltalsTab } from '../tabs/NyckeltalsTab';
 import { TabContent } from '../components/TabContent';
 import Image from 'next/image';
 
+// CSS för att hantera sidbrytningar vid utskrift
+const printStyles = `
+  @media print {
+    /* Globala utskriftsinställningar */
+    @page {
+      margin: 1cm;
+      size: A4;
+    }
+    
+    body {
+      font-size: 12pt;
+    }
+    
+    /* Förstasidan */
+    #frontpage {
+      page-break-after: always;
+      break-after: page;
+    }
+    
+    /* Innehållsförteckning */
+    #top {
+      page-break-after: always;
+      break-after: page;
+    }
+    
+    /* Huvudsektioner - börja på ny sida */
+    #nulage, #orsaksanalys, #syfte, #malsattning, #malgrupp, #intervention, #genomforandeplan, #rekommendation, #nyckeltal {
+      page-break-before: always;
+      break-before: page;
+    }
+    
+    /* Se till att vissa element inte delas vid sidbrytning */
+    h2, h3, h4 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    
+    /* Undvik sidbrytning inuti dessa element */
+    .avoid-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    /* Dölj navigeringsknappar och andra UI-element vid utskrift */
+    .no-print {
+      display: none !important;
+    }
+    
+    /* För att förhindra att tabeller bryts */
+    table {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    /* För att förhindra att diagram bryts */
+    .chart-container, [class*="ChartCard"] {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  }
+`;
+
 export default function AggregatedReportPage() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -29,7 +91,7 @@ export default function AggregatedReportPage() {
 
   // Komponent för navigering tillbaka till toppen
   const BackToTopButton = () => (
-    <div className="flex justify-end mt-4 pb-2 pr-4">
+    <div className="flex justify-end mt-4 pb-2 pr-4 no-print">
       <Button 
         variant="ghost" 
         size="sm" 
@@ -46,6 +108,9 @@ export default function AggregatedReportPage() {
     <TabContent>
       {(reportData) => (
         <div className="space-y-8 pb-12 max-w-[1000px] mx-auto">
+          {/* Lägg till style-tagg för utskriftsstil */}
+          <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+          
           {/* Förstasida */}
           <div className="bg-white dark:bg-gray-900 rounded-lg border shadow-lg p-8 min-h-[800px] flex flex-col" id="frontpage">
             <div className="flex justify-center mb-6 mt-8">
@@ -127,7 +192,7 @@ export default function AggregatedReportPage() {
           </div>
 
           {/* Innehållsförteckning */}
-          <div className="bg-card border rounded-lg p-6" id="top">
+          <div className="bg-white border rounded-lg p-6" id="top">
             <div className="mb-6">
               <h1 className="text-3xl font-bold">Komplett ROI-rapport</h1>
             </div>
@@ -174,10 +239,7 @@ export default function AggregatedReportPage() {
 
           {/* Nuläge-sektion */}
           <div className="scroll-mt-20" id="nulage">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">1. Nuläge</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <NulageTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -185,10 +247,7 @@ export default function AggregatedReportPage() {
 
           {/* Orsaksanalys-sektion */}
           <div className="scroll-mt-20" id="orsaksanalys">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">2. Orsaksanalys</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <OrsakTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -196,10 +255,7 @@ export default function AggregatedReportPage() {
 
           {/* Syfte-sektion */}
           <div className="scroll-mt-20" id="syfte">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">3. Syfte med insatserna</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <SyfteTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -207,10 +263,7 @@ export default function AggregatedReportPage() {
 
           {/* Målsättning-sektion */}
           <div className="scroll-mt-20" id="malsattning">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">4. Målsättning</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <MalTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -218,10 +271,7 @@ export default function AggregatedReportPage() {
 
           {/* Målgrupp-sektion */}
           <div className="scroll-mt-20" id="malgrupp">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">5. Målgrupp</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <MalgruppTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -229,10 +279,7 @@ export default function AggregatedReportPage() {
 
           {/* Intervention-sektion */}
           <div className="scroll-mt-20" id="intervention">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">6. Intervention</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <InterventionTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -240,10 +287,7 @@ export default function AggregatedReportPage() {
 
           {/* Genomförandeplan-sektion */}
           <div className="scroll-mt-20" id="genomforandeplan">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">7. Genomförandeplan</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <GenomforandePlanTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -251,10 +295,7 @@ export default function AggregatedReportPage() {
 
           {/* Rekommendation-sektion */}
           <div className="scroll-mt-20" id="rekommendation">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">8. Rekommendation</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <RekommendationTab reportData={reportData} />
               <BackToTopButton />
             </div>
@@ -262,10 +303,7 @@ export default function AggregatedReportPage() {
 
           {/* Nyckeltal-sektion */}
           <div className="scroll-mt-20" id="nyckeltal">
-            <div className="bg-muted py-3 px-6 rounded-t-lg border border-border">
-              <h2 className="text-xl font-semibold">9. Nyckeltal</h2>
-            </div>
-            <div className="border-x border-b border-border rounded-b-lg">
+            <div className="bg-white border rounded-lg avoid-break">
               <NyckeltalsTab reportData={reportData} />
               <BackToTopButton />
             </div>

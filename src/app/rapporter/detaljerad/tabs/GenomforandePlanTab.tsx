@@ -15,7 +15,7 @@ interface GenomforandePlanTabProps {
 export const GenomforandePlanTab: React.FC<GenomforandePlanTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Genomförandeplan</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -25,7 +25,7 @@ export const GenomforandePlanTab: React.FC<GenomforandePlanTabProps> = ({ report
             {reportData.implementationPlan || 'Ingen genomförandeplan har angivits i formuläret.'}
           </p>
           
-          <div className="bg-card border rounded-lg p-6 mb-6">
+          <div className="bg-white border rounded-lg p-6 mb-6">
             <h3 className="text-lg font-medium mb-4 flex items-center">
               <BookOpen className="h-5 w-5 mr-2 text-primary" />
               Implementering med kvalitet

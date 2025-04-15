@@ -16,7 +16,7 @@ interface NulageTabProps {
 export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-white border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Nuläge</h2>
         <div className="prose dark:prose-invert max-w-none">
           <p className="text-lg font-medium mb-3">
@@ -94,7 +94,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
           <h3 className="text-xl font-medium mb-4">Total kostnad för psykisk ohälsa</h3>
           
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <div className="bg-card border rounded-lg p-6">
+            <div className="bg-white border rounded-lg p-6">
               <h4 className="font-medium mb-4">Kostnad för psykisk ohälsa</h4>
               <div className="relative pt-1">
                 <div className="text-3xl font-bold mb-2">
@@ -165,7 +165,7 @@ export const NulageTab: React.FC<NulageTabProps> = ({ reportData }) => {
               </div>
             </div>
             
-            <div className="bg-card border rounded-lg p-6">
+            <div className="bg-white border rounded-lg p-6">
               <h4 className="font-medium mb-4 flex items-center">
                 <BookOpen className="h-4 w-4 mr-2 text-primary" />
                 Kostnad per anställd med sjukfrånvaro pga. psykisk ohälsa
