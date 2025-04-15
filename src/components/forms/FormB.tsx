@@ -72,6 +72,7 @@ const FormInfo = () => (
 // Gör FormB till en forwardRef component
 const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const { currentUser } = useAuth();
+  const [fallbackStep, setFallbackStep] = useState('');
   const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
     contactPerson: '',
@@ -109,6 +110,10 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
           const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE);
           if (data) {
             console.log('Loaded form data:', data);
+            // Ensure implementationPlan is always an array
+            if (!data.implementationPlan || !Array.isArray(data.implementationPlan) || data.implementationPlan.length === 0) {
+              data.implementationPlan = [''];
+            }
             setFormData(data);
           }
         } catch (error) {
@@ -216,6 +221,11 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         (preparedData as Record<keyof FormBData, string | string[] | null>)[typedKey] = null;
       }
     });
+    
+    // Säkerställ att implementationPlan alltid är en array
+    if (!preparedData.implementationPlan || !Array.isArray(preparedData.implementationPlan)) {
+      preparedData.implementationPlan = [''];
+    }
     
     return preparedData;
   };
@@ -466,30 +476,55 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             
             <div className="space-y-2">
               <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
-              {formData.implementationPlan.map((step, index) => (
-                <div key={index} className="flex gap-2 mb-3">
+              {formData.implementationPlan && Array.isArray(formData.implementationPlan) && formData.implementationPlan.length > 0 ? (
+                formData.implementationPlan.map((step, index) => (
+                  <div key={index} className="flex gap-2 mb-3">
+                    <Input
+                      value={step}
+                      onChange={(e) => {
+                        const newPlan = [...formData.implementationPlan];
+                        newPlan[index] = e.target.value;
+                        handleChange('implementationPlan', newPlan);
+                      }}
+                      placeholder={`Steg ${index + 1}`}
+                      className="bg-background/50"
+                    />
+                    {index === formData.implementationPlan.length - 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
+                      >
+                        +
+                      </Button>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex gap-2 mb-3">
                   <Input
-                    value={step}
+                    value={fallbackStep}
                     onChange={(e) => {
-                      const newPlan = [...formData.implementationPlan];
-                      newPlan[index] = e.target.value;
-                      handleChange('implementationPlan', newPlan);
+                      setFallbackStep(e.target.value);
+                      handleChange('implementationPlan', [e.target.value]);
                     }}
-                    placeholder={`Steg ${index + 1}`}
+                    placeholder="Steg 1"
                     className="bg-background/50"
                   />
-                  {index === formData.implementationPlan.length - 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
-                    >
-                      +
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setFallbackStep('');
+                      handleChange('implementationPlan', ['']);
+                    }}
+                  >
+                    +
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
           

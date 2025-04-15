@@ -92,6 +92,27 @@ export default function DashboardPage() {
           </div>
         </Link>
 
+        {/* Jämförande ROI-kalkylator kort */}
+        <Link href="/roi/comparative" className="group">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-teal-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-teal-500/10 p-3 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-teal-500" />
+              </div>
+              <span className="text-sm font-medium px-2 py-1 bg-teal-500/10 text-teal-500 rounded-full">
+                Ny
+              </span>
+            </div>
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-teal-500 transition-colors">
+              Jämförande ROI
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Jämför olika insatser för att hitta den med bäst avkastning
+            </p>
+            <Button className="w-full" variant="outline">Jämför insatser</Button>
+          </div>
+        </Link>
+
         {/* Mina rapporter kort */}
         <Link href="/rapporter" className="group">
           <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-blue-500/20">

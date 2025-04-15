@@ -173,8 +173,19 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
       // Total kostnad för psykisk ohälsa
       const total_mental_health_cost = total_production_loss + total_sick_leave_cost;
 
-      // Beräkna ROI
-      const economic_benefit = total_mental_health_cost * expected_reduction / 100;
+      // Beräkna ROI - reducering av andelen med hög stressnivå
+      // Beräkna den nya stressnivån efter interventionen
+      const reduced_stress_level = stress_level * (1 - expected_reduction / 100);
+      // Beräkna nytt produktionsbortfall med den reducerade stressnivån
+      const reduced_production_loss = total_personnel_cost * reduced_stress_level / 100 * production_loss / 100;
+      // Kostnadsminskning för produktionsbortfall
+      const production_loss_benefit = total_production_loss - reduced_production_loss;
+      
+      // Anta att sjukfrånvaron också påverkas proportionellt med stressminskningen
+      const sick_leave_benefit = total_sick_leave_cost * expected_reduction / 100;
+      
+      // Total ekonomisk nytta
+      const economic_benefit = production_loss_benefit + sick_leave_benefit;
       const economic_surplus = economic_benefit - intervention_cost;
       const roi_percentage = (economic_surplus / intervention_cost) * 100;
       const break_even_effect = (intervention_cost / total_mental_health_cost) * 100;
@@ -367,8 +378,8 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
               
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-1">
-                  Förväntad reduktion (%)
-                  <InfoLabel text="Förväntad minskning av stressrelaterade kostnader. Studier visar att välplanerade insatser kan ge 10-20% minskade stressrelaterade kostnader. Förebyggande insatser ger ofta 5-15%, medan mer omfattande program kan ge 15-30% vid korrekt implementering." />
+                  Förväntad minskning av hög stressnivå (%)
+                  <InfoLabel text="Förväntad minskning av andelen personal med hög stressnivå. Studier visar att välplanerade insatser kan minska andelen personer med hög stress med 10-20%. Förebyggande insatser ger ofta 5-15%, medan mer omfattande program kan ge 15-30% vid korrekt implementering." />
                 </label>
                 <FormattedNumberInput
                   value={formData.expected_reduction}
@@ -520,6 +531,7 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
                   <div className="p-4 bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200 rounded-md text-sm mt-4">
                     <p className="font-medium mb-1">Tolkning av resultaten:</p>
                     <p>ROI visar avkastningen på din investering i procent. Ett positivt värde innebär ekonomisk vinst, medan ett negativt värde betyder att kostnaden överstiger den ekonomiska nyttan på kort sikt.</p>
+                    <p className="mt-2">Den ekonomiska nyttan beräknas genom den förväntade minskningen av andelen personal med hög stressnivå, vilket i sin tur minskar både produktionsbortfall och sjukfrånvaro.</p>
                     <p className="mt-2">Tänk på att många hälsofrämjande insatser har långsiktiga effekter som inte fångas i denna beräkning, som förbättrad arbetsmiljö, ökad trivsel och starkare arbetsgivarvarumärke.</p>
                   </div>
                 </div>
