@@ -13,6 +13,32 @@ interface BenefitItem {
   amount: number;
 }
 
+// Interface för FormG insatser och kostnader
+export interface FormGCost {
+  id: string;
+  name: string;
+  externalCost: number | null;
+  internalCost: number | null;
+}
+
+export interface FormGIntervention {
+  id: string;
+  name: string;
+  description: string;
+  costs: FormGCost[];
+  totalExternalCost: number;
+  totalInternalCost: number;
+  totalCost: number;
+}
+
+export interface FormGData {
+  timePeriod: string;
+  interventions: FormGIntervention[];
+  totalInterventionCost: number;
+  totalExternalCost: number;
+  totalInternalCost: number;
+}
+
 // Interface för samlad data från alla formulär
 export interface ROIReportData {
   // Organisation och kontaktinformation
@@ -53,19 +79,24 @@ export interface ROIReportData {
   interventionsArray?: string[];           // Behåll original array med interventioner
   interventionCosts?: CostItem[];
   
+  // FormG data - detaljerad interventionsdata
+  formGData?: FormGData;
+  
   // Nuläge, mål och resultat
   currentSituation?: string;
   goalsDescription?: string;
-  
-  // Nya fält från formulär A och B
   causeAnalysis?: string;          // Från Form A: Steg 3 - Orsaksanalys
   recommendation?: string;         // Från Form A: Steg 7 - Rekommendation för beslut
-  interventionPurpose?: string;    // Från Form B: Syfte med insatserna
-  targetGroup?: string;            // Från Form B: Målgrupp
-  implementationPlan?: string;     // Från Form B: Genomförandeplan
-  implementationPlanArray?: string[]; // Behåll original array för genomförandeplan
   
-  // Kostnader och fördelar
+  // Genomförandeplanering
+  implementationPlan?: string;              // Kommaseparerad sträng
+  implementationPlanArray?: string[];       // Array av implementeringssteg
+  
+  // Målgrupp och syfte
+  targetGroup?: string;
+  interventionPurpose?: string;
+  
+  // Fördelar med interventionen
   benefitAreas?: BenefitItem[];
 }
 
@@ -250,6 +281,30 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
           }));
         
         reportData.benefitAreas = validBenefits;
+      }
+    }
+    
+    // Hämta data från Form G (insatskostnader)
+    const formGPath = `users/${userId}/forms/G`;
+    const formGSnapshot = await get(child(dbRef, formGPath));
+    
+    if (formGSnapshot.exists()) {
+      const formGData: FormGData = formGSnapshot.val();
+      
+      // Lägg till FormG-data direkt till rapportdatan
+      reportData.formGData = formGData;
+      
+      // Om vi inte har kostnadsdata i interventionCosts, beräkna från FormG för bakåtkompatibilitet
+      if (!reportData.interventionCosts || reportData.interventionCosts.length === 0) {
+        // Skapa förenklad kostnadsdata från FormG
+        if (formGData.interventions && formGData.interventions.length > 0) {
+          const simplifiedCosts: CostItem[] = formGData.interventions.map(intervention => ({
+            description: intervention.name,
+            amount: intervention.totalCost
+          }));
+          
+          reportData.interventionCosts = simplifiedCosts;
+        }
       }
     }
     

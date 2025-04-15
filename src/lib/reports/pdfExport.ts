@@ -353,7 +353,7 @@ export async function exportROIToPdf(data: ROIReportData, currentUserId?: string
   
   doc.setFontSize(14);
   doc.setTextColor(0, 0, 0);
-  const minEffectText = enhancedData.minEffectForBreakEvenAlt3 !== undefined ? formatPercent(enhancedData.minEffectForBreakEvenAlt3) : 'N/A';
+  const minEffectText = enhancedData.minEffectForBreakEvenAlt3 !== undefined ? formatPercent((enhancedData.minEffectForBreakEvenAlt3) / 100) : 'N/A';
   doc.text(minEffectText, margin + cardWidth + 15, currentY + 20);
   
   doc.setFontSize(8);
