@@ -102,7 +102,20 @@ export default function AggregatedReportPage() {
                 
                 <div className="flex">
                   <div className="w-1/3 font-medium">Datum:</div>
-                  <div>10 april 2025</div>
+                  <div>{(() => {
+                    const today = new Date();
+                    const day = today.getDate();
+                    const month = today.getMonth();
+                    const year = today.getFullYear();
+                    
+                    // Swedish month names
+                    const monthNames = [
+                      'januari', 'februari', 'mars', 'april', 'maj', 'juni', 
+                      'juli', 'augusti', 'september', 'oktober', 'november', 'december'
+                    ];
+                    
+                    return `${day} ${monthNames[month]} ${year}`;
+                  })()}</div>
                 </div>
               </div>
             </div>
