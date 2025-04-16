@@ -161,9 +161,11 @@ type FormCProps = React.ComponentProps<'div'> & {
 const FormInfo = () => (
   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md mb-6 border border-blue-200 dark:border-blue-800">
     <h3 className="text-lg font-semibold mb-2">Formulär 2 – Kostnader relaterade till mental ohälsa</h3>
-    <p className="text-sm text-slate-700 dark:text-slate-300">
+    <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">
       I detta formulär beräknar du kostnader som är relaterade till mental ohälsa i organisationen.
       Uppgifterna baseras delvis på data från Formulär 1 och används senare för att motivera investeringar i förebyggande åtgärder.
+    </p>
+    <p className="text-sm text-blue-700 dark:text-blue-300 italic">
     </p>
   </div>
 );

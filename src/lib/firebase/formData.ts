@@ -1,5 +1,5 @@
 import { database } from './config';
-import { ref, set, get, child } from 'firebase/database';
+import { ref, set, get, child, onValue, off} from 'firebase/database';
 
 /**
  * Saves form data to Firebase Realtime Database
@@ -108,4 +108,45 @@ export const setupFormAutosave = <T>(
       setIsSaving(false);
     }
   }, 10000); // Autosave after 10 seconds of inactivity
+};
+
+/**
+ * Set up a real-time listener for form data changes
+ * @param userId - The current user's ID
+ * @param formType - The type of form to listen to (A, B, C, etc.)
+ * @param callback - Function to call when data changes
+ * @returns A function to unsubscribe the listener
+ */
+export const setupFormDataListener = <T>(
+  userId: string,
+  formType: string,
+  callback: (data: T | null) => void
+): (() => void) => {
+  if (!database || !userId) {
+    console.error('Cannot setup listener: database not initialized or no userId provided');
+    return () => {}; // Return empty function in case of error
+  }
+
+  console.log(`Setting up real-time listener for form ${formType} for user ${userId}`);
+  const formRef = ref(database, `users/${userId}/forms/${formType}`);
+  
+  // Set up the listener
+  onValue(formRef, (snapshot) => {
+    if (snapshot.exists()) {
+      console.log(`Real-time update received for form ${formType}:`, snapshot.val());
+      callback(snapshot.val() as T);
+    } else {
+      console.log(`No data found for form ${formType} in real-time update`);
+      callback(null);
+    }
+  }, (error) => {
+    console.error(`Error in real-time listener for form ${formType}:`, error);
+    callback(null);
+  });
+  
+  // Return a function to unsubscribe
+  return () => {
+    console.log(`Removing real-time listener for form ${formType}`);
+    off(formRef);
+  };
 }; 

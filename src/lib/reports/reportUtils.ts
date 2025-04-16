@@ -468,25 +468,18 @@ export function formatPercent(value: number | undefined): string {
 }
 
 /**
- * Formatera tid i månader till en läsbar format
+ * Formatera månader till en läsbar format
+ * @param months - Antal månader
+ * @returns Formaterad sträng med månader
  */
 export function formatMonths(months: number | undefined): string {
-  if (months === undefined) return "0 månader";
+  if (months === undefined || months === null) {
+    return '-';
+  }
   
+  // Avrunda till en decimal
   const roundedMonths = Math.round(months * 10) / 10;
   
-  if (roundedMonths < 1) {
-    return `${Math.round(roundedMonths * 30)} dagar`;
-  } else if (roundedMonths < 12) {
-    return `${roundedMonths} månader`;
-  } else {
-    const years = Math.floor(roundedMonths / 12);
-    const remainingMonths = Math.round(roundedMonths % 12);
-    
-    if (remainingMonths === 0) {
-      return `${years} år`;
-    } else {
-      return `${years} år och ${remainingMonths} månader`;
-    }
-  }
+  // Formatera med en decimal
+  return `${roundedMonths.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mån`;
 } 

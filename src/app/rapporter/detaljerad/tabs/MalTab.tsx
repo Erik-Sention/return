@@ -11,6 +11,30 @@ interface MalTabProps {
   reportData: ROIReportData;
 }
 
+interface StressReductionInfoProps {
+  currentLevel: number;
+  reductionPercent: number;
+}
+
+const StressReductionInfo: React.FC<StressReductionInfoProps> = ({ currentLevel, reductionPercent }) => {
+  const stressReductionInPercentagePoints = (currentLevel * reductionPercent) / 100;
+  const newStressLevel = currentLevel - stressReductionInPercentagePoints;
+  
+  return (
+    <div className="text-xs text-muted-foreground mt-2">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 mt-2">
+        <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Beräkning av stressminskning:</p>
+        <ul className="space-y-1 text-xs">
+          <li>Aktuell andel av personal med hög stressnivå: {formatPercent(currentLevel)}</li>
+          <li>Minskad andel av personal med hög stressnivå: {formatPercent(reductionPercent)}</li>
+          <li>Beräknad reducering: {formatPercent(currentLevel)} × {formatPercent(reductionPercent)} = {formatPercent(stressReductionInPercentagePoints)} procentenheter</li>
+          <li>Förväntad ny andel av personal med hög stressnivå: {formatPercent(currentLevel)} − {formatPercent(stressReductionInPercentagePoints)} = {formatPercent(newStressLevel)}</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
   return (
     <div className="space-y-6">
@@ -61,13 +85,25 @@ export const MalTab: React.FC<MalTabProps> = ({ reportData }) => {
                 <div>
                   <div className="flex justify-between mb-1">
                     <span className="text-xs">Målnivå</span>
-                    <span className="text-xs font-medium">{formatPercent((reportData.stressPercentage || 0) - (reportData.reducedStressPercentage || 0))}</span>
+                    <span className="text-xs font-medium">
+                      {formatPercent((reportData.stressPercentage || 0) - ((reportData.stressPercentage || 0) * (reportData.reducedStressPercentage || 0) / 100))}
+                    </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-1.5">
-                    <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(reportData.stressPercentage || 0) - (reportData.reducedStressPercentage || 0)}%` }}></div>
+                    <div 
+                      className="bg-green-500 h-1.5 rounded-full" 
+                      style={{ 
+                        width: `${(reportData.stressPercentage || 0) - ((reportData.stressPercentage || 0) * (reportData.reducedStressPercentage || 0) / 100)}%` 
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>
+              
+              <StressReductionInfo 
+                currentLevel={reportData.stressPercentage || 0} 
+                reductionPercent={reportData.reducedStressPercentage || 0} 
+              />
               
               <div className="text-xs text-muted-foreground mt-4">
               Forskning visar att väldesignade stresshanteringsinterventioner har en betydande positiv effekt på att minska stress.

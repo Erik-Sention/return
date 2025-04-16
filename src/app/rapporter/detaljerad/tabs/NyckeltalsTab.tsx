@@ -4,10 +4,9 @@ import {
   TrendingDown, 
   DollarSign, 
   Users, 
-  Briefcase, 
   Clock 
 } from 'lucide-react';
-import { formatCurrency, formatPercent, ROIReportData } from '@/lib/reports/reportUtils';
+import { formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { formatNumber } from '@/lib/utils/format';
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
@@ -225,7 +224,7 @@ export const NyckeltalsTab: React.FC<NyckeltalsTabProps> = ({ reportData }) => {
                 Återbetalningstid
               </h3>
             </div>
-            <span className="text-4xl font-bold">{reportData.paybackPeriod || '-'}</span>
+            <span className="text-4xl font-bold">{formatMonths(reportData.paybackPeriod || 0)}</span>
             <div className="text-sm text-muted-foreground mt-1">
               Månader till positiv avkastning
             </div>
@@ -270,22 +269,73 @@ export const NyckeltalsTab: React.FC<NyckeltalsTabProps> = ({ reportData }) => {
             <div className="pb-4 mb-4 border-b border-border">
               <h3 className="font-medium flex items-center">
                 <TrendingDown className="h-5 w-5 mr-2 text-green-500" />
-                Sjukfrånvarominskning
+                Stressnivå
               </h3>
             </div>
-            <span className="text-4xl font-bold">{formatPercent(extendedData.absenteeismReduction || 0)}</span>
+            <span className="text-4xl font-bold">{formatPercent(reportData.reducedStressPercentage || 0)}</span>
             <div className="text-sm text-muted-foreground mt-1">
-              Förväntad minskning av sjukfrånvaro
+              Förväntad minskning av hög stress
             </div>
             
             <div className="mt-4">
               <div className="text-sm flex justify-between">
-                <span>Nuvarande nivå:</span>
-                <span>{formatPercent(extendedData.currentAbsenteeism || 0)}</span>
+                <span>Nuvarande andel med hög stress:</span>
+                <span>{formatPercent(reportData.stressPercentage || 0)}</span>
               </div>
               <div className="text-sm flex justify-between">
                 <span>Målnivå:</span>
-                <span>{formatPercent((extendedData.currentAbsenteeism || 0) - (extendedData.absenteeismReduction || 0))}</span>
+                <span>{formatPercent(
+                  (reportData.stressPercentage || 0) - 
+                  ((reportData.stressPercentage || 0) * (reportData.reducedStressPercentage || 0) / 100)
+                )}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white border rounded-lg p-5">
+            <div className="pb-4 mb-4 border-b border-border">
+              <h3 className="font-medium flex items-center">
+                <DollarSign className="h-5 w-5 mr-2 text-amber-500" />
+                Max kostnad för break-even
+              </h3>
+            </div>
+            <span className="text-4xl font-bold">{formatCurrency(reportData.totalCostAlt2 || 0)}</span>
+            <div className="text-sm text-muted-foreground mt-1">
+              Maximal kostnad för lönsamhet
+            </div>
+            
+            <div className="mt-4">
+              <div className="text-sm flex justify-between">
+                <span>Baserat på stressminskning:</span>
+                <span>{formatPercent(reportData.reducedStressPercentageAlt2 || 0)}</span>
+              </div>
+              <div className="text-sm flex justify-between">
+                <span>Total kostnad för psykisk ohälsa:</span>
+                <span>{formatCurrency(reportData.totalMentalHealthCostAlt2 || 0)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white border rounded-lg p-5">
+            <div className="pb-4 mb-4 border-b border-border">
+              <h3 className="font-medium flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2 text-purple-500" />
+                Min. effekt för break-even
+              </h3>
+            </div>
+            <span className="text-4xl font-bold">{formatPercent(reportData.minEffectForBreakEvenAlt3 || 0)}</span>
+            <div className="text-sm text-muted-foreground mt-1">
+              Minsta stressminskning för lönsamhet
+            </div>
+            
+            <div className="mt-4">
+              <div className="text-sm flex justify-between">
+                <span>Total kostnad för insatsen:</span>
+                <span>{formatCurrency(reportData.totalCostAlt3 || 0)}</span>
+              </div>
+              <div className="text-sm flex justify-between">
+                <span>Total kostnad för psykisk ohälsa:</span>
+                <span>{formatCurrency(reportData.totalMentalHealthCostAlt3 || 0)}</span>
               </div>
             </div>
           </div>
@@ -326,226 +376,73 @@ export const NyckeltalsTab: React.FC<NyckeltalsTabProps> = ({ reportData }) => {
           <div className="bg-white border rounded-lg p-5">
             <div className="pb-4 mb-4 border-b border-border">
               <h3 className="font-medium flex items-center">
-                <Briefcase className="h-5 w-5 mr-2 text-amber-500" />
-                Produktivitetsökning
+                <DollarSign className="h-5 w-5 mr-2 text-red-500" />
+                Kostnader psykisk ohälsa
               </h3>
             </div>
-            <span className="text-4xl font-bold">{formatPercent(extendedData.productivityIncrease || 0)}</span>
+            <span className="text-4xl font-bold">{formatCurrency(reportData.totalMentalHealthCost || 0)}</span>
             <div className="text-sm text-muted-foreground mt-1">
-              Beräknad ökning av produktivitet
+              Total kostnad per år
             </div>
             
             <div className="mt-4">
-              <div className="text-sm flex justify-between">
-                <span>Ekonomiskt värde:</span>
+              <div className="text-sm flex justify-between mb-1">
+                <span>Kort sjukfrånvaro:</span>
                 <span>
-                  {formatCurrency(
-                    (extendedData.productivityIncrease || 0) * 
-                    (extendedData.averageSalary || 0) * 
-                    (extendedData.affectedEmployees || 0) / 100 // Dela med 100 eftersom productivityIncrease är i procent
-                  )}
+                  {formatCurrency(reportData.sickLeaveValue ? reportData.sickLeaveValue * 0.6 : 0)}
+                </span>
+              </div>
+              <div className="text-sm flex justify-between mb-1">
+                <span>Lång sjukfrånvaro:</span>
+                <span>
+                  {formatCurrency(reportData.sickLeaveValue ? reportData.sickLeaveValue * 0.4 : 0)}
                 </span>
               </div>
               <div className="text-sm flex justify-between">
-                <span>Beräkningsmodell:</span>
-                <span>Lönebesparing + Produktionsvärde</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          <div className="bg-white border rounded-lg p-5">
-            <h3 className="text-lg font-medium mb-4">Prognostiserad kostnad vs. avkastning över tid</h3>
-            
-            <div className="relative w-full h-64 bg-white border rounded-lg p-5">
-              <div className="absolute inset-x-0 bottom-0 top-10 flex items-end">
-                {/* Months */}
-                {Array.from({ length: 36 }, (_, i) => (
-                  <div 
-                    key={i} 
-                    className="h-full flex-1 flex flex-col justify-end items-center"
-                  >
-                    {/* Cost Bar */}
-                    <div 
-                      className="w-2 bg-red-500" 
-                      style={{ 
-                        height: `${i === 0 
-                          ? Math.min(80, (reportData.totalCost || 0) / 1000) 
-                          : 0}%` 
-                      }}
-                    ></div>
-                    
-                    {/* Benefit Bar */}
-                    <div 
-                      className="w-2 bg-green-500 mt-0.5" 
-                      style={{ 
-                        height: `${Math.min(80, ((reportData.totalBenefit || 0) / 36) * (i + 1) / 1000)}%` 
-                      }}
-                    ></div>
-                    
-                    {/* Month Label - only show every 6 months */}
-                    {(i + 1) % 6 === 0 && (
-                      <span className="text-xs text-muted-foreground absolute -bottom-6">
-                        {i + 1}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                
-                {/* Break-even line */}
-                {reportData.paybackPeriod && (
-                  <div 
-                    className="absolute border-t border-dashed border-amber-500" 
-                    style={{ 
-                      bottom: `${Math.min(80, (reportData.totalCost || 0) / 1000)}%`,
-                      left: 0,
-                      right: 0
-                    }}
-                  >
-                    <span className="absolute text-xs bg-card text-amber-600 -top-3 rounded px-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                      Break-even: {reportData.paybackPeriod} månader
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              {/* X-axis */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-border"></div>
-              
-              {/* Legend */}
-              <div className="absolute top-0 right-5 flex items-center space-x-4">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-500 mr-1"></div>
-                  <span className="text-xs text-muted-foreground">Kostnad</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 mr-1"></div>
-                  <span className="text-xs text-muted-foreground">Avkastning</span>
-                </div>
-              </div>
-              
-              {/* X-axis label */}
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground">
-                Månader
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground mb-1">3 månader</div>
-                <div className={`font-medium ${((reportData.totalBenefit || 0) / 4) > (reportData.totalCost || 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency(((reportData.totalBenefit || 0) / 4) - (reportData.totalCost || 0))}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground mb-1">12 månader</div>
-                <div className={`font-medium ${(reportData.totalBenefit || 0) > (reportData.totalCost || 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatCurrency((reportData.totalBenefit || 0) - (reportData.totalCost || 0))}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground mb-1">36 månader</div>
-                <div className="font-medium text-green-600 dark:text-green-400">
-                  {formatCurrency(((reportData.totalBenefit || 0) * 3) - (reportData.totalCost || 0))}
-                </div>
+                <span>Produktionsbortfall:</span>
+                <span>
+                  {formatCurrency(reportData.productionLossValue || 0)}
+                </span>
               </div>
             </div>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="bg-white border rounded-lg p-5">
-              <h3 className="text-lg font-medium mb-4">Kostnadsfördelning</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Externa kostnader</span>
-                    <span className="text-sm font-medium">{formatCurrency(extendedData.directCosts || 0)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div 
-                      className="bg-blue-500 h-2.5 rounded-full" 
-                      style={{ width: `${reportData.totalCost ? (extendedData.directCosts || 0) / reportData.totalCost * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Interna kostnader</span>
-                    <span className="text-sm font-medium">{formatCurrency(extendedData.indirectCosts || 0)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div 
-                      className="bg-purple-500 h-2.5 rounded-full" 
-                      style={{ width: `${reportData.totalCost ? (extendedData.indirectCosts || 0) / reportData.totalCost * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <hr className="my-4" />
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Totala kostnader</span>
-                    <span className="text-sm font-medium">{formatCurrency(reportData.totalCost || 0)}</span>
-                  </div>
-                </div>
-              </div>
+          <div className="bg-white border rounded-lg p-5">
+            <div className="pb-4 mb-4 border-b border-border">
+              <h3 className="font-medium flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2 text-emerald-500" />
+                Total besparing över 3 år
+              </h3>
+            </div>
+            <span className="text-4xl font-bold">
+              {formatCurrency(((reportData.totalBenefit || 0) * 3) - (reportData.totalCost || 0))}
+            </span>
+            <div className="text-sm text-muted-foreground mt-1">
+              Långsiktigt värde av insatsen
             </div>
             
-            <div className="bg-white border rounded-lg p-5">
-              <h3 className="text-lg font-medium mb-4">Avkastningsfördelning</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Minskad sjukfrånvaro</span>
-                    <span className="text-sm font-medium">{formatCurrency(extendedData.absenteeismSavings || 0)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div 
-                      className="bg-green-500 h-2.5 rounded-full" 
-                      style={{ width: `${reportData.totalBenefit ? (extendedData.absenteeismSavings || 0) / reportData.totalBenefit * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Ökad produktivitet</span>
-                    <span className="text-sm font-medium">{formatCurrency(extendedData.productivityBenefits || 0)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div 
-                      className="bg-amber-500 h-2.5 rounded-full" 
-                      style={{ width: `${reportData.totalBenefit ? (extendedData.productivityBenefits || 0) / reportData.totalBenefit * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Övriga fördelar</span>
-                    <span className="text-sm font-medium">{formatCurrency(extendedData.otherBenefits || 0)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div 
-                      className="bg-cyan-500 h-2.5 rounded-full" 
-                      style={{ width: `${reportData.totalBenefit ? (extendedData.otherBenefits || 0) / reportData.totalBenefit * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <hr className="my-4" />
-                
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Total avkastning (per år)</span>
-                    <span className="text-sm font-medium">{formatCurrency(reportData.totalBenefit || 0)}</span>
-                  </div>
-                </div>
+            <div className="mt-4">
+              <div className="text-sm flex justify-between mb-1">
+                <span>Total intäkt (3 år):</span>
+                <span>
+                  {formatCurrency((reportData.totalBenefit || 0) * 3)}
+                </span>
+              </div>
+              <div className="text-sm flex justify-between mb-1">
+                <span>Total kostnad:</span>
+                <span>
+                  {formatCurrency(reportData.totalCost || 0)}
+                </span>
+              </div>
+              <div className="text-sm flex justify-between">
+                <span>ROI över 3 år:</span>
+                <span>
+                  {formatPercent(
+                    reportData.totalCost && reportData.totalCost > 0
+                      ? (((reportData.totalBenefit || 0) * 3) - (reportData.totalCost || 0)) / (reportData.totalCost || 1) * 100
+                      : 0
+                  )}
+                </span>
               </div>
             </div>
           </div>

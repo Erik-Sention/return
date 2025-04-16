@@ -3,7 +3,7 @@ import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Calculator, Info, ArrowDown, ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
+import { saveFormData, loadFormData, setupFormAutosave, setupFormDataListener } from '@/lib/firebase/formData';
 import { formatCurrency, formatPercentage } from '@/lib/utils/format';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
@@ -11,6 +11,7 @@ import { FadeIn } from '@/components/ui/fade-in';
 // Interface för data från formulär C
 interface FormCData {
   totalCostMentalHealth: number;
+  percentHighStress?: number;
   [key: string]: unknown;
 }
 
@@ -278,6 +279,9 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const [transferMessage, setTransferMessage] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Lägg till state för att spåra aktuell stressnivå från FormC
+  const [currentStressLevel, setCurrentStressLevel] = useState<number | undefined>(undefined);
+  
   // Lägg till state för att spåra automatisk datahämtning
   const [autoFetchStatus, setAutoFetchStatus] = useState({
     hasFetched: false,
@@ -286,23 +290,13 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     costMentalHealthAlt2: false,     // J12: Total kostnad för psykisk ohälsa (alt 2)
     interventionCostAlt3: false,     // J15: Total kostnad för insatsen (alt 3)
     costMentalHealthAlt3: false,     // J16: Total kostnad för psykisk ohälsa (alt 3)
+    stressLevelFetched: false,       // Stressnivå hämtad från FormC
     errorMessage: null as string | null
   });
   
   const safeFormData = useMemo<FormJData>(() => {
     return calculateValues({ ...formData });
   }, [formData]);
-  
-  // Clear transferMessage after a timeout
-  useEffect(() => {
-    if (transferMessage) {
-      const timer = setTimeout(() => {
-        setTransferMessage(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [transferMessage]);
   
   // Formatera nummer med tusentalsavgränsare
   const formatNumber = (num: number | undefined): string => {
@@ -353,84 +347,102 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     });
   }, []);
   
-  // Ny useEffect för att automatiskt hämta data från Formulär C och G vid inladdning
+  // Add a new useEffect for the real-time Form C data listener
   useEffect(() => {
-    const autoFetchFromForms = async () => {
-      if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
-      
-      try {
-        console.log('Starting auto-fetch from Forms C and G');
-        
-        // Spara aktuell status för autoFetch
-        const currentStatus = { ...autoFetchStatus, hasFetched: true };
-        setAutoFetchStatus(currentStatus);
-        
-        // Hämta data från Form C (totalCostMentalHealth)
-        console.log('Fetching data from FormC...');
-        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
-        
-        console.log('Fetched FormC data:', formCData); // Debug log
-        
-        if (formCData) {
-          if (formCData.totalCostMentalHealth !== undefined && formCData.totalCostMentalHealth !== null) {
-            const roundedValue = Math.round(formCData.totalCostMentalHealth);
-            console.log('Using totalCostMentalHealth value from FormC:', roundedValue); // Debug log
-            
-            // Uppdatera alla fält som använder totalCostMentalHealth
-            // Vi säkerställer att vi alltid skickar ett nummer, aldrig undefined
-            handleChange('totalCostMentalHealthAlt1', roundedValue);
-            handleChange('totalCostMentalHealthAlt2', roundedValue);
-            handleChange('totalCostMentalHealthAlt3', roundedValue);
-            
-            currentStatus.costMentalHealthAlt1 = true;
-            currentStatus.costMentalHealthAlt2 = true;
-            currentStatus.costMentalHealthAlt3 = true;
-          } else {
-            console.warn('totalCostMentalHealth is undefined or null in FormC data:', formCData);
-          }
-        } else {
-          console.warn('No FormC data found');
-        }
-        
-        // Hämta data från Form G (totalInterventionCost)
-        console.log('Fetching data from FormG...');
-        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
-        
-        console.log('Fetched FormG data:', formGData); // Debug log
-        
-        if (formGData) {
-          if (formGData.totalInterventionCost !== undefined && formGData.totalInterventionCost !== null) {
-            const roundedValue = Math.round(formGData.totalInterventionCost);
-            console.log('Using totalInterventionCost value from FormG:', roundedValue); // Debug log
-            
-            // Uppdatera alla fält som använder totalInterventionCost
-            // Vi säkerställer att vi alltid skickar ett nummer, aldrig undefined
-            handleChange('totalInterventionCostAlt1', roundedValue);
-            handleChange('totalInterventionCostAlt3', roundedValue);
-            
-            currentStatus.interventionCostAlt1 = true;
-            currentStatus.interventionCostAlt3 = true;
-          } else {
-            console.warn('totalInterventionCost is undefined or null in FormG data:', formGData);
-          }
-        } else {
-          console.warn('No FormG data found');
-        }
-        
-        console.log('Auto-fetch completed, updating status');
-        setAutoFetchStatus(currentStatus);
-      } catch (error) {
-        console.error('Fel vid automatisk hämtning från formulär:', error);
-        setAutoFetchStatus(prev => ({ 
-          ...prev, 
-          hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från formulär 2 och 5.' 
-        }));
-      }
-    };
+    // Only set up the listener if the user is logged in
+    if (!currentUser?.uid) return;
     
-    autoFetchFromForms();
-  }, [currentUser, autoFetchStatus, handleChange]);
+    console.log('Setting up real-time listener for Form C data');
+    
+    // Set up the listener for Form C data
+    const unsubscribe = setupFormDataListener<FormCData>(
+      currentUser.uid,
+      'C',
+      (formCData) => {
+        if (!formCData) {
+          console.log('No Form C data received from real-time listener');
+          return;
+        }
+        
+        console.log('Received real-time Form C data update:', formCData);
+        
+        // Update totalCostMentalHealth fields if they exist in the data
+        if (formCData.totalCostMentalHealth !== undefined && formCData.totalCostMentalHealth !== null) {
+          const roundedValue = Math.round(formCData.totalCostMentalHealth);
+          console.log('Updating totalCostMentalHealth fields with new value:', roundedValue);
+          
+          handleChange('totalCostMentalHealthAlt1', roundedValue);
+          handleChange('totalCostMentalHealthAlt2', roundedValue);
+          handleChange('totalCostMentalHealthAlt3', roundedValue);
+          
+          // Update autoFetchStatus if it hasn't been set already
+          setAutoFetchStatus(prev => ({
+            ...prev,
+            costMentalHealthAlt1: true,
+            costMentalHealthAlt2: true,
+            costMentalHealthAlt3: true
+          }));
+        }
+        
+        // Update percentHighStress if it exists in the data
+        if (formCData.percentHighStress !== undefined && formCData.percentHighStress !== null) {
+          console.log('Updating stress level with new value:', formCData.percentHighStress);
+          setCurrentStressLevel(formCData.percentHighStress);
+          setAutoFetchStatus(prev => ({ ...prev, stressLevelFetched: true }));
+        }
+      }
+    );
+    
+    // Return cleanup function to remove the listener when component unmounts
+    return () => {
+      console.log('Cleaning up Form C data listener');
+      unsubscribe();
+    };
+  }, [currentUser, handleChange]); // Dependencies
+  
+  // Add a new useEffect for the real-time Form G data listener
+  useEffect(() => {
+    // Only set up the listener if the user is logged in
+    if (!currentUser?.uid) return;
+    
+    console.log('Setting up real-time listener for Form G data');
+    
+    // Set up the listener for Form G data
+    const unsubscribe = setupFormDataListener<FormGData>(
+      currentUser.uid,
+      'G',
+      (formGData) => {
+        if (!formGData) {
+          console.log('No Form G data received from real-time listener');
+          return;
+        }
+        
+        console.log('Received real-time Form G data update:', formGData);
+        
+        // Update totalInterventionCost fields if they exist in the data
+        if (formGData.totalInterventionCost !== undefined && formGData.totalInterventionCost !== null) {
+          const roundedValue = Math.round(formGData.totalInterventionCost);
+          console.log('Updating totalInterventionCost fields with new value:', roundedValue);
+          
+          handleChange('totalInterventionCostAlt1', roundedValue);
+          handleChange('totalInterventionCostAlt3', roundedValue);
+          
+          // Update autoFetchStatus if it hasn't been set already
+          setAutoFetchStatus(prev => ({
+            ...prev,
+            interventionCostAlt1: true,
+            interventionCostAlt3: true
+          }));
+        }
+      }
+    );
+    
+    // Return cleanup function to remove the listener when component unmounts
+    return () => {
+      console.log('Cleaning up Form G data listener');
+      unsubscribe();
+    };
+  }, [currentUser, handleChange]); // Dependencies
   
   // Ladda data från Firebase vid komponentladdning
   useEffect(() => {
@@ -450,15 +462,15 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     loadData();
   }, [currentUser]);
   
-  // Funktion för att hämta värden från andra formulär
-  const fetchValueFromForm = async (formType: string, targetField: keyof FormJData, setMessage: React.Dispatch<React.SetStateAction<string | null>>) => {
+  // Update the fetchValueFromForm function
+  const fetchValueFromForm = async (formType: string, targetField: keyof FormJData | 'stressLevel', setMessage: React.Dispatch<React.SetStateAction<string | null>>) => {
     if (!currentUser?.uid) {
-      setTransferMessage('Du måste vara inloggad för att hämta data');
+      setMessage('Du måste vara inloggad för att hämta data');
       return;
     }
 
     try {
-      setTransferMessage('Hämtar data...');
+      setMessage('Hämtar data...');
       
       if (formType === 'C') {
         console.log(`Manually fetching data from Form C into field ${String(targetField)}`);
@@ -466,13 +478,24 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         console.log('Fetched FormC data in manual fetch:', data); // Debug log
         
         if (data) {
-          if (data.totalCostMentalHealth !== undefined && data.totalCostMentalHealth !== null) {
+          if (targetField === 'stressLevel') {
+            // Hämta stressnivå (percentHighStress)
+            if (data.percentHighStress !== undefined && data.percentHighStress !== null) {
+              console.log('Using percentHighStress in manual fetch:', data.percentHighStress);
+              setCurrentStressLevel(data.percentHighStress);
+              setAutoFetchStatus(prev => ({ ...prev, stressLevelFetched: true }));
+              setMessage(`Stressnivå hämtad från Formulär 2: ${data.percentHighStress}%`);
+            } else {
+              console.warn('percentHighStress is undefined or null in FormC data:', data);
+              setMessage(`Inget värde för "Andel av personalen med hög stressnivå" hittades i Formulär 2.`);
+            }
+          } else if (data.totalCostMentalHealth !== undefined && data.totalCostMentalHealth !== null) {
             // Avrunda värdet till heltal för att undvika decimalproblem
             const roundedValue = Math.round(data.totalCostMentalHealth);
             console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
             
             // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
-            handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
+            handleChange(targetField as keyof FormJData, roundedValue as FormJData[keyof FormJData]);
             setMessage(`Värde hämtat från Formulär 2: ${roundedValue.toLocaleString('sv-SE')} kr`);
           } else {
             console.warn('totalCostMentalHealth is undefined or null in FormC data:', data);
@@ -494,7 +517,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
             console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
             
             // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
-            handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
+            handleChange(targetField as keyof FormJData, roundedValue as FormJData[keyof FormJData]);
             setMessage(`Värde hämtat från Formulär 5: ${roundedValue.toLocaleString('sv-SE')} kr`);
           } else {
             console.warn('totalInterventionCost is undefined or null in FormG data:', data);
@@ -695,6 +718,151 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     </div>
   );
   
+  // Skapa en ny komponent för att visa förklaringen av stress-beräkningen
+  const StressReductionExplanation = ({ 
+    currentStressLevel, 
+    reducedStressPercentage,
+    onNavigateToFormC
+  }: { 
+    currentStressLevel: number | undefined;
+    reducedStressPercentage: number | undefined;
+    onNavigateToFormC: () => void;
+  }) => {
+    // Om vi inte har tillgång till antingen aktuell stressnivå eller reduktionsgrad, visa inget
+    if (!currentStressLevel || !reducedStressPercentage) {
+      return null;
+    }
+    
+    // Beräkna procentenheterna som stressnivån kommer att minska med
+    const stressReductionInPercentagePoints = (currentStressLevel * reducedStressPercentage) / 100;
+    
+    // Beräkna den nya stressnivån efter insatsen
+    const newStressLevel = currentStressLevel - stressReductionInPercentagePoints;
+    
+    return (
+      <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+        <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Stressreducering - förklaring:</p>
+        <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1">
+          <li className="flex items-center justify-between">
+            <span>Aktuell andel av personal med hög stressnivå: {formatPercentage(currentStressLevel)}</span>
+            <button 
+              onClick={onNavigateToFormC} 
+              className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-800/50 dark:hover:bg-blue-700/50 dark:text-blue-200 rounded px-2 py-0.5 ml-2 transition-colors"
+            >
+              Justera
+            </button>
+          </li>
+          <li>Minskad andel av personal med hög stressnivå: {formatPercentage(reducedStressPercentage)}</li>
+          <li>Beräknad reducering andel av personal med hög stressnivå: {formatPercentage(currentStressLevel)} × {formatPercentage(reducedStressPercentage)} = {formatPercentage(stressReductionInPercentagePoints)} procentenheter</li>
+          <li>Förväntad ny andel av personal med hög stressnivå: {formatPercentage(currentStressLevel)} − {formatPercentage(stressReductionInPercentagePoints)} = {formatPercentage(newStressLevel)}</li>
+        </ul>
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 italic">
+          Detta betyder att {formatPercentage(reducedStressPercentage)} av de {formatPercentage(currentStressLevel)} som har hög stress kommer att få lägre stressnivå.
+        </p>
+      </div>
+    );
+  };
+  
+  // Add a new useEffect for initial data loading from Form C and G
+  useEffect(() => {
+    const initialDataLoading = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        console.log('Loading initial data from Forms C and G');
+        
+        // Prepare status object
+        const status = { ...autoFetchStatus, hasFetched: true };
+        
+        // Load data from Form C
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+        console.log('Initial FormC data:', formCData);
+        
+        if (formCData) {
+          // Handle totalCostMentalHealth
+          if (formCData.totalCostMentalHealth !== undefined && formCData.totalCostMentalHealth !== null) {
+            const roundedValue = Math.round(formCData.totalCostMentalHealth);
+            console.log('Using initial totalCostMentalHealth value:', roundedValue);
+            
+            handleChange('totalCostMentalHealthAlt1', roundedValue);
+            handleChange('totalCostMentalHealthAlt2', roundedValue);
+            handleChange('totalCostMentalHealthAlt3', roundedValue);
+            
+            status.costMentalHealthAlt1 = true;
+            status.costMentalHealthAlt2 = true;
+            status.costMentalHealthAlt3 = true;
+          }
+          
+          // Handle percentHighStress
+          if (formCData.percentHighStress !== undefined && formCData.percentHighStress !== null) {
+            console.log('Found initial percentHighStress:', formCData.percentHighStress);
+            setCurrentStressLevel(formCData.percentHighStress);
+            status.stressLevelFetched = true;
+          }
+        }
+        
+        // Load data from Form G
+        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+        console.log('Initial FormG data:', formGData);
+        
+        if (formGData) {
+          // Handle totalInterventionCost
+          if (formGData.totalInterventionCost !== undefined && formGData.totalInterventionCost !== null) {
+            const roundedValue = Math.round(formGData.totalInterventionCost);
+            console.log('Using initial totalInterventionCost value:', roundedValue);
+            
+            handleChange('totalInterventionCostAlt1', roundedValue);
+            handleChange('totalInterventionCostAlt3', roundedValue);
+            
+            status.interventionCostAlt1 = true;
+            status.interventionCostAlt3 = true;
+          }
+        }
+        
+        // Update status
+        setAutoFetchStatus(status);
+      } catch (error) {
+        console.error('Error loading initial data from forms:', error);
+        setAutoFetchStatus(prev => ({
+          ...prev,
+          hasFetched: true,
+          errorMessage: 'Kunde inte ladda initial data från formulär 2 och 5.'
+        }));
+      }
+    };
+    
+    // Only run initial loading if we haven't fetched data yet
+    if (!autoFetchStatus.hasFetched) {
+      initialDataLoading();
+    }
+  }, [currentUser, autoFetchStatus.hasFetched, handleChange, autoFetchStatus]);
+  
+  // Add back the missing useEffect for transferMessage
+  // Clear transferMessage after a timeout
+  useEffect(() => {
+    if (transferMessage) {
+      const timer = setTimeout(() => {
+        setTransferMessage(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [transferMessage]);
+  
+  // Add back the stress level fetch message state
+  const [stressLevelFetchMessage, setStressLevelFetchMessage] = useState<string | null>(null);
+
+  // Add back the useEffect to clear stressLevelFetchMessage
+  useEffect(() => {
+    if (stressLevelFetchMessage) {
+      const timer = setTimeout(() => {
+        setStressLevelFetchMessage(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [stressLevelFetchMessage]);
+  
   // Huvudinnehåll
   return (
     <div className="space-y-6">
@@ -824,6 +992,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Minskad andel av personal med hög stressnivå</label>
+                  <InfoLabel text="Ange den procentuella minskningen av personal med hög stress." />
                   <div className="flex items-center gap-2">
                     <FormattedNumberInput
                       value={safeFormData.reducedStressPercentageAlt1}
@@ -836,6 +1005,23 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                   </div>
                   {validationWarnings.reducedStressPercentageAlt1 && (
                     <p className="text-amber-500 text-xs mt-1">{validationWarnings.reducedStressPercentageAlt1}</p>
+                  )}
+                  {/* Lägg till förklaringskomponenten */}
+                  {autoFetchStatus.stressLevelFetched ? (
+                    <StressReductionExplanation 
+                      currentStressLevel={currentStressLevel} 
+                      reducedStressPercentage={safeFormData.reducedStressPercentageAlt1}
+                      onNavigateToFormC={() => navigateToForm('C')} 
+                    />
+                  ) : (
+                    <div className="mt-2">
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('C', 'stressLevel', setStressLevelFetchMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="C"
+                        message={stressLevelFetchMessage}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
@@ -943,6 +1129,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Minskad andel av personal med hög stressnivå</label>
+                  <InfoLabel text="Ange den procentuella minskningen av personal med hög stress. Till exempel 20% betyder att 20% av de med hög stress får lägre stressnivå efter insatsen." />
                   <div className="flex items-center gap-2">
                     <FormattedNumberInput
                       value={safeFormData.reducedStressPercentageAlt2}
@@ -955,6 +1142,23 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                   </div>
                   {validationWarnings.reducedStressPercentageAlt2 && (
                     <p className="text-amber-500 text-xs mt-1">{validationWarnings.reducedStressPercentageAlt2}</p>
+                  )}
+                  {/* Lägg till förklaringskomponenten även här */}
+                  {autoFetchStatus.stressLevelFetched ? (
+                    <StressReductionExplanation 
+                      currentStressLevel={currentStressLevel} 
+                      reducedStressPercentage={safeFormData.reducedStressPercentageAlt2}
+                      onNavigateToFormC={() => navigateToForm('C')} 
+                    />
+                  ) : (
+                    <div className="mt-2">
+                      <FetchValueButton 
+                        onClick={() => fetchValueFromForm('C', 'stressLevel', setStressLevelFetchMessage)}
+                        disabled={!currentUser?.uid}
+                        formName="C"
+                        message={stressLevelFetchMessage}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
