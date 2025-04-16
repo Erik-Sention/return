@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { loadROIReportData, ROIReportData } from '@/lib/reports/reportUtils';
+import { loadROIReportData, loadROIReportDataForProject, ROIReportData } from '@/lib/reports/reportUtils';
 import { printToPdf } from '@/lib/reports/pdfExport';
 import { ReportContext } from './components/ReportContext';
+import { getProject } from '@/lib/project/projectApi';
 
 export default function DetaljeradRapportLayout({
   children,
@@ -22,8 +23,28 @@ export default function DetaljeradRapportLayout({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [projectName, setProjectName] = useState<string>('');
   
   const activeTab = pathname ? pathname.split('/').pop() || 'nulage' : 'nulage';
+  const projectId = searchParams?.get('projectId');
+  
+  // Helper function to create properly formatted links with projectId if it exists
+  const getTabLink = useCallback((tabName: string) => {
+    return projectId 
+      ? `/rapporter/detaljerad/${tabName}?projectId=${projectId}`
+      : `/rapporter/detaljerad/${tabName}`;
+  }, [projectId]);
+  
+  // Helper function to check if a tab is active
+  const isTabActive = useCallback((tabName: string) => {
+    return activeTab === tabName;
+  }, [activeTab]);
+  
+  // För debugging
+  useEffect(() => {
+    console.log('DetaljeradRapportLayout - projectId:', projectId);
+  }, [projectId]);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +55,26 @@ export default function DetaljeradRapportLayout({
     }
   }, [currentUser, loading, router]);
 
+  // Hämta projektnamn om projektId finns
+  useEffect(() => {
+    const fetchProjectName = async () => {
+      if (projectId && currentUser) {
+        try {
+          const project = await getProject(currentUser.uid, projectId);
+          if (project) {
+            setProjectName(project.name);
+          }
+        } catch (error) {
+          console.error('Fel vid hämtning av projektinformation:', error);
+        }
+      }
+    };
+    
+    if (mounted && currentUser) {
+      fetchProjectName();
+    }
+  }, [currentUser, mounted, projectId]);
+
   // Ladda rapportdata när användaren är inloggad
   useEffect(() => {
     const fetchReportData = async () => {
@@ -43,7 +84,20 @@ export default function DetaljeradRapportLayout({
         setIsLoading(true);
         setError(null);
         
-        const data = await loadROIReportData(currentUser.uid);
+        let data;
+        console.log('Laddar rapportdata - projectId:', projectId);
+        
+        if (projectId) {
+          // Ladda projektspecifik data om projektId finns
+          console.log('Laddar projektspecifik data för projektId:', projectId);
+          data = await loadROIReportDataForProject(currentUser.uid, projectId);
+        } else {
+          // Ladda standarddata om inget projektId
+          console.log('Laddar standarddata (ingen projektId)');
+          data = await loadROIReportData(currentUser.uid);
+        }
+        
+        console.log('Rapportdata laddad:', data ? 'Success' : 'Null');
         setReportData(data);
         
         if (!data) {
@@ -60,7 +114,7 @@ export default function DetaljeradRapportLayout({
     if (mounted && currentUser) {
       fetchReportData();
     }
-  }, [currentUser, mounted]);
+  }, [currentUser, mounted, projectId]);
 
   // Funktion för att hantera PDF-export
   const handleExportPdf = () => {
@@ -92,7 +146,7 @@ export default function DetaljeradRapportLayout({
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -111,7 +165,7 @@ export default function DetaljeradRapportLayout({
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -123,7 +177,7 @@ export default function DetaljeradRapportLayout({
           <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
           <p className="text-gray-600 dark:text-gray-400">Fyll i ROI-formulären för att generera en rapport.</p>
           <div className="mt-6">
-            <Link href="/roi">
+            <Link href={projectId ? `/roi?projectId=${projectId}` : "/roi"}>
               <Button>Gå till ROI-formulären</Button>
             </Link>
           </div>
@@ -137,7 +191,7 @@ export default function DetaljeradRapportLayout({
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -150,7 +204,7 @@ export default function DetaljeradRapportLayout({
             Du behöver fylla i ROI-formulären för att se en detaljerad rapport.
           </p>
           <div className="mt-6">
-            <Link href="/roi">
+            <Link href={projectId ? `/roi?projectId=${projectId}` : "/roi"}>
               <Button>Gå till ROI-formulären</Button>
             </Link>
           </div>
@@ -164,7 +218,7 @@ export default function DetaljeradRapportLayout({
       <div className="container py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <Link href="/rapporter">
+            <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
               <Button variant="ghost" className="gap-2 mb-2">
                 <ArrowLeft className="h-4 w-4" />
                 Tillbaka till rapporter
@@ -174,7 +228,11 @@ export default function DetaljeradRapportLayout({
               <>
                 <h1 className="text-3xl font-bold">Detaljerad forskningsbaserad rapport</h1>
                 <p className="text-muted-foreground mt-1">
-                  Djupgående analys av ROI för {reportData.sharedFields?.organizationName || 'din organisation'}
+                  {projectId ? (
+                    `Djupgående analys för projektet: ${projectName}`
+                  ) : (
+                    `Djupgående analys av ROI för ${reportData.sharedFields?.organizationName || 'din organisation'}`
+                  )}
                 </p>
               </>
             )}
@@ -189,53 +247,53 @@ export default function DetaljeradRapportLayout({
         
         <div className="mb-8 border-b border-border">
           <nav className="flex overflow-x-auto">
-            <Link href="/rapporter/detaljerad/nulage">
-              <Button variant={activeTab === 'nulage' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('nulage')}>
+              <Button variant={isTabActive('nulage') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Nuläge
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/orsak">
-              <Button variant={activeTab === 'orsak' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('orsak')}>
+              <Button variant={isTabActive('orsak') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Orsaksanalys
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/syfte">
-              <Button variant={activeTab === 'syfte' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('syfte')}>
+              <Button variant={isTabActive('syfte') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Syfte med insatserna
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/mal">
-              <Button variant={activeTab === 'mal' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('mal')}>
+              <Button variant={isTabActive('mal') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Målsättning
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/malgrupp">
-              <Button variant={activeTab === 'malgrupp' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('malgrupp')}>
+              <Button variant={isTabActive('malgrupp') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Målgrupp
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/intervention">
-              <Button variant={activeTab === 'intervention' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('intervention')}>
+              <Button variant={isTabActive('intervention') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Intervention
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/plan">
-              <Button variant={activeTab === 'plan' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('plan')}>
+              <Button variant={isTabActive('plan') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Genomförandeplan
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/rekommendation">
-              <Button variant={activeTab === 'rekommendation' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('rekommendation')}>
+              <Button variant={isTabActive('rekommendation') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Rekommendation
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/nyckeltal">
-              <Button variant={activeTab === 'nyckeltal' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
+            <Link href={getTabLink('nyckeltal')}>
+              <Button variant={isTabActive('nyckeltal') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4">
                 Nyckeltal
               </Button>
             </Link>
-            <Link href="/rapporter/detaljerad/aggregerad">
-              <Button variant={activeTab === 'aggregerad' ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4 ml-4 bg-primary/10">
+            <Link href={getTabLink('aggregerad')}>
+              <Button variant={isTabActive('aggregerad') ? 'default' : 'ghost'} className="rounded-none border-b-2 border-transparent px-4 ml-4 bg-primary/10">
                 Komplett rapport
               </Button>
             </Link>

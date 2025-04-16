@@ -4,6 +4,7 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { FadeIn } from '@/components/ui/fade-in';
 import { ReportContext } from './ReportContext';
 import { ROIReportData } from '@/lib/reports/reportUtils';
+import { useSearchParams } from 'next/navigation';
 
 interface TabContentProps {
   children: (reportData: ROIReportData) => React.ReactNode;
@@ -14,6 +15,17 @@ export function TabContent({ children }: TabContentProps) {
   const [isVisible, setIsVisible] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const projectId = searchParams?.get('projectId');
+  
+  // Logga när denna komponent renderas och dess reportData
+  useEffect(() => {
+    console.log('TabContent rendererad', { 
+      hasReportData: !!reportData, 
+      isLoading, 
+      projectId
+    });
+  }, [reportData, isLoading, projectId]);
   
   // Mät innehållets höjd för att undvika layout-skift
   useEffect(() => {

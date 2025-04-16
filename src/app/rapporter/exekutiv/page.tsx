@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChartCard } from '@/components/ui/chart-card';
 import { StatItem } from '@/components/ui/stat-item';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
-import { loadROIReportData, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
+import { loadROIReportData, loadROIReportDataForProject, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { printToPdf } from '@/lib/reports/pdfExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
+import { getProject } from '@/lib/project/projectApi';
 
 // Hjälpfunktion för att generera slutsats
 function generateConclusion(data: ROIReportData | null): string {
@@ -89,6 +90,7 @@ export default function ExekutivSammanfattningPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<string>("roi");
   const [formDData, setFormDData] = useState<{
     organizationName?: string;
@@ -96,6 +98,9 @@ export default function ExekutivSammanfattningPage() {
     startDate?: string;
     endDate?: string;
   } | null>(null);
+  const [projectName, setProjectName] = useState<string>('');
+  
+  const projectId = searchParams?.get('projectId');
 
   useEffect(() => {
     setMounted(true);
@@ -106,6 +111,26 @@ export default function ExekutivSammanfattningPage() {
     }
   }, [currentUser, loading, router]);
 
+  // Hämta projektnamn om projektId finns
+  useEffect(() => {
+    const fetchProjectName = async () => {
+      if (projectId && currentUser) {
+        try {
+          const project = await getProject(currentUser.uid, projectId);
+          if (project) {
+            setProjectName(project.name);
+          }
+        } catch (error) {
+          console.error('Fel vid hämtning av projektinformation:', error);
+        }
+      }
+    };
+    
+    if (mounted && currentUser) {
+      fetchProjectName();
+    }
+  }, [currentUser, mounted, projectId]);
+
   // Ladda rapportdata när användaren är inloggad
   useEffect(() => {
     const fetchReportData = async () => {
@@ -115,7 +140,15 @@ export default function ExekutivSammanfattningPage() {
         setIsLoading(true);
         setError(null);
         
-        const data = await loadROIReportData(currentUser.uid);
+        let data;
+        if (projectId) {
+          // Ladda projektspecifik data om projektId finns
+          data = await loadROIReportDataForProject(currentUser.uid, projectId);
+        } else {
+          // Ladda standarddata om inget projektId
+          data = await loadROIReportData(currentUser.uid);
+        }
+        
         setReportData(data);
         
         if (!data) {
@@ -132,7 +165,7 @@ export default function ExekutivSammanfattningPage() {
     if (mounted && currentUser) {
       fetchReportData();
     }
-  }, [currentUser, mounted]);
+  }, [currentUser, mounted, projectId]);
   
   // Ladda FormD-data separat för att säkerställa att vi alltid har senaste informationen
   useEffect(() => {
@@ -141,7 +174,10 @@ export default function ExekutivSammanfattningPage() {
       
       try {
         const dbRef = ref(database);
-        const formDPath = `users/${currentUser.uid}/forms/D`;
+        // Använd projektFormD om det finns, annars använd standardformulär
+        const formDPath = projectId 
+          ? `users/${currentUser.uid}/projectForms/${projectId}/D`
+          : `users/${currentUser.uid}/forms/D`;
         const formDSnapshot = await get(child(dbRef, formDPath));
         
         if (formDSnapshot.exists()) {
@@ -162,7 +198,7 @@ export default function ExekutivSammanfattningPage() {
     if (mounted && currentUser) {
       fetchFormDData();
     }
-  }, [currentUser, mounted]);
+  }, [currentUser, mounted, projectId]);
 
   // Funktion för att hantera PDF-export
   const handleExportPdf = async () => {
@@ -201,9 +237,14 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
   // Hjälpfunktion för att kombinera data från FormD och reportData
   const getOrganizationInfo = () => {
     // Om vi har data från FormD, använd den först
-    const organizationName = formDData?.organizationName || 
-                           reportData?.sharedFields?.organizationName || 
-                           'Organisationsnamn saknas';
+    let organizationName = formDData?.organizationName || 
+                         reportData?.sharedFields?.organizationName || 
+                         'Organisationsnamn saknas';
+    
+    // Om det är ett projekt, använd projektnamn
+    if (projectId && projectName) {
+      organizationName = projectName;
+    }
     
     const contactPerson = formDData?.contactPerson || 
                          reportData?.sharedFields?.contactPerson || 
@@ -236,7 +277,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -255,7 +296,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -267,7 +308,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
           <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
           <p className="text-gray-600 dark:text-gray-400">Fyll i ROI-formulären för att generera en rapport.</p>
           <div className="mt-6">
-            <Link href="/roi">
+            <Link href={projectId ? `/roi?projectId=${projectId}` : "/roi"}>
               <Button>Gå till ROI-formulären</Button>
             </Link>
           </div>
@@ -281,7 +322,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-4">
-          <Link href="/rapporter">
+          <Link href={projectId ? `/rapporter?projectId=${projectId}` : "/rapporter"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Tillbaka till rapporter
@@ -294,7 +335,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
             Du behöver fylla i ROI-formulären för att se en exekutiv sammanfattning.
           </p>
           <div className="mt-6">
-            <Link href="/roi">
+            <Link href={projectId ? `/roi?projectId=${projectId}` : "/roi"}>
               <Button>Gå till ROI-formulären</Button>
             </Link>
           </div>
@@ -307,7 +348,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
     <div className="container py-8">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-2">
-          <Button onClick={() => router.push('/rapporter')} variant="outline" size="sm" className="gap-1">
+          <Button onClick={() => router.push(projectId ? `/rapporter?projectId=${projectId}` : '/rapporter')} variant="outline" size="sm" className="gap-1">
             <ChevronLeft className="h-4 w-4" />
             Tillbaka till rapporter
           </Button>

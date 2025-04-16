@@ -1,20 +1,32 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FadeIn } from '@/components/ui/fade-in';
 
 export default function DetaljeradRapportIndexPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectId = searchParams?.get('projectId');
+  
+  // Logga projektId för debugging
+  console.log('DetaljeradRapportIndexPage - projectId:', projectId);
 
   useEffect(() => {
     // Kort fördröjning för att visa fade-in-effekt innan redirect
     const timer = setTimeout(() => {
-      router.push('/rapporter/detaljerad/nulage');
+      const redirectPath = projectId 
+        ? `/rapporter/detaljerad/nulage?projectId=${projectId}`
+        : '/rapporter/detaljerad/nulage';
+      
+      console.log('Omdirigerar till:', redirectPath);
+      
+      // Använd replace istället för push för att ersätta historieposten
+      router.replace(redirectPath);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, projectId]);
 
   return (
     <FadeIn show={true} duration={300} delay={0}>
