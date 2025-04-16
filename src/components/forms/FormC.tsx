@@ -355,7 +355,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave || 0) * (formData.percentLongSickLeaveMentalHealth || 0)) / 100;
   
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
-    const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
+    const totalCostMentalHealth = Number(valueProductionLoss + totalCostSickLeaveMentalHealth);
     
     console.log('FormC calculated values:', {
       valueProductionLoss,
@@ -441,7 +441,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     const preparedData = { ...data };
     
     // Säkerställ att totalCostMentalHealth aldrig är undefined innan vi sparar
-    if (typeof preparedData.totalCostMentalHealth === 'undefined') {
+    // Och kontrollera att det är ett numeriskt värde
+    if (typeof preparedData.totalCostMentalHealth === 'undefined' || preparedData.totalCostMentalHealth === null) {
       preparedData.totalCostMentalHealth = 0;
     }
     

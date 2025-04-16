@@ -168,30 +168,37 @@ const calculateValues = (data: FormJData): FormJData => {
   // Säkerställ att vi har ett giltigt objekt
   const updatedData = { ...data };
   
+  // Konvertera null till 0 för alla numeriska värden som används i beräkningar
+  const getValue = (field: keyof FormJData): number => {
+    const value = updatedData[field];
+    if (value === undefined || value === null) return 0;
+    return typeof value === 'number' ? value : 0;
+  };
+  
   // Beräkningsalternativ 1
   updatedData.economicBenefitAlt1 = 
-    (updatedData.totalCostMentalHealthAlt1 || 0) * 
-    ((updatedData.reducedStressPercentageAlt1 || 0) / 100);
+    getValue('totalCostMentalHealthAlt1') * 
+    (getValue('reducedStressPercentageAlt1') / 100);
   
   updatedData.economicSurplusAlt1 = 
     updatedData.economicBenefitAlt1 - 
-    (updatedData.totalInterventionCostAlt1 || 0);
+    getValue('totalInterventionCostAlt1');
   
   updatedData.roiPercentageAlt1 = 
-    (updatedData.totalInterventionCostAlt1 || 0) === 0 
+    getValue('totalInterventionCostAlt1') === 0 
       ? 0 
-      : (updatedData.economicSurplusAlt1 / (updatedData.totalInterventionCostAlt1 || 1)) * 100;
+      : (updatedData.economicSurplusAlt1 / getValue('totalInterventionCostAlt1')) * 100;
   
   // Beräkningsalternativ 2
   updatedData.maxInterventionCostAlt2 = 
-    (updatedData.totalCostMentalHealthAlt2 || 0) * 
-    ((updatedData.reducedStressPercentageAlt2 || 0) / 100);
+    getValue('totalCostMentalHealthAlt2') * 
+    (getValue('reducedStressPercentageAlt2') / 100);
   
   // Beräkningsalternativ 3
   updatedData.minEffectForBreakEvenAlt3 = 
-    (updatedData.totalCostMentalHealthAlt3 || 0) === 0 
+    getValue('totalCostMentalHealthAlt3') === 0 
       ? 0 
-      : ((updatedData.totalInterventionCostAlt3 || 0) / (updatedData.totalCostMentalHealthAlt3 || 1)) * 100;
+      : (getValue('totalInterventionCostAlt3') / getValue('totalCostMentalHealthAlt3')) * 100;
   
   return updatedData;
 };
@@ -199,26 +206,47 @@ const calculateValues = (data: FormJData): FormJData => {
 // Uppdatera prepareDataForSave-funktionen med specifika typer
 const prepareDataForSave = (data: FormJData): Record<string, unknown> => {
   // Skapa ett objekt med väldefinierade typer
-  const cleanedData: Record<string, unknown> = {
-    organizationName: data.organizationName || '',
-    contactPerson: data.contactPerson || '',
-    
-    totalCostMentalHealthAlt1: data.totalCostMentalHealthAlt1,
-    reducedStressPercentageAlt1: data.reducedStressPercentageAlt1,
-    economicBenefitAlt1: data.economicBenefitAlt1 || 0,
-    totalInterventionCostAlt1: data.totalInterventionCostAlt1,
-    economicSurplusAlt1: data.economicSurplusAlt1 || 0,
-    roiPercentageAlt1: data.roiPercentageAlt1 || 0,
-    
-    totalCostMentalHealthAlt2: data.totalCostMentalHealthAlt2,
-    reducedStressPercentageAlt2: data.reducedStressPercentageAlt2,
-    maxInterventionCostAlt2: data.maxInterventionCostAlt2 || 0,
-    
-    totalInterventionCostAlt3: data.totalInterventionCostAlt3,
-    totalCostMentalHealthAlt3: data.totalCostMentalHealthAlt3,
-    minEffectForBreakEvenAlt3: data.minEffectForBreakEvenAlt3 || 0
-  };
+  const cleanedData: Record<string, unknown> = {};
   
+  // Konvertera explicit alla undefineds till null eller defaultvärden
+  Object.keys(data).forEach(key => {
+    const typedKey = key as keyof FormJData;
+    const value = data[typedKey];
+    
+    if (value === undefined) {
+      // För numeriska fält, använd 0 istället för null
+      if (
+        typedKey === 'economicBenefitAlt1' || 
+        typedKey === 'economicSurplusAlt1' || 
+        typedKey === 'roiPercentageAlt1' ||
+        typedKey === 'maxInterventionCostAlt2' ||
+        typedKey === 'minEffectForBreakEvenAlt3'
+      ) {
+        cleanedData[key] = 0;
+      } 
+      // För string-fält använd tom sträng
+      else if (
+        typedKey === 'organizationName' || 
+        typedKey === 'contactPerson'
+      ) {
+        cleanedData[key] = '';
+      }
+      // För övriga fält (inputfält som kan vara undefined), använd null
+      else {
+        cleanedData[key] = null;
+      }
+    } 
+    // Om värdet är null, behåll det som null
+    else if (value === null) {
+      cleanedData[key] = null;
+    }
+    // Annars använd värdet som det är
+    else {
+      cleanedData[key] = value;
+    }
+  });
+  
+  console.log('Data prepared for save:', cleanedData);
   return cleanedData;
 };
 
@@ -293,8 +321,34 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   
   // Hantera ändringar i formuläret
   const handleChange = useCallback(<K extends keyof FormJData>(field: K, value: FormJData[K]) => {
+    console.log(`Changing field "${String(field)}" to value:`, value);
+    
+    // Säkerställ att numeriska inputfält med undefined blir null (inte undefined)
+    let safeValue = value;
+    if (value === undefined) {
+      if (
+        field === 'economicBenefitAlt1' || 
+        field === 'economicSurplusAlt1' || 
+        field === 'roiPercentageAlt1' ||
+        field === 'maxInterventionCostAlt2' ||
+        field === 'minEffectForBreakEvenAlt3'
+      ) {
+        safeValue = 0 as unknown as FormJData[K];
+      } else if (
+        field === 'totalCostMentalHealthAlt1' ||
+        field === 'reducedStressPercentageAlt1' ||
+        field === 'totalInterventionCostAlt1' ||
+        field === 'totalCostMentalHealthAlt2' ||
+        field === 'reducedStressPercentageAlt2' ||
+        field === 'totalInterventionCostAlt3' ||
+        field === 'totalCostMentalHealthAlt3'
+      ) {
+        safeValue = null as unknown as FormJData[K];
+      }
+    }
+    
     setFormData(prev => {
-      const updatedData = { ...prev, [field]: value };
+      const updatedData = { ...prev, [field]: safeValue };
       return calculateValues(updatedData);
     });
   }, []);
@@ -305,45 +359,65 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
       
       try {
+        console.log('Starting auto-fetch from Forms C and G');
+        
         // Spara aktuell status för autoFetch
         const currentStatus = { ...autoFetchStatus, hasFetched: true };
         setAutoFetchStatus(currentStatus);
         
         // Hämta data från Form C (totalCostMentalHealth)
+        console.log('Fetching data from FormC...');
         const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
         
         console.log('Fetched FormC data:', formCData); // Debug log
         
-        if (formCData && typeof formCData.totalCostMentalHealth === 'number') {
-          const roundedValue = Math.round(formCData.totalCostMentalHealth);
-          console.log('Using value from FormC:', roundedValue); // Debug log
-          
-          // Uppdatera alla fält som använder totalCostMentalHealth
-          handleChange('totalCostMentalHealthAlt1', roundedValue);
-          handleChange('totalCostMentalHealthAlt2', roundedValue);
-          handleChange('totalCostMentalHealthAlt3', roundedValue);
-          
-          currentStatus.costMentalHealthAlt1 = true;
-          currentStatus.costMentalHealthAlt2 = true;
-          currentStatus.costMentalHealthAlt3 = true;
+        if (formCData) {
+          if (formCData.totalCostMentalHealth !== undefined && formCData.totalCostMentalHealth !== null) {
+            const roundedValue = Math.round(formCData.totalCostMentalHealth);
+            console.log('Using totalCostMentalHealth value from FormC:', roundedValue); // Debug log
+            
+            // Uppdatera alla fält som använder totalCostMentalHealth
+            // Vi säkerställer att vi alltid skickar ett nummer, aldrig undefined
+            handleChange('totalCostMentalHealthAlt1', roundedValue);
+            handleChange('totalCostMentalHealthAlt2', roundedValue);
+            handleChange('totalCostMentalHealthAlt3', roundedValue);
+            
+            currentStatus.costMentalHealthAlt1 = true;
+            currentStatus.costMentalHealthAlt2 = true;
+            currentStatus.costMentalHealthAlt3 = true;
+          } else {
+            console.warn('totalCostMentalHealth is undefined or null in FormC data:', formCData);
+          }
         } else {
-          console.warn('No totalCostMentalHealth value found in FormC data:', formCData);
+          console.warn('No FormC data found');
         }
         
         // Hämta data från Form G (totalInterventionCost)
+        console.log('Fetching data from FormG...');
         const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
         
-        if (formGData && formGData.totalInterventionCost !== undefined) {
-          const roundedValue = Math.round(formGData.totalInterventionCost);
-          
-          // Uppdatera alla fält som använder totalInterventionCost
-          handleChange('totalInterventionCostAlt1', roundedValue);
-          handleChange('totalInterventionCostAlt3', roundedValue);
-          
-          currentStatus.interventionCostAlt1 = true;
-          currentStatus.interventionCostAlt3 = true;
+        console.log('Fetched FormG data:', formGData); // Debug log
+        
+        if (formGData) {
+          if (formGData.totalInterventionCost !== undefined && formGData.totalInterventionCost !== null) {
+            const roundedValue = Math.round(formGData.totalInterventionCost);
+            console.log('Using totalInterventionCost value from FormG:', roundedValue); // Debug log
+            
+            // Uppdatera alla fält som använder totalInterventionCost
+            // Vi säkerställer att vi alltid skickar ett nummer, aldrig undefined
+            handleChange('totalInterventionCostAlt1', roundedValue);
+            handleChange('totalInterventionCostAlt3', roundedValue);
+            
+            currentStatus.interventionCostAlt1 = true;
+            currentStatus.interventionCostAlt3 = true;
+          } else {
+            console.warn('totalInterventionCost is undefined or null in FormG data:', formGData);
+          }
+        } else {
+          console.warn('No FormG data found');
         }
         
+        console.log('Auto-fetch completed, updating status');
         setAutoFetchStatus(currentStatus);
       } catch (error) {
         console.error('Fel vid automatisk hämtning från formulär:', error);
@@ -384,32 +458,51 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     }
 
     try {
-      setTransferMessage(null);
+      setTransferMessage('Hämtar data...');
       
       if (formType === 'C') {
+        console.log(`Manually fetching data from Form C into field ${String(targetField)}`);
         const data = await loadFormData<FormCData>(currentUser.uid, formType);
         console.log('Fetched FormC data in manual fetch:', data); // Debug log
         
-        if (data && typeof data.totalCostMentalHealth === 'number') {
-          // Avrunda värdet till heltal för att undvika decimalproblem
-          const roundedValue = Math.round(data.totalCostMentalHealth);
-          console.log('Using value in manual fetch:', roundedValue); // Debug log
-          
-          handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
-          setMessage(`Värde hämtat från Formulär 2!`);
+        if (data) {
+          if (data.totalCostMentalHealth !== undefined && data.totalCostMentalHealth !== null) {
+            // Avrunda värdet till heltal för att undvika decimalproblem
+            const roundedValue = Math.round(data.totalCostMentalHealth);
+            console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
+            
+            // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
+            handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
+            setMessage(`Värde hämtat från Formulär 2: ${roundedValue.toLocaleString('sv-SE')} kr`);
+          } else {
+            console.warn('totalCostMentalHealth is undefined or null in FormC data:', data);
+            setMessage(`Inget värde för "Total kostnad för psykisk ohälsa" hittades i Formulär 2.`);
+          }
         } else {
-          console.warn('No totalCostMentalHealth value found in manually fetched FormC data:', data);
-          setMessage(`Inget värde hittades i Formulär 2.`);
+          console.warn('No data found for FormC');
+          setMessage(`Inget data hittades i Formulär 2.`);
         }
       } else if (formType === 'G') {
+        console.log(`Manually fetching data from Form G into field ${String(targetField)}`);
         const data = await loadFormData<FormGData>(currentUser.uid, formType);
-        if (data && data.totalInterventionCost !== undefined) {
-          // Avrunda värdet till heltal för att undvika decimalproblem
-          const roundedValue = Math.round(data.totalInterventionCost);
-          handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
-          setMessage(`Värde hämtat från Formulär 5!`);
+        console.log('Fetched FormG data in manual fetch:', data); // Debug log
+        
+        if (data) {
+          if (data.totalInterventionCost !== undefined && data.totalInterventionCost !== null) {
+            // Avrunda värdet till heltal för att undvika decimalproblem
+            const roundedValue = Math.round(data.totalInterventionCost);
+            console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
+            
+            // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
+            handleChange(targetField, roundedValue as FormJData[keyof FormJData]);
+            setMessage(`Värde hämtat från Formulär 5: ${roundedValue.toLocaleString('sv-SE')} kr`);
+          } else {
+            console.warn('totalInterventionCost is undefined or null in FormG data:', data);
+            setMessage(`Inget värde för "Total kostnad för insatsen" hittades i Formulär 5.`);
+          }
         } else {
-          setMessage(`Inget värde hittades i Formulär 5.`);
+          console.warn('No data found for FormG');
+          setMessage(`Inget data hittades i Formulär 5.`);
         }
       }
     } catch (error) {
@@ -417,8 +510,11 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       setMessage(`Ett fel uppstod när data skulle hämtas från Formulär ${getFormNumber(formType)}.`);
     }
 
-    // Rensa meddelandet efter 3 sekunder
-    setTimeout(() => setMessage(null), 3000);
+    // Rensa meddelandet efter 3 sekunder (håll det lite längre om det var framgångsrikt)
+    setTimeout(() => {
+      console.log('Clearing fetch message');
+      setMessage(null);
+    }, 3000);
   };
   
   // Lägg till state för valideringsfel
@@ -430,12 +526,14 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   // Spara data till Firebase
   const handleSave = async () => {
     if (!currentUser?.uid) {
+      console.error('Cannot save form: No user logged in');
       setTransferMessage('Du måste vara inloggad för att spara data');
       return Promise.reject('Du måste vara inloggad för att spara data');
     }
 
     try {
-      setTransferMessage(null);
+      console.log('Starting save operation for FormJ');
+      setTransferMessage('Sparar...');
       
       // Kontrollera efter saknade värden men tillåt fortfarande sparande
       const warnings: {
@@ -453,25 +551,40 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       
       setValidationWarnings(warnings);
       
-      // Visa en varning om det finns validering som farit men fortsätt ändå
-      if (Object.keys(warnings).length > 0) {
-        setTransferMessage('Formuläret sparades, men vissa värden saknas för beräkningarna');
-      }
-      
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
       
-      // Save to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      console.log('Data prepared for save:', dataToSave);
       
-      if (Object.keys(warnings).length === 0) {
+      // Save to Firebase
+      console.log(`Saving FormJ data to Firebase for user ${currentUser.uid}`);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      console.log('FormJ data saved successfully');
+      
+      // Visa olika meddelanden beroende på om det finns varningar eller inte
+      if (Object.keys(warnings).length > 0) {
+        setTransferMessage('Formuläret sparades, men vissa värden saknas för beräkningarna');
+      } else {
         setTransferMessage('Formuläret har sparats!');
       }
-      setTimeout(() => setTransferMessage(null), 3000);
+      
+      // Rensa meddelandet efter en timeout
+      setTimeout(() => {
+        console.log('Clearing save message');
+        setTransferMessage(null);
+      }, 3000);
+      
       return Promise.resolve();
     } catch (error) {
       console.error('Error saving form data:', error);
       setTransferMessage('Ett fel uppstod när formuläret skulle sparas till databasen.');
+      
+      // Rensa felmeddelandet efter en längre timeout
+      setTimeout(() => {
+        console.log('Clearing error message');
+        setTransferMessage(null);
+      }, 5000);
+      
       return Promise.reject(error);
     }
   };
