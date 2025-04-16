@@ -70,6 +70,7 @@ const FORM_TYPE = 'A';
 // Utöka FormAProps för att inkludera en onNavigateToForm prop
 type FormAProps = React.ComponentProps<'div'> & {
   onNavigateToForm?: (formName: string) => void;
+  projectId?: string | null;
 };
 
 // Lägg till en hjälpfunktion för att översätta formulärbokstäver till siffror
@@ -138,7 +139,7 @@ const FormInfo = () => (
 // Gör FormA till en forwardRef component
 const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm } = props;
+  const { onNavigateToForm, projectId } = props;
   const [formData, setFormData] = useState<FormAData>({
     organizationName: '',
     contactPerson: '',
@@ -183,7 +184,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         try {
           setIsDataLoading(true);
           setError(null);
-          const data = await loadFormData<FormAData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormAData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
@@ -201,7 +202,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     };
 
     loadFromFirebase();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
   
   // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
   useEffect(() => {
@@ -234,7 +235,8 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         FORM_TYPE,
         formData,
         setIsSaving,
-        setSaveMessage
+        setSaveMessage,
+        projectId
       );
     }
 
@@ -244,7 +246,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser]);
+  }, [formData, currentUser, projectId]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
@@ -269,14 +271,14 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       console.log('Saving form data to Firebase:', dataToSave);
       
       // Save to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       // Uppdatera även gemensamma fält - skicka endast nödvändiga fält
       await updateSharedFieldsFromCurrentForm(currentUser.uid, {
         organizationName: dataToSave.organizationName,
         contactPerson: dataToSave.contactPerson,
         timePeriod: '' // FormA har ingen timePeriod
-      });
+      }, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);

@@ -480,11 +480,14 @@ const FetchValueButton = ({
 const FORM_TYPE = 'G';
 
 // Definiera en typ för komponentens props
-type FormGProps = React.ComponentProps<'div'>;
+type FormGProps = React.ComponentProps<'div'> & {
+  projectId?: string | null;
+};
 
 // Gör FormG till en forwardRef component
 const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const { currentUser } = useAuth();
+  const { projectId } = props;
   const initialState: FormGData = {
     timePeriod: '',
     interventions: [],
@@ -505,8 +508,8 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fetchMessageFormH, setFetchMessageFormH] = useState<string | null>(null);
-  const [fetchMessageFormI, setFetchMessageFormI] = useState<string | null>(null);
+  const [fetchMessageFromH, setFetchMessageFromH] = useState<string | null>(null);
+  const [fetchMessageFromI, setFetchMessageFromI] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Skapa en memoized-dependency för att spåra kostnadsändringar
@@ -541,7 +544,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
         try {
           setIsDataLoading(true);
           setError(null);
-          const data = await loadFormData<FormGData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormGData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
@@ -559,7 +562,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     };
 
     loadFromFirebase();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
   
   // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
   useEffect(() => {
@@ -657,29 +660,33 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
 
   // Setup autosave whenever formData changes
   useEffect(() => {
+    // Clear any existing timer
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
-
+  
+    // Only autosave if user is logged in and form has been interacted with
     if (currentUser?.uid) {
       // Kontrollera och fixa eventuella undefined-värden innan autosave
       const safeFormDataToSave = prepareDataForSave(safeFormData);
-      
+     
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
         safeFormDataToSave,
         setIsSaving,
-        setSaveMessage
+        setSaveMessage,
+        projectId
       );
     }
-
+  
+    // Cleanup timer on unmount
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser, safeFormData]);
+  }, [formData, currentUser, safeFormData, projectId]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
@@ -815,15 +822,17 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      // Save to Firebase
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
-      throw error;
+      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
     } finally {
       setIsSaving(false);
     }
@@ -831,28 +840,30 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
 
   // Rensa fetchMessage efter en viss tid
   useEffect(() => {
-    if (fetchMessageFormH) {
+    if (fetchMessageFromH) {
       const timer = setTimeout(() => {
-        setFetchMessageFormH(null);
+        setFetchMessageFromH(null);
       }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [fetchMessageFormH]);
+  }, [fetchMessageFromH]);
 
   // Funktion för att hämta insats från formulär H
   const fetchInterventionFromFormH = async () => {
     if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att hämta data');
+      setFetchMessageFromH('Du måste vara inloggad för att hämta data');
       return;
     }
 
     try {
-      setError(null);
-      const formHData = await loadFormData<FormHData>(currentUser.uid, 'H');
+      setFetchMessageFromH('Hämtar data...');
+      
+      // Hämta data från Form H
+      const formHData = await loadFormData<FormHData>(currentUser.uid, 'H', projectId);
       
       if (!formHData || !formHData.interventions || formHData.interventions.length === 0) {
-        setFetchMessageFormH('Inga insatser hittades i Formulär H.');
+        setFetchMessageFromH('Inga insatser hittades i Formulär H.');
         return;
       }
 
@@ -1006,36 +1017,38 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
         
         // Visa ett informativt meddelande
         if (added > 0 && updated > 0) {
-          setFetchMessageFormH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 6.`);
+          setFetchMessageFromH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 6.`);
         } else if (added > 0) {
-          setFetchMessageFormH(`${added} nya delinsatser tillagda från Formulär 6.`);
+          setFetchMessageFromH(`${added} nya delinsatser tillagda från Formulär 6.`);
         } else if (updated > 0) {
-          setFetchMessageFormH(`${updated} befintliga delinsatser uppdaterade från Formulär 6.`);
+          setFetchMessageFromH(`${updated} befintliga delinsatser uppdaterade från Formulär 6.`);
         } else {
-          setFetchMessageFormH('Inga ändringar behövdes, allt är redan uppdaterat.');
+          setFetchMessageFromH('Inga ändringar behövdes, allt är redan uppdaterat.');
         }
       } else {
-        setFetchMessageFormH('Alla insatser från Formulär 6 har redan hämtats.');
+        setFetchMessageFromH('Alla insatser från Formulär 6 har redan hämtats.');
       }
     } catch (error) {
+      setFetchMessageFromH(`Ett fel uppstod: ${error}`);
       console.error('Error fetching data from Form H:', error);
-      setError('Kunde inte hämta data från Formulär 6.');
     }
   };
 
   // Funktion för att hämta insats från formulär I
   const fetchInterventionFromFormI = async () => {
     if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att hämta data');
+      setFetchMessageFromI('Du måste vara inloggad för att hämta data');
       return;
     }
 
     try {
-      setError(null);
-      const formIData = await loadFormData<FormIData>(currentUser.uid, 'I');
+      setFetchMessageFromI('Hämtar data...');
+      
+      // Hämta data från Form I
+      const formIData = await loadFormData<FormIData>(currentUser.uid, 'I', projectId);
       
       if (!formIData || !formIData.internalCosts || formIData.internalCosts.length === 0) {
-        setFetchMessageFormI('Inga insatser hittades i Formulär 7.');
+        setFetchMessageFromI('Inga insatser hittades i Formulär 7.');
         return;
       }
 
@@ -1195,33 +1208,33 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
         
         // Visa ett informativt meddelande
         if (added > 0 && updated > 0) {
-          setFetchMessageFormI(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 7.`);
+          setFetchMessageFromI(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 7.`);
         } else if (added > 0) {
-          setFetchMessageFormI(`${added} nya delinsatser tillagda från Formulär 7.`);
+          setFetchMessageFromI(`${added} nya delinsatser tillagda från Formulär 7.`);
         } else if (updated > 0) {
-          setFetchMessageFormI(`${updated} befintliga delinsatser uppdaterade från Formulär 7.`);
+          setFetchMessageFromI(`${updated} befintliga delinsatser uppdaterade från Formulär 7.`);
         } else {
-          setFetchMessageFormI('Inga ändringar behövdes, allt är redan uppdaterat.');
+          setFetchMessageFromI('Inga ändringar behövdes, allt är redan uppdaterat.');
         }
       } else {
-        setFetchMessageFormI('Alla insatser från Formulär 7 har redan hämtats.');
+        setFetchMessageFromI('Alla insatser från Formulär 7 har redan hämtats.');
       }
     } catch (error) {
+      setFetchMessageFromI(`Ett fel uppstod: ${error}`);
       console.error('Error fetching data from Form I:', error);
-      setError('Kunde inte hämta data från Formulär 7.');
     }
   };
 
   // Rensa fetchMessageFormI efter en viss tid
   useEffect(() => {
-    if (fetchMessageFormI) {
+    if (fetchMessageFromI) {
       const timer = setTimeout(() => {
-        setFetchMessageFormI(null);
+        setFetchMessageFromI(null);
       }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [fetchMessageFormI]);
+  }, [fetchMessageFromI]);
 
   return (
     <div className="space-y-6">
@@ -1305,13 +1318,13 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 <FetchValueButton 
                   onClick={fetchInterventionFromFormH}
                   disabled={!currentUser?.uid}
-                  message={fetchMessageFormH}
+                  message={fetchMessageFromH}
                   source="H"
                 />
                 <FetchValueButton 
                   onClick={fetchInterventionFromFormI}
                   disabled={!currentUser?.uid}
-                  message={fetchMessageFormI}
+                  message={fetchMessageFromI}
                   source="I"
                 />
                 <Button 

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthForm from '@/components/ui/auth/AuthForm';
-import { Calculator, FileText, BarChart3 } from 'lucide-react';
+import { Calculator, FileText, BarChart3, Folder } from 'lucide-react';
 
 export default function DashboardPage() {
   const { currentUser, loading } = useAuth();
@@ -50,6 +50,27 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* ROI-projekt kort */}
+        <Link href="/roi-projects" className="group">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-emerald-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-emerald-500/10 p-3 rounded-lg">
+                <Folder className="h-6 w-6 text-emerald-500" />
+              </div>
+              <span className="text-sm font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-full">
+                Nytt
+              </span>
+            </div>
+            <h2 className="text-xl font-semibold mb-2 group-hover:text-emerald-500 transition-colors">
+              ROI-projekt
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Skapa och hantera flera olika ROI-kalkylprojekt
+            </p>
+            <Button className="w-full">Visa projekt</Button>
+          </div>
+        </Link>
+
         {/* ROI-kalkylator kort */}
         <Link href="/roi" className="group">
           <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20">

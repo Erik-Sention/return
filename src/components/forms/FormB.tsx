@@ -54,7 +54,9 @@ const SectionHeader = ({
 );
 
 // Definiera en typ för komponentens props
-type FormBProps = React.ComponentProps<'div'>;
+type FormBProps = React.ComponentProps<'div'> & {
+  projectId?: string | null;
+};
 
 const FORM_TYPE = 'B';
 
@@ -72,6 +74,7 @@ const FormInfo = () => (
 // Gör FormB till en forwardRef component
 const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const { currentUser } = useAuth();
+  const { projectId } = props;
   const [fallbackStep, setFallbackStep] = useState('');
   const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
@@ -107,7 +110,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         try {
           setIsDataLoading(true);
           setError(null);
-          const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
             // Ensure implementationPlan is always an array
@@ -129,7 +132,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
     };
 
     loadFromFirebase();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
   
   // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
   useEffect(() => {
@@ -162,7 +165,8 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         FORM_TYPE,
         formData,
         setIsSaving,
-        setSaveMessage
+        setSaveMessage,
+        projectId
       );
     }
 
@@ -172,7 +176,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser]);
+  }, [formData, currentUser, projectId]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
@@ -197,7 +201,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
       console.log('Saving form data to Firebase:', dataToSave);
       
       // Save only to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);

@@ -1,20 +1,21 @@
-import type { Metadata } from "next";
-import { Rajdhani } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/providers/theme-provider";
-import RootLayout from "@/components/layout/RootLayout";
-import { AuthProvider } from "@/contexts/AuthContext";
+import './globals.css'
+import type { Metadata } from 'next'
+import { Rajdhani } from 'next/font/google'
+import { ThemeProvider } from '@/components/providers/theme-provider'
+import RootLayout from '@/components/layout/RootLayout'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { Toaster } from '@/components/ui/toaster'
 
 const rajdhani = Rajdhani({
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
-});
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
+})
 
 export const metadata: Metadata = {
-  title: "ROI-kalkylator - Hälsofrämjande insatser",
-  description: "Beräkna avkastning på investering för hälsofrämjande insatser",
-};
+  title: 'ROI-kalkylator - Hälsofrämjande insatser',
+  description: 'Beräkna avkastning på investering för hälsofrämjande insatser',
+}
 
 export default function Layout({
   children,
@@ -32,9 +33,10 @@ export default function Layout({
         >
           <AuthProvider>
             <RootLayout>{children}</RootLayout>
+            <Toaster />
           </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

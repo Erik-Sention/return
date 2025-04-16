@@ -140,8 +140,13 @@ export const saveSharedFields = async (userId: string, data: SharedFields): Prom
  * Uppdatera gemensamma fält från det aktuella formuläret
  * @param userId - Användarens ID
  * @param formData - Data från formuläret som innehåller gemensamma fält
+ * @param projectId - Projekt-ID för projektspecifik datalagring
  */
-export const updateSharedFieldsFromCurrentForm = async (userId: string, formData: Record<string, unknown>): Promise<void> => {
+export const updateSharedFieldsFromCurrentForm = async (
+  userId: string, 
+  formData: Record<string, unknown>,
+  projectId?: string | null
+): Promise<void> => {
   if (!userId) return Promise.reject(new Error('No user ID provided'));
   
   try {
@@ -152,7 +157,21 @@ export const updateSharedFieldsFromCurrentForm = async (userId: string, formData
       endDate: typeof formData.endDate === 'string' ? formData.endDate : ''
     };
     
-    await saveSharedFields(userId, sharedFields);
+    if (projectId) {
+      // Om vi har ett projektId, spara gemensamma fält till den projektspecifika lagringsplatsen
+      const sharedFieldsRef = ref(database, `users/${userId}/projectForms/${projectId}/sharedFields`);
+      await set(sharedFieldsRef, sharedFields);
+      console.log(`Shared fields saved successfully for project ${projectId}`);
+      
+      // Uppdatera även tidsstämpeln
+      const timestampRef = ref(database, `users/${userId}/projectForms/${projectId}/sharedFields_timestamp`);
+      await set(timestampRef, new Date().toISOString());
+      console.log('Project timestamp updated successfully');
+    } else {
+      // Annars använd standardlagringsplatsen för gemensamma fält
+      await saveSharedFields(userId, sharedFields);
+    }
+    
     return Promise.resolve();
   } catch (error) {
     console.error('Error updating shared fields:', error);

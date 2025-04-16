@@ -556,11 +556,14 @@ const InternalCostCard = ({
 };
 
 // Definiera typen för FormI props
-type FormIProps = React.ComponentProps<'div'>;
+type FormIProps = React.ComponentProps<'div'> & {
+  projectId?: string | null;
+};
 
 // Skapa huvudkomponenten som en forwardRef för att exponera metoder till föräldrakomponenten
 const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   const { currentUser } = useAuth();
+  const { projectId } = props;
   const [formData, setFormData] = useState<FormIData>({
     organizationName: '',
     contactPerson: '',
@@ -631,7 +634,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
         try {
           setIsDataLoading(true);
           setError(null);
-          const data = await loadFormData<FormIData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormIData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
             setFormData(data);
@@ -649,7 +652,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     };
 
     loadFromFirebase();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
   
   // Kombinera alla laddningsstatus för att avgöra om innehållet är redo att visas
   useEffect(() => {
@@ -712,31 +715,32 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
     }
   }, [costsDependency, safeFormData.internalCosts, safeFormData.totalInternalCost]);
 
-  // Sätt upp autosave när formulärdata ändras
+  // Setup autosave whenever formData changes
   useEffect(() => {
+    // Clear any existing timer
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
 
+    // Only autosave if user is logged in and form has been interacted with
     if (currentUser?.uid) {
-      // Förbereda data för att undvika Firebase-fel med undefined-värden
-      const dataToSave = prepareDataForSave(safeFormData);
-      
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
-        dataToSave,
+        formData,
         setIsSaving,
-        setSaveMessage
+        setSaveMessage,
+        projectId
       );
     }
 
+    // Cleanup timer on unmount
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser, safeFormData, safeFormData.internalCosts]);
+  }, [formData, currentUser, projectId]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
@@ -792,16 +796,18 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       setError(null);
       
       // Förbereda data för att undvika Firebase-fel med undefined-värden
-      const dataToSave = prepareDataForSave(safeFormData);
+      const dataToSave = prepareDataForSave(formData);
+      console.log('Saving form data to Firebase:', dataToSave);
       
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      // Save to Firebase
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
-      throw error;
+      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
     } finally {
       setIsSaving(false);
     }
@@ -880,13 +886,15 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
   // Funktion för att hämta insatser från Form G
   const fetchInterventionsFromFormG = async () => {
     if (!currentUser?.uid) {
-      setError('Du måste vara inloggad för att hämta data');
+      setFetchMessageFormG('Du måste vara inloggad för att hämta data');
       return;
     }
 
     try {
-      setError(null);
-      const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+      setFetchMessageFormG('Hämtar data...');
+      
+      // Hämta data från Form G
+      const formGData = await loadFormData<FormGData>(currentUser.uid, 'G', projectId);
       
       if (!formGData || !formGData.interventions || formGData.interventions.length === 0) {
         setFetchMessageFormG('Inga insatser hittades i Formulär G.');
@@ -947,8 +955,8 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
       
       setFetchMessageFormG(`${newInternalCosts.length} nya delinsatser hämtade från Formulär G.`);
     } catch (error) {
+      setFetchMessageFormG(`Ett fel uppstod: ${error}`);
       console.error('Error fetching data from Form G:', error);
-      setError('Kunde inte hämta data från Formulär G.');
     }
   };
 

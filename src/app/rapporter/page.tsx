@@ -5,13 +5,45 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthForm from '@/components/ui/auth/AuthForm';
-import { FileText, PieChart, BarChart3 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { FileText, PieChart, BarChart3, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getProject } from '@/lib/project/projectApi';
 
 export default function RapportPage() {
   const { currentUser, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Projektrelaterad state
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string>('');
+
+  // Hämta projektId från URL-parametern och projektet från Firebase
+  useEffect(() => {
+    const projectIdFromUrl = searchParams?.get('projectId');
+    if (projectIdFromUrl) {
+      setProjectId(projectIdFromUrl);
+      
+      // Hämta projektinformation om användaren är inloggad
+      if (currentUser) {
+        const fetchProject = async () => {
+          try {
+            const project = await getProject(currentUser.uid, projectIdFromUrl);
+            if (project) {
+              setProjectName(project.name);
+            } else {
+              router.push('/roi-projects');
+            }
+          } catch (error) {
+            console.error('Fel vid hämtning av projekt:', error);
+          }
+        };
+        
+        fetchProject();
+      }
+    }
+  }, [currentUser, searchParams, router]);
 
   useEffect(() => {
     setMounted(true);
@@ -51,13 +83,34 @@ export default function RapportPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Mina rapporter</h1>
-        <p className="text-muted-foreground">Visualisera och analysera dina ROI-beräkningar</p>
+        {projectId && (
+          <Link href="/roi-projects">
+            <Button variant="ghost" className="mb-4 -ml-2 gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Tillbaka till projekt
+            </Button>
+          </Link>
+        )}
+        
+        <h1 className="text-3xl font-bold mb-2">
+          {projectId ? `Rapporter: ${projectName}` : 'Mina rapporter'}
+        </h1>
+        <p className="text-muted-foreground">
+          {projectId 
+            ? `Visualisera och analysera data för projektet "${projectName}"`
+            : 'Visualisera och analysera dina ROI-beräkningar'}
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Exekutiv sammanfattning kort */}
-        <Link href="/rapporter/exekutiv" className="group">
+        <Link 
+          href={projectId 
+            ? `/rapporter/exekutiv?projectId=${projectId}` 
+            : "/rapporter/exekutiv"
+          } 
+          className="group"
+        >
           <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-blue-500/20">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-blue-500/10 p-3 rounded-lg">
@@ -78,7 +131,13 @@ export default function RapportPage() {
         </Link>
 
         {/* Detaljerade resultat kort */}
-        <Link href="/rapporter/detaljerad" className="group">
+        <Link 
+          href={projectId 
+            ? `/rapporter/detaljerad?projectId=${projectId}` 
+            : "/rapporter/detaljerad"
+          } 
+          className="group"
+        >
           <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-purple-500/10 p-3 rounded-lg">

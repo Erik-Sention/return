@@ -54,6 +54,7 @@ export interface FormJRef {
 // Definiera props-typen för komponenten
 type FormJProps = React.ComponentProps<'div'> & {
   onNavigateToForm?: (formName: string) => void;
+  projectId?: string | null;
 };
 
 // Lägg till en hjälpfunktion för att översätta formulärbokstäver till siffror
@@ -255,7 +256,7 @@ const FORM_TYPE = 'J';
 
 const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm } = props;
+  const { onNavigateToForm, projectId } = props;
   const [formData, setFormData] = useState<FormJData>({
     organizationName: '',
     contactPerson: '',
@@ -444,23 +445,29 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     };
   }, [currentUser, handleChange]); // Dependencies
   
-  // Ladda data från Firebase vid komponentladdning
+  // Load data from Firebase when component mounts
   useEffect(() => {
     const loadData = async () => {
-      if (currentUser) {
+      if (currentUser?.uid) {
         try {
-          const data = await loadFormData(currentUser.uid, FORM_TYPE);
+          setIsDataLoading(true);
+          setError(null);
+          const data = await loadFormData<FormJData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
-            setFormData(prev => calculateValues({...prev, ...data}));
+            console.log('Loaded form data:', data);
+            setFormData(calculateValues(data));
           }
         } catch (error) {
-          console.error("Fel vid laddning av data:", error);
+          console.error('Error loading data from Firebase:', error);
+          setError('Kunde inte ladda data från databasen.');
+        } finally {
+          setIsDataLoading(false);
         }
       }
     };
-    
+
     loadData();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
   
   // Update the fetchValueFromForm function
   const fetchValueFromForm = async (formType: string, targetField: keyof FormJData | 'stressLevel', setMessage: React.Dispatch<React.SetStateAction<string | null>>) => {
@@ -474,7 +481,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       
       if (formType === 'C') {
         console.log(`Manually fetching data from Form C into field ${String(targetField)}`);
-        const data = await loadFormData<FormCData>(currentUser.uid, formType);
+        const data = await loadFormData<FormCData>(currentUser.uid, formType, projectId);
         console.log('Fetched FormC data in manual fetch:', data); // Debug log
         
         if (data) {
@@ -507,7 +514,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         }
       } else if (formType === 'G') {
         console.log(`Manually fetching data from Form G into field ${String(targetField)}`);
-        const data = await loadFormData<FormGData>(currentUser.uid, formType);
+        const data = await loadFormData<FormGData>(currentUser.uid, formType, projectId);
         console.log('Fetched FormG data in manual fetch:', data); // Debug log
         
         if (data) {
@@ -581,7 +588,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       
       // Save to Firebase
       console.log(`Saving FormJ data to Firebase for user ${currentUser.uid}`);
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       console.log('FormJ data saved successfully');
       
       // Visa olika meddelanden beroende på om det finns varningar eller inte
@@ -612,14 +619,12 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     }
   };
   
-  // Setup autosave whenever formData changes
+  // Setup autosave timer
   useEffect(() => {
-    // Clear any existing timer
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
 
-    // Only autosave if user is logged in
     if (currentUser?.uid) {
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(safeFormData);
@@ -638,17 +643,17 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         FORM_TYPE,
         dataToSave,
         handleSavingStateChange,
-        handleSaveMessageChange
+        handleSaveMessageChange,
+        projectId
       );
     }
 
-    // Cleanup timer on unmount
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [currentUser, safeFormData]);
+  }, [safeFormData, currentUser, projectId]);
   
   // Exponera metoder via ref
   useImperativeHandle(ref, () => ({
@@ -673,33 +678,6 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       setIsContentReady(true);
     }
   }, [isDataLoading, isOrgInfoLoading]);
-  
-  // Uppdatera den befintliga datahämtningen
-  useEffect(() => {
-    const loadFromFirebase = async () => {
-      if (currentUser?.uid) {
-        try {
-          setIsDataLoading(true);
-          setError(null);
-          const data = await loadFormData<FormJData>(currentUser.uid, FORM_TYPE);
-          // Använd den befintliga logiken för datahämtning här
-          if (data) {
-            // Befintlig datahämtningslogik...
-            setFormData(data);
-          }
-        } catch (error) {
-          console.error('Error loading data from Firebase:', error);
-          setError('Kunde inte ladda data från databasen.');
-        } finally {
-          setIsDataLoading(false);
-        }
-      } else {
-        setIsDataLoading(false);
-      }
-    };
-
-    loadFromFirebase();
-  }, [currentUser]);
   
   // Callback för OrganizationHeader
   const handleOrgLoadingChange = (isLoading: boolean) => {
@@ -775,7 +753,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         const status = { ...autoFetchStatus, hasFetched: true };
         
         // Load data from Form C
-        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C', projectId);
         console.log('Initial FormC data:', formCData);
         
         if (formCData) {
@@ -802,7 +780,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         }
         
         // Load data from Form G
-        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G');
+        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G', projectId);
         console.log('Initial FormG data:', formGData);
         
         if (formGData) {
@@ -835,7 +813,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
     if (!autoFetchStatus.hasFetched) {
       initialDataLoading();
     }
-  }, [currentUser, autoFetchStatus.hasFetched, handleChange, autoFetchStatus]);
+  }, [currentUser, autoFetchStatus.hasFetched, handleChange, autoFetchStatus, projectId]);
   
   // Add back the missing useEffect for transferMessage
   // Clear transferMessage after a timeout

@@ -14,7 +14,9 @@ import FormTimeline from '@/components/forms/FormTimeline';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getProject } from '@/lib/project/projectApi';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ROIPage() {
   const [currentForm, setCurrentForm] = useState('D');
@@ -24,6 +26,12 @@ export default function ROIPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  
+  // Projektrelaterad state
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string>('');
   
   // Refs till formulären med korrekta typer
   const formARef = useRef<FormARef>(null);
@@ -34,6 +42,42 @@ export default function ROIPage() {
   const formHRef = useRef<FormHRef>(null);
   const formIRef = useRef<FormIRef>(null);
   const formJRef = useRef<FormJRef>(null);
+
+  // Hämta projektId från URL-parametern och projektet från Firebase
+  useEffect(() => {
+    const projectIdFromUrl = searchParams?.get('projectId');
+    if (projectIdFromUrl) {
+      setProjectId(projectIdFromUrl);
+      
+      // Hämta projektinformation om användaren är inloggad
+      if (currentUser) {
+        const fetchProject = async () => {
+          try {
+            const project = await getProject(currentUser.uid, projectIdFromUrl);
+            if (project) {
+              setProjectName(project.name);
+            } else {
+              toast({
+                title: "Projektet hittades inte",
+                description: "Kunde inte hitta det angivna projektet.",
+                variant: "destructive"
+              });
+              router.push('/roi-projects');
+            }
+          } catch (error) {
+            console.error('Fel vid hämtning av projekt:', error);
+            toast({
+              title: "Ett fel uppstod",
+              description: "Kunde inte hämta projektinformation.",
+              variant: "destructive"
+            });
+          }
+        };
+        
+        fetchProject();
+      }
+    }
+  }, [currentUser, searchParams, router, toast]);
 
   useEffect(() => {
     setMounted(true);
@@ -115,13 +159,18 @@ export default function ROIPage() {
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link href="/">
+          <Link href={projectId ? "/roi-projects" : "/"}>
             <Button variant="ghost" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Tillbaka till start
+              {projectId ? "Tillbaka till projekt" : "Tillbaka till start"}
             </Button>
           </Link>
           <h1 className="text-3xl font-bold">ROI-kalkylator</h1>
+          {projectId && projectName && (
+            <div className="bg-primary/10 py-1 px-3 rounded-full text-sm font-medium">
+              Projekt: {projectName}
+            </div>
+          )}
         </div>
         
         {saveMessage && (
@@ -144,15 +193,20 @@ export default function ROIPage() {
             onNavigateToForm={(formName) => {
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
-            }} 
+            }}
+            projectId={projectId}
           />}
-          {currentForm === 'B' && <FormB ref={formBRef} />}
+          {currentForm === 'B' && <FormB 
+            ref={formBRef}
+            projectId={projectId}
+          />}
           {currentForm === 'C' && <FormC 
             ref={formCRef} 
             onNavigateToForm={(formName) => {
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
+            projectId={projectId}
           />}
           {currentForm === 'D' && <FormD 
             ref={formDRef}
@@ -160,16 +214,27 @@ export default function ROIPage() {
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
+            projectId={projectId}
           />}
-          {currentForm === 'G' && <FormG ref={formGRef} />}
-          {currentForm === 'H' && <FormH ref={formHRef} />}
-          {currentForm === 'I' && <FormI ref={formIRef} />}
+          {currentForm === 'G' && <FormG 
+            ref={formGRef}
+            projectId={projectId}
+          />}
+          {currentForm === 'H' && <FormH 
+            ref={formHRef}
+            projectId={projectId}
+          />}
+          {currentForm === 'I' && <FormI 
+            ref={formIRef}
+            projectId={projectId}
+          />}
           {currentForm === 'J' && <FormJ 
             ref={formJRef} 
             onNavigateToForm={(formName) => {
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
+            projectId={projectId}
           />}
         </div>
 

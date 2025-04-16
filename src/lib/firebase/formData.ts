@@ -6,10 +6,16 @@ import { ref, set, get, child, onValue, off} from 'firebase/database';
  * @param userId - The current user's ID
  * @param formType - The type of form (A, B, C, etc.)
  * @param data - The form data to save
+ * @param projectId - Optional project ID för projektspecifik data
  */
-export const saveFormData = async <T>(userId: string, formType: string, data: T): Promise<void> => {
+export const saveFormData = async <T>(
+  userId: string, 
+  formType: string, 
+  data: T, 
+  projectId?: string | null
+): Promise<void> => {
   try {
-    console.log(`Attempting to save form ${formType} for user ${userId}`);
+    console.log(`Attempting to save form ${formType}${projectId ? ` for project ${projectId}` : ''} for user ${userId}`);
     console.log('Database instance:', database);
     
     // Make sure we have a valid database reference
@@ -18,14 +24,23 @@ export const saveFormData = async <T>(userId: string, formType: string, data: T)
       return Promise.reject(new Error('Firebase database is not initialized'));
     }
 
-    const formRef = ref(database, `users/${userId}/forms/${formType}`);
-    console.log('Form reference path:', `users/${userId}/forms/${formType}`);
+    // Bestäm sökväg baserat på om vi har ett projektId eller inte
+    const formPath = projectId 
+      ? `users/${userId}/projectForms/${projectId}/${formType}`
+      : `users/${userId}/forms/${formType}`;
+      
+    const formRef = ref(database, formPath);
+    console.log('Form reference path:', formPath);
     
     await set(formRef, data);
     console.log(`Form ${formType} data saved successfully`);
     
     // Also update the last updated timestamp
-    const timestampRef = ref(database, `users/${userId}/forms/${formType}_timestamp`);
+    const timestampPath = projectId
+      ? `users/${userId}/projectForms/${projectId}/${formType}_timestamp`
+      : `users/${userId}/forms/${formType}_timestamp`;
+      
+    const timestampRef = ref(database, timestampPath);
     await set(timestampRef, new Date().toISOString());
     console.log('Timestamp updated successfully');
     
@@ -40,11 +55,16 @@ export const saveFormData = async <T>(userId: string, formType: string, data: T)
  * Loads form data from Firebase Realtime Database
  * @param userId - The current user's ID
  * @param formType - The type of form (A, B, C, etc.)
+ * @param projectId - Optional project ID för projektspecifik data
  * @returns The form data or null if not found
  */
-export const loadFormData = async <T>(userId: string, formType: string): Promise<T | null> => {
+export const loadFormData = async <T>(
+  userId: string, 
+  formType: string, 
+  projectId?: string | null
+): Promise<T | null> => {
   try {
-    console.log(`Attempting to load form ${formType} for user ${userId}`);
+    console.log(`Attempting to load form ${formType}${projectId ? ` for project ${projectId}` : ''} for user ${userId}`);
     
     // Make sure we have a valid database reference
     if (!database) {
@@ -53,7 +73,12 @@ export const loadFormData = async <T>(userId: string, formType: string): Promise
     }
     
     const dbRef = ref(database);
-    const path = `users/${userId}/forms/${formType}`;
+    
+    // Bestäm sökväg baserat på om vi har ett projektId eller inte
+    const path = projectId 
+      ? `users/${userId}/projectForms/${projectId}/${formType}`
+      : `users/${userId}/forms/${formType}`;
+      
     console.log('Loading from path:', path);
     
     const snapshot = await get(child(dbRef, path));
@@ -78,13 +103,15 @@ export const loadFormData = async <T>(userId: string, formType: string): Promise
  * @param data - The form data to save
  * @param setIsSaving - Function to update saving state
  * @param setSaveMessage - Function to update save message
+ * @param projectId - Optional project ID för projektspecifik data
  */
 export const setupFormAutosave = <T>(
   userId: string | undefined,
   formType: string, 
   data: T,
   setIsSaving: (saving: boolean) => void,
-  setSaveMessage: (message: string | null) => void
+  setSaveMessage: (message: string | null) => void,
+  projectId?: string | null
 ): NodeJS.Timeout | null => {
   if (!userId) {
     console.log('Cannot setup autosave: No user ID provided');
@@ -94,9 +121,9 @@ export const setupFormAutosave = <T>(
   // Create autosave timer
   return setTimeout(async () => {
     try {
-      console.log(`Autosaving form ${formType}...`);
+      console.log(`Autosaving form ${formType}${projectId ? ` for project ${projectId}` : ''}...`);
       setIsSaving(true);
-      await saveFormData(userId, formType, data);
+      await saveFormData(userId, formType, data, projectId);
       console.log(`Autosave successful for form ${formType}`);
       setSaveMessage('Autosparat');
       setTimeout(() => setSaveMessage(null), 2000);
@@ -115,20 +142,28 @@ export const setupFormAutosave = <T>(
  * @param userId - The current user's ID
  * @param formType - The type of form to listen to (A, B, C, etc.)
  * @param callback - Function to call when data changes
+ * @param projectId - Optional project ID för projektspecifik data
  * @returns A function to unsubscribe the listener
  */
 export const setupFormDataListener = <T>(
   userId: string,
   formType: string,
-  callback: (data: T | null) => void
+  callback: (data: T | null) => void,
+  projectId?: string | null
 ): (() => void) => {
   if (!database || !userId) {
     console.error('Cannot setup listener: database not initialized or no userId provided');
     return () => {}; // Return empty function in case of error
   }
 
-  console.log(`Setting up real-time listener for form ${formType} for user ${userId}`);
-  const formRef = ref(database, `users/${userId}/forms/${formType}`);
+  console.log(`Setting up real-time listener for form ${formType}${projectId ? ` for project ${projectId}` : ''} for user ${userId}`);
+  
+  // Bestäm sökväg baserat på om vi har ett projektId eller inte
+  const formPath = projectId 
+    ? `users/${userId}/projectForms/${projectId}/${formType}`
+    : `users/${userId}/forms/${formType}`;
+    
+  const formRef = ref(database, formPath);
   
   // Set up the listener
   onValue(formRef, (snapshot) => {

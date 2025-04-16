@@ -152,9 +152,10 @@ export interface FormCRef {
   handleSave: () => Promise<void>;
 }
 
-// Uppdatera FormCProps för att ta emot en onNavigateToForm prop
+// Definiera en typ för komponentens props
 type FormCProps = React.ComponentProps<'div'> & {
   onNavigateToForm?: (formName: string) => void;
+  projectId?: string | null;
 };
 
 // Formulärinformationskomponent
@@ -173,7 +174,7 @@ const FormInfo = () => (
 // Gör FormC till en forwardRef component
 const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   const { currentUser } = useAuth();
-  const { onNavigateToForm } = props;
+  const { onNavigateToForm, projectId } = props;
   const [formData, setFormData] = useState<FormCData>({
     organizationName: '',
     contactPerson: '',
@@ -239,7 +240,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         try {
           setIsDataLoading(true);
           setError(null);
-          const data = await loadFormData<FormCData>(currentUser.uid, FORM_TYPE);
+          const data = await loadFormData<FormCData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
             console.log('Loaded totalCostMentalHealth value:', data.totalCostMentalHealth);
@@ -265,7 +266,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     };
 
     loadFromFirebase();
-  }, [currentUser]);
+  }, [currentUser, projectId]);
 
   // Lägg till automatisk datahämtning från FormD vid inladdning
   useEffect(() => {
@@ -278,7 +279,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         setAutoFetchStatus(currentStatus);
         
         // Hämta data från FormD
-        const formDData = await loadFormData<FormDData>(currentUser.uid, 'D');
+        const formDData = await loadFormData<FormDData>(currentUser.uid, 'D', projectId);
         if (formDData) {
           // Hämta totalPersonnelCosts om det finns
           if (formDData.totalPersonnelCosts !== undefined) {
@@ -328,17 +329,17 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         
         setAutoFetchStatus(currentStatus);
       } catch (error) {
-        console.error('Fel vid automatisk hämtning från andra formulär:', error);
-        setAutoFetchStatus(prev => ({ 
-          ...prev, 
-          hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från formulär D.' 
+        console.error('Error auto-fetching data:', error);
+        setAutoFetchStatus(prev => ({
+          ...prev,
+          hasFetched: true,
+          errorMessage: 'Kunde inte hämta data automatiskt från Formulär D.'
         }));
       }
     };
     
     autoFetchFromOtherForms();
-  }, [currentUser, autoFetchStatus, handleChange]);
+  }, [currentUser, autoFetchStatus.hasFetched, projectId, autoFetchStatus, handleChange]);
 
   // Beräkna automatiska värden när relevanta fält ändras
   useEffect(() => {
@@ -388,33 +389,27 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   
   // Setup autosave whenever formData changes
   useEffect(() => {
-    // Clear any existing timer
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
 
-    // Only autosave if user is logged in and form has been interacted with
     if (currentUser?.uid) {
-      // Ensure we're saving data with proper totalCostMentalHealth
-      const dataToAutosave = prepareDataForSave(formData);
-      console.log('[Autosave] Preparing data for autosave, totalCostMentalHealth =', dataToAutosave.totalCostMentalHealth);
-      
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
-        dataToAutosave,
+        formData,
         setIsSaving,
-        setSaveMessage
+        setSaveMessage,
+        projectId
       );
     }
 
-    // Cleanup timer on unmount
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [formData, currentUser]);
+  }, [formData, currentUser, projectId]);
 
   // Exponera handleSave till föräldrakomponenten via ref
   useImperativeHandle(ref, () => ({
@@ -475,17 +470,16 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
       // Förbereda data för att undvika Firebase-fel med undefined-värden
       const dataToSave = prepareDataForSave(formData);
       console.log('Saving form data to Firebase:', dataToSave);
-      console.log('totalCostMentalHealth value being saved:', dataToSave.totalCostMentalHealth);
       
-      // Save only to Firebase
-      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave);
+      // Save to Firebase
+      await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Error saving form data:', error);
       setError('Ett fel uppstod när formuläret skulle sparas till databasen.');
-      throw error; // Kasta vidare felet så att föräldrakomponenten kan fånga det
+      throw error;
     } finally {
       setIsSaving(false);
     }
