@@ -152,17 +152,20 @@ export default function AggregatedReportPage() {
               <div className="grid gap-4">
                 <div className="flex">
                   <div className="w-1/3 font-medium">Organisation:</div>
-                  <div>Demo Alltjänst</div>
+                  <div>{reportData?.sharedFields?.organizationName || 'Ej angiven'}</div>
                 </div>
                 
                 <div className="flex">
                   <div className="w-1/3 font-medium">Kontaktperson:</div>
-                  <div>Erik Helsing</div>
+                  <div>{reportData?.sharedFields?.contactPerson || 'Ej angiven'}</div>
                 </div>
                 
                 <div className="flex">
                   <div className="w-1/3 font-medium">Tidsperiod:</div>
-                  <div>2025-01-01 - 2026-01-01</div>
+                  <div>{reportData?.sharedFields?.startDate && reportData?.sharedFields?.endDate
+                    ? `${reportData.sharedFields.startDate} - ${reportData.sharedFields.endDate}`
+                    : (reportData?.timePeriod || 'Ej angiven')
+                  }</div>
                 </div>
                 
                 <div className="flex">

@@ -16,7 +16,7 @@ export interface SharedFields {
  */
 export const loadSharedFields = async (userId: string, projectId?: string | null): Promise<SharedFields | null> => {
   try {
-    console.log(`Attempting to load shared fields for user ${userId}${projectId ? ` and project ${projectId}` : ''}`);
+    console.log(`[DEBUG] loadSharedFields: Attempting to load shared fields for user ${userId}${projectId ? ` and project ${projectId}` : ''}`);
     
     // Kontrollera om vi har en giltig databasreferens
     if (!database) {
@@ -39,30 +39,42 @@ export const loadSharedFields = async (userId: string, projectId?: string | null
     
     // STEG 1: Hämta organisationsnamn och kontaktperson från Formulär A
     const formAPath = `${formPrefix}/A`;
-    console.log('Loading organization name and contact person from path:', formAPath);
+    console.log('[DEBUG] loadSharedFields: Loading organization name and contact person from path:', formAPath);
     
     let snapshot = await get(child(dbRef, formAPath));
     
     if (snapshot.exists()) {
       const formAData = snapshot.val();
-      console.log(`Form A data found:`, formAData);
+      console.log(`[DEBUG] loadSharedFields: Form A data found:`, formAData);
       
       // Extrahera organisationsnamn och kontaktperson från Form A
       sharedFields.organizationName = formAData.organizationName || '';
       sharedFields.contactPerson = formAData.contactPerson || '';
+      console.log(`[DEBUG] loadSharedFields: Extracted from Form A: organizationName="${sharedFields.organizationName}", contactPerson="${sharedFields.contactPerson}"`);
     } else {
-      console.log('No data found in Form A');
+      console.log('[DEBUG] loadSharedFields: No data found in Form A');
     }
     
     // STEG 2: Hämta start- och slutdatum från Formulär D
     const formDPath = `${formPrefix}/D`;
-    console.log('Loading start and end date from path:', formDPath);
+    console.log('[DEBUG] loadSharedFields: Loading start and end date from path:', formDPath);
     
     snapshot = await get(child(dbRef, formDPath));
     
     if (snapshot.exists()) {
       const formDData = snapshot.val();
-      console.log(`Form D data found:`, formDData);
+      console.log(`[DEBUG] loadSharedFields: Form D data found:`, formDData);
+      
+      // VIKTIGT: Hämta också organizationName och contactPerson från Form D om det finns
+      if (formDData.organizationName) {
+        sharedFields.organizationName = formDData.organizationName;
+        console.log(`[DEBUG] loadSharedFields: Updated organizationName from Form D: "${sharedFields.organizationName}"`);
+      }
+      
+      if (formDData.contactPerson) {
+        sharedFields.contactPerson = formDData.contactPerson;
+        console.log(`[DEBUG] loadSharedFields: Updated contactPerson from Form D: "${sharedFields.contactPerson}"`);
+      }
       
       // Extrahera startdatum och slutdatum från Form D
       if (formDData.startDate) {
@@ -71,18 +83,19 @@ export const loadSharedFields = async (userId: string, projectId?: string | null
       if (formDData.endDate) {
         sharedFields.endDate = formDData.endDate;
       }
+      console.log(`[DEBUG] loadSharedFields: Dates from Form D: startDate="${sharedFields.startDate}", endDate="${sharedFields.endDate}"`);
     } else {
-      console.log('No data found in Form D');
+      console.log('[DEBUG] loadSharedFields: No data found in Form D');
       
       // Om Form D inte har data, försök med Form C (för bakåtkompatibilitet)
       const formCPath = `${formPrefix}/C`;
-      console.log('Trying to load time period from path:', formCPath);
+      console.log('[DEBUG] loadSharedFields: Trying to load time period from path:', formCPath);
       
       snapshot = await get(child(dbRef, formCPath));
       
       if (snapshot.exists()) {
         const formCData = snapshot.val();
-        console.log(`Form C data found:`, formCData);
+        console.log(`[DEBUG] loadSharedFields: Form C data found:`, formCData);
         
         // Om formCData har timePeriod, försök att dela upp den i start- och slutdatum
         if (formCData.timePeriod) {
@@ -90,6 +103,7 @@ export const loadSharedFields = async (userId: string, projectId?: string | null
           if (parts.length === 2) {
             sharedFields.startDate = parts[0];
             sharedFields.endDate = parts[1];
+            console.log(`[DEBUG] loadSharedFields: Split timePeriod from Form C: startDate="${sharedFields.startDate}", endDate="${sharedFields.endDate}"`);
           }
         }
       }
@@ -97,13 +111,14 @@ export const loadSharedFields = async (userId: string, projectId?: string | null
     
     // Returnera fälten bara om vi har hittat något
     if (sharedFields.organizationName || sharedFields.contactPerson || sharedFields.startDate || sharedFields.endDate) {
+      console.log(`[DEBUG] loadSharedFields: Returning shared fields:`, sharedFields);
       return sharedFields;
     }
     
-    console.log(`No shared fields found`);
+    console.log(`[DEBUG] loadSharedFields: No shared fields found`);
     return null;
   } catch (error) {
-    console.error(`Error loading shared fields:`, error);
+    console.error(`[DEBUG] loadSharedFields: Error loading shared fields:`, error);
     return null;
   }
 };
