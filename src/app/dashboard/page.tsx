@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import AuthForm from '@/components/ui/auth/AuthForm';
-import { Calculator, FileText, BarChart3, Folder } from 'lucide-react';
+import { Calculator, BarChart3, Folder } from 'lucide-react';
 
 export default function DashboardPage() {
   const { currentUser, loading } = useAuth();
@@ -49,10 +48,10 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Översikt över dina ROI-beräkningar och verktyg</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
         {/* ROI-projekt kort */}
         <Link href="/roi-projects" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-emerald-500/20">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-emerald-500/20 h-full">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-emerald-500/10 p-3 rounded-lg">
                 <Folder className="h-6 w-6 text-emerald-500" />
@@ -64,37 +63,15 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold mb-2 group-hover:text-emerald-500 transition-colors">
               ROI-projekt
             </h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground">
               Skapa och hantera flera olika ROI-kalkylprojekt
             </p>
-            <Button className="w-full">Visa projekt</Button>
-          </div>
-        </Link>
-
-        {/* ROI-kalkylator kort */}
-        <Link href="/roi" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-purple-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-purple-500/10 p-3 rounded-lg">
-                <Calculator className="h-6 w-6 text-purple-500" />
-              </div>
-              <span className="text-sm font-medium px-2 py-1 bg-purple-500/10 text-purple-500 rounded-full">
-                Verktyg
-              </span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2 group-hover:text-purple-500 transition-colors">
-              ROI-kalkylator
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              Beräkna avkastning på investering för hälsofrämjande insatser
-            </p>
-            <Button className="w-full">Öppna kalkylator</Button>
           </div>
         </Link>
 
         {/* Förenklad ROI-kalkylator kort */}
         <Link href="/roi/simple" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-primary/20">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-amber-500/20 h-full">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-amber-500/10 p-3 rounded-lg">
                 <Calculator className="h-6 w-6 text-amber-500" />
@@ -106,16 +83,15 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold mb-2 group-hover:text-amber-500 transition-colors">
               Förenklad ROI
             </h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground">
               Snabb översikt av ROI med de viktigaste variablerna
             </p>
-            <Button className="w-full" variant="outline">Öppna snabbkalkylator</Button>
           </div>
         </Link>
 
         {/* Jämförande ROI-kalkylator kort */}
         <Link href="/roi/comparative" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-teal-500/20">
+          <div className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-all border border-border hover:border-teal-500/20 h-full">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-teal-500/10 p-3 rounded-lg">
                 <BarChart3 className="h-6 w-6 text-teal-500" />
@@ -127,52 +103,11 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold mb-2 group-hover:text-teal-500 transition-colors">
               Jämförande ROI
             </h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground">
               Jämför olika insatser för att hitta den med bäst avkastning
             </p>
-            <Button className="w-full" variant="outline">Jämför insatser</Button>
           </div>
         </Link>
-
-        {/* Mina rapporter kort */}
-        <Link href="/rapporter" className="group">
-          <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-blue-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-blue-500/10 p-3 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-500" />
-              </div>
-              <span className="text-sm font-medium px-2 py-1 bg-blue-500/10 text-blue-500 rounded-full">
-                Rapporter
-              </span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-500 transition-colors">
-              Mina rapporter
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              Hantera och visa dina sparade ROI-beräkningar
-            </p>
-            <Button variant="outline" className="w-full">Visa rapporter</Button>
-          </div>
-        </Link>
-
-        {/* Statistik kort */}
-        <div className="bg-card rounded-lg shadow-md p-6 border border-border hover:shadow-lg transition-all hover:border-green-500/20 group">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-green-500/10 p-3 rounded-lg">
-              <BarChart3 className="h-6 w-6 text-green-500" />
-            </div>
-            <span className="text-sm font-medium px-2 py-1 bg-green-500/10 text-green-500 rounded-full">
-              Statistik
-            </span>
-          </div>
-          <h2 className="text-xl font-semibold mb-2 group-hover:text-green-500 transition-colors">
-            Översikt och trender
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Se statistik och trender baserat på dina ROI-beräkningar
-          </p>
-          <Button variant="outline" className="w-full" disabled>Kommer snart</Button>
-        </div>
       </div>
 
       <div className="mt-8 p-6 bg-card rounded-lg shadow-md border border-border">
