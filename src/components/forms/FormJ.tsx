@@ -1094,7 +1094,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Minskad andel av personal med hög stressnivå</label>
-                  <InfoLabel text="Ange den procentuella minskningen av personal med hög stress. Till exempel 20% betyder att 20% av de med hög stress får lägre stressnivå efter insatsen." />
+                  <InfoLabel text="Ange den procentuella minskningen av personal med hög stress." />
                   <div className="flex items-center gap-2">
                     <FormattedNumberInput
                       value={safeFormData.reducedStressPercentageAlt2}

@@ -344,7 +344,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
   // Hantera alla automatiska beräkningar när formData ändras
   useEffect(() => {
     // Räkna ut totalvärde av arbete
-    const totalWorkValue = formData.totalPersonnelCosts || 0;
+    const totalWorkValue = (formData.totalPersonnelCosts || 0) + (formData.companyProfit || 0);
     
     // Räkna ut totalt produktionsbortfall
     const percentDecimal = (formData.percentHighStress || 0) / 100;
@@ -401,7 +401,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
         totalCostMentalHealth
       }));
     }
-  }, [formData.totalPersonnelCosts, formData.percentHighStress, formData.productionLossHighStress, formData.costShortSickLeave, formData.percentShortSickLeaveMentalHealth, formData.costLongSickLeave, formData.percentLongSickLeaveMentalHealth, formData.totalWorkValue, formData.totalProductionLoss, formData.valueProductionLoss, formData.costShortSickLeaveMentalHealth, formData.costLongSickLeaveMentalHealth, formData.totalCostSickLeaveMentalHealth, formData.totalCostMentalHealth]);
+  }, [formData.totalPersonnelCosts, formData.companyProfit, formData.percentHighStress, formData.productionLossHighStress, formData.costShortSickLeave, formData.percentShortSickLeaveMentalHealth, formData.costLongSickLeave, formData.percentLongSickLeaveMentalHealth, formData.totalWorkValue, formData.totalProductionLoss, formData.valueProductionLoss, formData.costShortSickLeaveMentalHealth, formData.costLongSickLeaveMentalHealth, formData.totalCostSickLeaveMentalHealth, formData.totalCostMentalHealth]);
   
   // Setup autosave whenever formData changes
   useEffect(() => {
