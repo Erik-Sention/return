@@ -183,7 +183,7 @@ export const RekommendationTab: React.FC<RekommendationTabProps> = ({ reportData
             <h3 className="text-base font-semibold">Rekommendation för beslut</h3>
           </div>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            {reportData.recommendation || `Det föreslagna paketet med insatser krävs att andelen med hög stressnivå minskar med minst ${formatPercent(minEffectPercent)} vilket motsvarar en sänkning från 22% till ca ${(22 - minEffectPercent).toFixed(1)}% för att insatsen ska gå ihop sig. Allt över det är en besparing. Givet att organisationens anställda avsätter den tid som krävs bedöms minsta effekt rimlig att uppnå. Insatspaketet rekommenderas.`}
+            {reportData.recommendation || 'Ingen rekommendation har angetts. Fyll i Steg 7 – Rekommendation för beslut i Form 3 för att visa din rekommendation här.'}
           </p>
         </div>
         
