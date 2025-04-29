@@ -341,51 +341,67 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     autoFetchFromOtherForms();
   }, [currentUser, autoFetchStatus.hasFetched, projectId, autoFetchStatus, handleChange]);
 
-  // Beräkna automatiska värden när relevanta fält ändras
+  // Hantera alla automatiska beräkningar när formData ändras
   useEffect(() => {
-    // Konvertera till nummer innan addition för att förhindra strängkonkatenering
-    const personnelCosts = Number(formData.totalPersonnelCosts || 0);
-    const profit = Number(formData.companyProfit || 0);
-    const totalWorkValue = personnelCosts + profit;
+    // Räkna ut totalvärde av arbete
+    const totalWorkValue = formData.totalPersonnelCosts || 0;
     
-    // C9 = C7 × C8 (percentage of staff with high stress × production loss at high stress)
-    const totalProductionLoss = ((formData.percentHighStress || 0) * (formData.productionLossHighStress || 0)) / 100;
+    // Räkna ut totalt produktionsbortfall
+    const percentDecimal = (formData.percentHighStress || 0) / 100;
+    const productionLossPercent = formData.productionLossHighStress || 0;
+    const totalProductionLoss = percentDecimal * productionLossPercent;
+    const valueProductionLoss = totalWorkValue * totalProductionLoss / 100;
     
-    // C10 = C6 × C9 ÷ 100
-    const valueProductionLoss = (totalWorkValue * totalProductionLoss) / 100;
-  
-    const costShortSickLeaveMentalHealth = ((formData.costShortSickLeave || 0) * (formData.percentShortSickLeaveMentalHealth || 0)) / 100;
-    const costLongSickLeaveMentalHealth = ((formData.costLongSickLeave || 0) * (formData.percentLongSickLeaveMentalHealth || 0)) / 100;
-  
+    // Räkna ut kostnad för korttidssjukfrånvaro kopplad till psykisk ohälsa
+    const shortSickLeaveBase = formData.costShortSickLeave || 0;
+    const shortSickLeaveMentalHealthPercent = formData.percentShortSickLeaveMentalHealth || 0;
+    const costShortSickLeaveMentalHealth = shortSickLeaveBase * shortSickLeaveMentalHealthPercent / 100;
+    
+    // Räkna ut kostnad för långtidssjukfrånvaro kopplad till psykisk ohälsa
+    const longSickLeaveBase = formData.costLongSickLeave || 0;
+    const longSickLeaveMentalHealthPercent = formData.percentLongSickLeaveMentalHealth || 0;
+    const costLongSickLeaveMentalHealth = longSickLeaveBase * longSickLeaveMentalHealthPercent / 100;
+    
+    // Räkna ut total kostnad för psykisk ohälsa
     const totalCostSickLeaveMentalHealth = costShortSickLeaveMentalHealth + costLongSickLeaveMentalHealth;
-    const totalCostMentalHealth = Number(valueProductionLoss + totalCostSickLeaveMentalHealth);
+    const totalCostMentalHealth = valueProductionLoss + totalCostSickLeaveMentalHealth;
     
-    console.log('FormC calculated values:', {
-      valueProductionLoss,
-      totalCostSickLeaveMentalHealth,
-      totalCostMentalHealth
-    });
-  
-    setFormData(prev => ({
-      ...prev,
-      totalWorkValue,
+    console.log('FormC beräkningar:', {
+      percentDecimal,
+      productionLossPercent,
       totalProductionLoss,
+      totalWorkValue,
       valueProductionLoss,
+      shortSickLeaveBase,
+      shortSickLeaveMentalHealthPercent,
       costShortSickLeaveMentalHealth,
+      longSickLeaveBase, 
+      longSickLeaveMentalHealthPercent,
       costLongSickLeaveMentalHealth,
       totalCostSickLeaveMentalHealth,
       totalCostMentalHealth
-    }));
-  }, [
-    formData.totalPersonnelCosts,
-    formData.companyProfit,
-    formData.percentHighStress,
-    formData.productionLossHighStress,
-    formData.costShortSickLeave,
-    formData.percentShortSickLeaveMentalHealth,
-    formData.costLongSickLeave,
-    formData.percentLongSickLeaveMentalHealth
-  ]);
+    });
+    
+    // Undvik för många rerenders genom att bara uppdatera om värdena har ändrats
+    if (formData.totalWorkValue !== totalWorkValue ||
+        formData.totalProductionLoss !== totalProductionLoss ||
+        formData.valueProductionLoss !== valueProductionLoss ||
+        formData.costShortSickLeaveMentalHealth !== costShortSickLeaveMentalHealth ||
+        formData.costLongSickLeaveMentalHealth !== costLongSickLeaveMentalHealth ||
+        formData.totalCostSickLeaveMentalHealth !== totalCostSickLeaveMentalHealth ||
+        formData.totalCostMentalHealth !== totalCostMentalHealth) {
+      setFormData(prev => ({
+        ...prev,
+        totalWorkValue,
+        totalProductionLoss,
+        valueProductionLoss,
+        costShortSickLeaveMentalHealth,
+        costLongSickLeaveMentalHealth,
+        totalCostSickLeaveMentalHealth,
+        totalCostMentalHealth
+      }));
+    }
+  }, [formData.totalPersonnelCosts, formData.percentHighStress, formData.productionLossHighStress, formData.costShortSickLeave, formData.percentShortSickLeaveMentalHealth, formData.costLongSickLeave, formData.percentLongSickLeaveMentalHealth, formData.totalWorkValue, formData.totalProductionLoss, formData.valueProductionLoss, formData.costShortSickLeaveMentalHealth, formData.costLongSickLeaveMentalHealth, formData.totalCostSickLeaveMentalHealth, formData.totalCostMentalHealth]);
   
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -493,16 +509,6 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     }
   }, [isDataLoading, isOrgInfoLoading]);
 
-  // Callback för när organisationsdata har laddats
-  const handleOrgDataLoaded = useCallback((data: { 
-    organizationName: string; 
-    contactPerson: string; 
-    startDate: string;
-    endDate: string;
-  } | null) => {
-    setOrgData(data);
-  }, []);
-
   return (
     <div className="space-y-6">
       <FadeIn show={isContentReady} duration={500}>
@@ -514,7 +520,8 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
           <div className="sr-only">
             <OrganizationHeader 
               onLoadingChange={setIsOrgInfoLoading} 
-              onDataLoaded={handleOrgDataLoaded}
+              onDataLoaded={setOrgData}
+              projectId={projectId}
             />
           </div>
           

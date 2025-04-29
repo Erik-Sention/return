@@ -33,6 +33,7 @@ interface FormCData {
   percentShortSickLeaveMentalHealth?: number;    // C12
   costLongSickLeave?: number;                    // C14
   percentLongSickLeaveMentalHealth?: number;     // C15
+  totalCostMentalHealth?: number;
   [key: string]: string | number | undefined | null; // Mer specifik typ istället för 'any'
 }
 
@@ -211,16 +212,6 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   }, [isDataLoading, isOrgInfoLoading]);
   
-  // Callback för när organisationsdata har laddats
-  const handleOrgDataLoaded = useCallback((data: { 
-    organizationName: string; 
-    contactPerson: string;
-    startDate: string;
-    endDate: string;
-  } | null) => {
-    setOrgData(data);
-  }, []);
-
   // Setup autosave whenever formData changes
   useEffect(() => {
     // Clear any existing timer
@@ -322,7 +313,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     }
   };
   
-  // Ny useEffect för att automatiskt hämta data från Formulär 2 vid inladdning
+  // Lägg till automatisk datahämtning från FormC vid inladdning
   useEffect(() => {
     const autoFetchFromFormC = async () => {
       if (autoFetchStatus.hasFetched || !currentUser?.uid) return;
@@ -332,23 +323,31 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
         const currentStatus = { ...autoFetchStatus, hasFetched: true };
         setAutoFetchStatus(currentStatus);
         
-        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C');
+        console.log(`Försöker hämta data från Form C för ${projectId ? `projekt ${projectId}` : 'standardformulär'}`);
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C', projectId);
+        console.log('Hämtad Form C data:', formCData);
         
         if (formCData) {
           const updatedStatus = { ...currentStatus };
           
           // Hämta stressnivå om tillgänglig
           if (formCData.percentHighStress !== undefined) {
+            console.log('Hämtar stressnivå:', formCData.percentHighStress);
             handleChange('stressLevel', formCData.percentHighStress);
             updatedStatus.stressLevel = true;
+          } else {
+            console.log('Stressnivå saknas i Form C data');
           }
           
-          // Hämta produktionsbortfall om tillgänglig och produktionsbortfall har ett värde
+          // Hämta produktionsbortfall om tillgänglig och beroende fält har värden
           if (formCData.valueProductionLoss !== undefined && 
               typeof formCData.productionLossHighStress === 'number' && 
               formCData.productionLossHighStress > 0) {
+            console.log('Hämtar produktionsbortfall:', formCData.valueProductionLoss);
             handleChange('productionLoss', formCData.valueProductionLoss);
             updatedStatus.productionLoss = true;
+          } else {
+            console.log('Produktionsbortfall saknas eller är ofullständigt i Form C data');
           }
           
           // Kontrollera om alla nödvändiga fält för sjukfrånvarokostnad finns
@@ -360,24 +359,39 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
           
           // Hämta sjukfrånvarokostnad endast om alla nödvändiga fält finns
           if (formCData.totalCostSickLeaveMentalHealth !== undefined && hasAllSickLeaveFields) {
+            console.log('Hämtar sjukfrånvarokostnad:', formCData.totalCostSickLeaveMentalHealth);
             handleChange('sickLeaveCost', formCData.totalCostSickLeaveMentalHealth);
             updatedStatus.sickLeaveCost = true;
+          } else {
+            console.log('Sjukfrånvarokostnad saknas eller är ofullständig i Form C data');
+            // Kontrollera om totalCostMentalHealth finns som ett alternativ
+            if (formCData.totalCostMentalHealth !== undefined) {
+              console.log('Hämtar totalCostMentalHealth som alternativ för sjukfrånvarokostnad:', formCData.totalCostMentalHealth);
+              handleChange('sickLeaveCost', formCData.totalCostMentalHealth);
+              updatedStatus.sickLeaveCost = true;
+            }
           }
           
           setAutoFetchStatus(updatedStatus);
+        } else {
+          console.warn('Ingen Form C data hittades');
         }
       } catch (error) {
-        console.error('Fel vid automatisk hämtning från Formulär 2:', error);
-        setAutoFetchStatus(prev => ({ 
-          ...prev, 
-          hasFetched: true, 
-          errorMessage: 'Kunde inte automatiskt hämta data från Formulär 2. Gå till Formulär 2 för att fylla i data.' 
+        console.error('Error fetching data from FormC:', error);
+        setAutoFetchStatus(prev => ({
+          ...prev,
+          hasFetched: true,
+          errorMessage: 'Ett fel uppstod när data skulle hämtas från Formulär 2.'
         }));
       }
     };
-    
-    autoFetchFromFormC();
-  }, [currentUser, autoFetchStatus, handleChange]);
+
+    // Kör endast om formuläret har laddats in
+    if (!isDataLoading) {
+      console.log('Kör autoFetchFromFormC eftersom formuläret är färdigladdat');
+      autoFetchFromFormC();
+    }
+  }, [currentUser, autoFetchStatus.hasFetched, isDataLoading, projectId, handleChange, autoFetchStatus]);
 
   // Formatera nummer med tusentalsavgränsare
   const formatNumber = (num: number | undefined): string => {
@@ -391,7 +405,8 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
       <div className="sr-only">
         <OrganizationHeader 
           onLoadingChange={setIsOrgInfoLoading} 
-          onDataLoaded={handleOrgDataLoaded}
+          onDataLoaded={setOrgData}
+          projectId={projectId}
         />
       </div>
       

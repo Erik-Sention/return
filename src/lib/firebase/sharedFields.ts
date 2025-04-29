@@ -11,11 +11,12 @@ export interface SharedFields {
 /**
  * Hämta gemensamma fält från Form A (organisationsnamn och kontaktperson) och Form D (tidsperiod)
  * @param userId - Användarens ID
+ * @param projectId - Projekt-ID för projektspecifik datalagring (optional)
  * @returns De gemensamma fälten eller null om de inte finns
  */
-export const loadSharedFields = async (userId: string): Promise<SharedFields | null> => {
+export const loadSharedFields = async (userId: string, projectId?: string | null): Promise<SharedFields | null> => {
   try {
-    console.log(`Attempting to load shared fields for user ${userId}`);
+    console.log(`Attempting to load shared fields for user ${userId}${projectId ? ` and project ${projectId}` : ''}`);
     
     // Kontrollera om vi har en giltig databasreferens
     if (!database) {
@@ -31,9 +32,14 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
       endDate: ''
     };
     
-    // STEG 1: Hämta alltid organisationsnamn och kontaktperson från Formulär A
-    const formAPath = `users/${userId}/forms/A`;
-    console.log('Loading organization name and contact person from Form A path:', formAPath);
+    // Bestäm sökväg baserat på om vi har ett projektId eller inte
+    const formPrefix = projectId 
+      ? `users/${userId}/projectForms/${projectId}`
+      : `users/${userId}/forms`;
+    
+    // STEG 1: Hämta organisationsnamn och kontaktperson från Formulär A
+    const formAPath = `${formPrefix}/A`;
+    console.log('Loading organization name and contact person from path:', formAPath);
     
     let snapshot = await get(child(dbRef, formAPath));
     
@@ -49,8 +55,8 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
     }
     
     // STEG 2: Hämta start- och slutdatum från Formulär D
-    const formDPath = `users/${userId}/forms/D`;
-    console.log('Loading start and end date from Form D path:', formDPath);
+    const formDPath = `${formPrefix}/D`;
+    console.log('Loading start and end date from path:', formDPath);
     
     snapshot = await get(child(dbRef, formDPath));
     
@@ -69,8 +75,8 @@ export const loadSharedFields = async (userId: string): Promise<SharedFields | n
       console.log('No data found in Form D');
       
       // Om Form D inte har data, försök med Form C (för bakåtkompatibilitet)
-      const formCPath = `users/${userId}/forms/C`;
-      console.log('Trying to load time period from Form C path:', formCPath);
+      const formCPath = `${formPrefix}/C`;
+      console.log('Trying to load time period from path:', formCPath);
       
       snapshot = await get(child(dbRef, formCPath));
       
@@ -182,16 +188,17 @@ export const updateSharedFieldsFromCurrentForm = async (
 /**
  * Hämta organisationsinformation från Form D (organisationsnamn och kontaktperson)
  * @param userId - Användarens ID
+ * @param projectId - Projekt-ID för projektspecifik datalagring (optional)
  * @returns Organisationens namn och kontaktperson eller null om de inte finns
  */
-export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{ 
+export const loadOrganizationInfoFromFormD = async (userId: string, projectId?: string | null): Promise<{ 
   organizationName: string, 
   contactPerson: string,
   startDate: string,
   endDate: string 
 } | null> => {
   try {
-    console.log(`Hämtar organisationsinfo från formulär D för användare ${userId}`);
+    console.log(`Hämtar organisationsinfo från formulär D för användare ${userId}${projectId ? ` och projekt ${projectId}` : ''}`);
     
     // Kontrollera om vi har en giltig databasreferens
     if (!database) {
@@ -200,10 +207,15 @@ export const loadOrganizationInfoFromFormD = async (userId: string): Promise<{
     }
     
     const dbRef = ref(database);
-    const formDPath = `users/${userId}/forms/D`;
-    console.log('Hämtar från sökväg:', formDPath);
     
-    const snapshot = await get(child(dbRef, formDPath));
+    // Bestäm sökväg baserat på om vi har ett projektId eller inte
+    const formPath = projectId 
+      ? `users/${userId}/projectForms/${projectId}/D`
+      : `users/${userId}/forms/D`;
+      
+    console.log('Hämtar från sökväg:', formPath);
+    
+    const snapshot = await get(child(dbRef, formPath));
     
     if (snapshot.exists()) {
       const formDData = snapshot.val();

@@ -13,12 +13,14 @@ interface OrganizationHeaderProps {
     startDate: string,
     endDate: string 
   } | null) => void;
+  projectId?: string | null;
 }
 
 export const OrganizationHeader = ({ 
   forceRefresh = false, 
   onLoadingChange,
-  onDataLoaded
+  onDataLoaded,
+  projectId
 }: OrganizationHeaderProps) => {
   const { currentUser } = useAuth();
   const [organizationInfo, setOrganizationInfo] = useState<{
@@ -67,7 +69,8 @@ export const OrganizationHeader = ({
             callbacksCalledRef.current.loadingChangeSet = true;
           }
           
-          const info = await loadOrganizationInfoFromFormD(currentUser.uid);
+          // Skicka projektId om det finns
+          const info = await loadOrganizationInfoFromFormD(currentUser.uid, projectId);
           
           // Uppdatera tillståndsvariabeln
           setOrganizationInfo(info);
@@ -106,7 +109,7 @@ export const OrganizationHeader = ({
     
     fetchOrganizationInfo();
     // Ta bort onLoadingChange och onDataLoaded från dependencies för att undvika oändliga uppdateringar
-  }, [currentUser, forceRefresh]);
+  }, [currentUser, forceRefresh, projectId]);
   
   // Visa inte header om information saknas
   if (!organizationInfo || (!organizationInfo.organizationName && !organizationInfo.contactPerson && 

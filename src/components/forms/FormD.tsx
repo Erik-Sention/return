@@ -469,6 +469,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
                   setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
                 }}
                 disabled={!currentUser?.uid}
+                projectId={projectId}
               />
             </div>
           </div>

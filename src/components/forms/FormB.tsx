@@ -245,6 +245,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
         <OrganizationHeader 
           onLoadingChange={setIsOrgInfoLoading} 
           onDataLoaded={handleOrgDataLoaded}
+          projectId={projectId}
         />
       </div>
       
@@ -334,6 +335,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
                   setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
                 }}
                 disabled={!currentUser?.uid}
+                projectId={projectId}
               />
             </div>
           </div>

@@ -8,13 +8,25 @@ interface EnhancedROIReportData extends ROIReportData {
   numberOfEmployees?: number;
   contactEmail?: string;
   contactPhone?: string;
+  goals?: string;
 }
 
 /**
- * Hämta all data för ROI-rapporten från de olika formulären
+ * Laddar ROI-rapportdata från olika formulär för default-vyn (icke-projekt)
+ * Detta kommer att fasas ut till förmån för projektspecifik data - använd loadROIReportDataForProject istället
+ * @param userId User ID
+ * @param projectId Optional project ID
  */
-export async function loadROIReportData(userId: string): Promise<ROIReportData | null> {
+export async function loadROIReportData(userId: string, projectId?: string | null): Promise<ROIReportData | null> {
   try {
+    // Om projektId finns, använd loadROIReportDataForProject istället
+    if (projectId) {
+      console.log(`loadROIReportData anropades med projectId=${projectId}, delegerar till loadROIReportDataForProject`);
+      return loadROIReportDataForProject(userId, projectId);
+    }
+    
+    console.log('loadROIReportData anropades utan projectId, hämtar standarddata');
+    
     // Make sure we have a valid database reference
     if (!database) {
       console.error('Firebase database is not initialized');
@@ -47,27 +59,34 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
     
     if (formASnapshot.exists()) {
       const formAData = formASnapshot.val();
-      reportData.currentSituation = formAData.currentSituation || '';
-      reportData.goalsDescription = formAData.goals || '';
-      reportData.causeAnalysis = formAData.causeAnalysis || '';
-      reportData.recommendation = formAData.recommendation || '';
       
-      // Hämta statistik om nuläget
-      reportData.stressPercentage = formAData.stressLevel || 0;
-      reportData.productionLossValue = formAData.productionLoss || 0;
-      reportData.sickLeaveValue = formAData.sickLeaveCost || 0;
+      // Nulägesbeskrivning
+      reportData.currentSituation = formAData.currentSituation;
       
-      // Om vi har en array med interventioner, skapa en sammanhängande text
-      if (formAData.interventions && Array.isArray(formAData.interventions) && formAData.interventions.length > 0) {
-        const filteredInterventions = formAData.interventions.filter((i: string) => !!i);
+      // Statistik från Form A
+      reportData.stressPercentage = formAData.stressLevel;
+      reportData.productionLossValue = formAData.productionLoss;
+      reportData.sickLeaveValue = formAData.sickLeaveCost;
+      
+      // Orsaksanalys och Risker
+      reportData.causeAnalysis = formAData.causeAnalysis;
+      
+      // Mål och behov
+      reportData.goals = formAData.goals;
+      
+      // Interventionsbeskrivning (kan vara tom eller saknas)
+      reportData.interventionDescription = formAData.recommendation;
+      
+      // Uppdatera interventionsArray om den finns
+      if (formAData.interventions && Array.isArray(formAData.interventions)) {
+        const filteredInterventions = formAData.interventions.filter((intervention: string) => !!intervention);
         if (filteredInterventions.length > 0) {
-          reportData.interventionDescription = filteredInterventions.join(', ');
-          reportData.interventionsArray = [...filteredInterventions]; // Spara den ursprungliga arrayen
+          reportData.interventionsArray = [...filteredInterventions];
         }
       }
     }
     
-    // Hämta data från Form B (info om insatser)
+    // Hämta data från Form B (interventionsdesign och genomförandeplan)
     const formBPath = `users/${userId}/forms/B`;
     const formBSnapshot = await get(child(dbRef, formBPath));
     
@@ -115,6 +134,26 @@ export async function loadROIReportData(userId: string): Promise<ROIReportData |
     if (formCSnapshot.exists()) {
       const formCData = formCSnapshot.val();
       reportData.timePeriod = formCData.timePeriod || '';
+      
+      // Lägg till stressnivå och kostnad om det finns
+      if (formCData.percentHighStress !== undefined) {
+        reportData.stressPercentage = formCData.percentHighStress;
+      }
+      
+      if (formCData.valueProductionLoss !== undefined) {
+        reportData.productionLossValue = formCData.valueProductionLoss;
+      }
+      
+      if (formCData.totalCostSickLeaveMentalHealth !== undefined) {
+        reportData.sickLeaveValue = formCData.totalCostSickLeaveMentalHealth;
+      }
+      
+      if (formCData.totalCostMentalHealth !== undefined) {
+        // Om vi inte redan har satt sickLeaveValue, använd totalCostMentalHealth
+        if (reportData.sickLeaveValue === undefined || reportData.sickLeaveValue === 0) {
+          reportData.sickLeaveValue = formCData.totalCostMentalHealth;
+        }
+      }
     }
     
     // Hämta data från Form D (kontaktuppgifter och antal anställda)
@@ -231,8 +270,8 @@ export async function loadROIReportDataForProject(userId: string, projectId: str
       return null;
     }
     
-    // Hämta grundläggande delad information
-    const sharedFields = await loadSharedFields(userId);
+    // Hämta grundläggande delad information - pass projectId to get project-specific shared fields
+    const sharedFields = await loadSharedFields(userId, projectId);
     
     if (!sharedFields) {
       console.log('Inga gemensamma fält hittades');
@@ -329,6 +368,26 @@ export async function loadROIReportDataForProject(userId: string, projectId: str
     if (formCSnapshot.exists()) {
       const formCData = formCSnapshot.val();
       reportData.timePeriod = formCData.timePeriod || '';
+      
+      // Lägg till stressnivå och kostnad om det finns
+      if (formCData.percentHighStress !== undefined) {
+        reportData.stressPercentage = formCData.percentHighStress;
+      }
+      
+      if (formCData.valueProductionLoss !== undefined) {
+        reportData.productionLossValue = formCData.valueProductionLoss;
+      }
+      
+      if (formCData.totalCostSickLeaveMentalHealth !== undefined) {
+        reportData.sickLeaveValue = formCData.totalCostSickLeaveMentalHealth;
+      }
+      
+      if (formCData.totalCostMentalHealth !== undefined) {
+        // Om vi inte redan har satt sickLeaveValue, använd totalCostMentalHealth
+        if (reportData.sickLeaveValue === undefined || reportData.sickLeaveValue === 0) {
+          reportData.sickLeaveValue = formCData.totalCostMentalHealth;
+        }
+      }
     }
     
     // Hämta data från Form D (kontaktuppgifter och antal anställda)

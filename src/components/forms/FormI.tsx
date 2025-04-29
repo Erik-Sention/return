@@ -967,6 +967,7 @@ const FormI = forwardRef<FormIRef, FormIProps>(function FormI(props, ref) {
         <OrganizationHeader 
           onLoadingChange={setIsOrgInfoLoading} 
           onDataLoaded={setOrgData}
+          projectId={projectId}
         />
       </div>
       

@@ -97,20 +97,32 @@ export async function deleteProject(userId: string, projectId: string): Promise<
   await remove(formsRef);
 }
 
-// Kopiera data från användarens standardformulär till ett specifikt projekt
+// Initialize a new project with an empty structure instead of copying data from default forms
 export async function initializeProjectFromDefault(userId: string, projectId: string): Promise<void> {
   try {
-    // Hämta standardformulärdata
-    const formsRef = ref(database, `users/${userId}/forms`);
-    const snapshot = await get(formsRef);
+    // Create an empty structure for the project
+    const projectFormsRef = ref(database, `users/${userId}/projectForms/${projectId}`);
     
-    if (snapshot.exists()) {
-      const defaultForms = snapshot.val();
-      
-      // Skapa samma struktur för projektet
-      const projectFormsRef = ref(database, `users/${userId}/projectForms/${projectId}`);
-      await set(projectFormsRef, defaultForms);
-    }
+    // Instead of copying form data, just create empty placeholders
+    // This ensures each project has its own separate data
+    const emptyStructure = {
+      A: {},
+      B: {},
+      C: {},
+      D: {},
+      G: {},
+      H: {},
+      I: {},
+      J: {},
+      sharedFields: {
+        organizationName: '',
+        contactPerson: '',
+        startDate: '',
+        endDate: ''
+      }
+    };
+    
+    await set(projectFormsRef, emptyStructure);
   } catch (error) {
     console.error('Fel vid initialisering av projektdata:', error);
     throw error;

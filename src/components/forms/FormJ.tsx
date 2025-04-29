@@ -475,76 +475,64 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
       setMessage('Du måste vara inloggad för att hämta data');
       return;
     }
-
+    
     try {
-      setMessage('Hämtar data...');
+      setMessage('Hämtar värde...');
       
       if (formType === 'C') {
-        console.log(`Manually fetching data from Form C into field ${String(targetField)}`);
-        const data = await loadFormData<FormCData>(currentUser.uid, formType, projectId);
-        console.log('Fetched FormC data in manual fetch:', data); // Debug log
+        // Hämta totalCostMentalHealth från Form C (stresshälsokostnader)
+        const formCData = await loadFormData<FormCData>(currentUser.uid, 'C', projectId);
         
-        if (data) {
-          if (targetField === 'stressLevel') {
-            // Hämta stressnivå (percentHighStress)
-            if (data.percentHighStress !== undefined && data.percentHighStress !== null) {
-              console.log('Using percentHighStress in manual fetch:', data.percentHighStress);
-              setCurrentStressLevel(data.percentHighStress);
-              setAutoFetchStatus(prev => ({ ...prev, stressLevelFetched: true }));
-              setMessage(`Stressnivå hämtad från Formulär 2: ${data.percentHighStress}%`);
-            } else {
-              console.warn('percentHighStress is undefined or null in FormC data:', data);
-              setMessage(`Inget värde för "Andel av personalen med hög stressnivå" hittades i Formulär 2.`);
+        if (formCData) {
+          if (targetField === 'totalCostMentalHealthAlt1' || 
+              targetField === 'totalCostMentalHealthAlt2' || 
+              targetField === 'totalCostMentalHealthAlt3') {
+            if (formCData.totalCostMentalHealth !== undefined) {
+              const value = Math.round(formCData.totalCostMentalHealth);
+              handleChange(targetField, value);
+              setMessage(`Värdet ${value.toLocaleString('sv-SE')} kr har hämtats från Formulär 2`);
+              setTimeout(() => setMessage(null), 3000);
+              return;
             }
-          } else if (data.totalCostMentalHealth !== undefined && data.totalCostMentalHealth !== null) {
-            // Avrunda värdet till heltal för att undvika decimalproblem
-            const roundedValue = Math.round(data.totalCostMentalHealth);
-            console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
-            
-            // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
-            handleChange(targetField as keyof FormJData, roundedValue as FormJData[keyof FormJData]);
-            setMessage(`Värde hämtat från Formulär 2: ${roundedValue.toLocaleString('sv-SE')} kr`);
-          } else {
-            console.warn('totalCostMentalHealth is undefined or null in FormC data:', data);
-            setMessage(`Inget värde för "Total kostnad för psykisk ohälsa" hittades i Formulär 2.`);
+          } else if (targetField === 'stressLevel') {
+            if (formCData.percentHighStress !== undefined) {
+              const value = formCData.percentHighStress;
+              setCurrentStressLevel(value);
+              setMessage(`Värdet ${value}% har hämtats från Formulär 2`);
+              setTimeout(() => setMessage(null), 3000);
+              return;
+            }
           }
-        } else {
-          console.warn('No data found for FormC');
-          setMessage(`Inget data hittades i Formulär 2.`);
         }
-      } else if (formType === 'G') {
-        console.log(`Manually fetching data from Form G into field ${String(targetField)}`);
-        const data = await loadFormData<FormGData>(currentUser.uid, formType, projectId);
-        console.log('Fetched FormG data in manual fetch:', data); // Debug log
         
-        if (data) {
-          if (data.totalInterventionCost !== undefined && data.totalInterventionCost !== null) {
-            // Avrunda värdet till heltal för att undvika decimalproblem
-            const roundedValue = Math.round(data.totalInterventionCost);
-            console.log('Using value in manual fetch:', roundedValue, 'for field', String(targetField)); // Debug log
-            
-            // Uppdatera fältet, se till att vi aldrig skickar undefined utan alltid ett nummer
-            handleChange(targetField as keyof FormJData, roundedValue as FormJData[keyof FormJData]);
-            setMessage(`Värde hämtat från Formulär 5: ${roundedValue.toLocaleString('sv-SE')} kr`);
-          } else {
-            console.warn('totalInterventionCost is undefined or null in FormG data:', data);
-            setMessage(`Inget värde för "Total kostnad för insatsen" hittades i Formulär 5.`);
+        setMessage('Kunde inte hitta värdet i Formulär 2. Kontrollera att rätt data finns.');
+        setTimeout(() => setMessage(null), 3000);
+      }
+      else if (formType === 'G') {
+        // Hämta totalInterventionCost från Form G (insatskostnad)
+        const formGData = await loadFormData<FormGData>(currentUser.uid, 'G', projectId);
+        
+        if (formGData) {
+          if (targetField === 'totalInterventionCostAlt1' || 
+              targetField === 'totalInterventionCostAlt3') {
+            if (formGData.totalInterventionCost !== undefined) {
+              const value = Math.round(formGData.totalInterventionCost);
+              handleChange(targetField, value);
+              setMessage(`Värdet ${value.toLocaleString('sv-SE')} kr har hämtats från Formulär 5`);
+              setTimeout(() => setMessage(null), 3000);
+              return;
+            }
           }
-        } else {
-          console.warn('No data found for FormG');
-          setMessage(`Inget data hittades i Formulär 5.`);
         }
+        
+        setMessage('Kunde inte hitta värdet i Formulär 5. Kontrollera att rätt data finns.');
+        setTimeout(() => setMessage(null), 3000);
       }
     } catch (error) {
-      console.error(`Error fetching data from Form ${formType}:`, error);
-      setMessage(`Ett fel uppstod när data skulle hämtas från Formulär ${getFormNumber(formType)}.`);
+      console.error('Error fetching value:', error);
+      setMessage('Ett fel uppstod när värdet skulle hämtas.');
+      setTimeout(() => setMessage(null), 3000);
     }
-
-    // Rensa meddelandet efter 3 sekunder (håll det lite längre om det var framgångsrikt)
-    setTimeout(() => {
-      console.log('Clearing fetch message');
-      setMessage(null);
-    }, 3000);
   };
   
   // Lägg till state för valideringsfel
@@ -797,23 +785,21 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
           }
         }
         
-        // Update status
         setAutoFetchStatus(status);
       } catch (error) {
-        console.error('Error loading initial data from forms:', error);
-        setAutoFetchStatus(prev => ({
-          ...prev,
-          hasFetched: true,
-          errorMessage: 'Kunde inte ladda initial data från formulär 2 och 5.'
+        console.error('Error loading initial data from Form C and G:', error);
+        setAutoFetchStatus(prev => ({ 
+          ...prev, 
+          hasFetched: true, 
+          errorMessage: 'Kunde inte ladda data automatiskt från Formulär 2 och 5' 
         }));
       }
     };
     
-    // Only run initial loading if we haven't fetched data yet
     if (!autoFetchStatus.hasFetched) {
       initialDataLoading();
     }
-  }, [currentUser, autoFetchStatus.hasFetched, handleChange, autoFetchStatus, projectId]);
+  }, [currentUser, projectId, autoFetchStatus, handleChange, setCurrentStressLevel]);
   
   // Add back the missing useEffect for transferMessage
   // Clear transferMessage after a timeout
@@ -849,6 +835,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
         <OrganizationHeader 
           onLoadingChange={handleOrgLoadingChange} 
           onDataLoaded={setOrgData}
+          projectId={projectId}
         />
       </div>
       

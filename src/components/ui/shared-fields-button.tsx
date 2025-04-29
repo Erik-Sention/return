@@ -7,12 +7,14 @@ interface SharedFieldsButtonProps {
   userId: string | undefined;
   onFieldsLoaded: (fields: SharedFields) => void;
   disabled?: boolean;
+  projectId?: string | null;
 }
 
 export const SharedFieldsButton = ({
   userId,
   onFieldsLoaded,
-  disabled = false
+  disabled = false,
+  projectId
 }: SharedFieldsButtonProps) => {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +29,7 @@ export const SharedFieldsButton = ({
       setIsLoading(true);
       setMessage(null);
       
-      const fields = await loadSharedFields(userId);
+      const fields = await loadSharedFields(userId, projectId);
       
       if (fields) {
         onFieldsLoaded(fields);

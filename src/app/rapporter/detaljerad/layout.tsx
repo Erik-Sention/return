@@ -77,31 +77,32 @@ export default function DetaljeradRapportLayout({
 
   // Ladda rapportdata när användaren är inloggad
   useEffect(() => {
-    const fetchReportData = async () => {
-      if (!currentUser?.uid) return;
+    const loadData = async () => {
+      if (!currentUser?.uid) {
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
         setError(null);
         
-        let data;
-        console.log('Laddar rapportdata - projectId:', projectId);
+        console.log('DetaljeradRapportLayout - Laddar rapportdata med projectId:', projectId);
         
+        // Ladda data beroende på om projectId finns
+        let data;
         if (projectId) {
-          // Ladda projektspecifik data om projektId finns
-          console.log('Laddar projektspecifik data för projektId:', projectId);
+          console.log('Hämtar projektspecifik data för projectId:', projectId);
           data = await loadROIReportDataForProject(currentUser.uid, projectId);
         } else {
-          // Ladda standarddata om inget projektId
-          console.log('Laddar standarddata (ingen projektId)');
+          console.log('Hämtar standarddata utan project');
           data = await loadROIReportData(currentUser.uid);
         }
         
-        console.log('Rapportdata laddad:', data ? 'Success' : 'Null');
-        setReportData(data);
-        
         if (!data) {
           setError('Ingen data hittades. Fyll i formulären först.');
+        } else {
+          setReportData(data);
         }
       } catch (error) {
         console.error('Error loading report data:', error);
@@ -111,10 +112,10 @@ export default function DetaljeradRapportLayout({
       }
     };
     
-    if (mounted && currentUser) {
-      fetchReportData();
+    if (currentUser) {
+      loadData();
     }
-  }, [currentUser, mounted, projectId]);
+  }, [currentUser, projectId]);
 
   // Funktion för att hantera PDF-export
   const handleExportPdf = () => {

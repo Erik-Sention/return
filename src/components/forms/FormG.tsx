@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, FileText, Download } from 'lucide-react';
@@ -571,11 +571,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     }
   }, [isDataLoading, isOrgInfoLoading]);
   
-  // Callback för när organisationsdata har laddats
-  const handleOrgDataLoaded = useCallback((data: { organizationName: string; contactPerson: string; startDate?: string; endDate?: string } | null) => {
-    setOrgData(data);
-  }, []);
-
   // Beräkna automatiska värden när relevanta kostnader ändras
   useEffect(() => {
     // Undvik att köra denna effekt om vi inte har en kostnadsdependency eller inga insatser
@@ -1242,7 +1237,8 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       <div className="sr-only">
         <OrganizationHeader 
           onLoadingChange={setIsOrgInfoLoading} 
-          onDataLoaded={handleOrgDataLoaded}
+          onDataLoaded={setOrgData}
+          projectId={projectId}
         />
       </div>
       
