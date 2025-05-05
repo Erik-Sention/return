@@ -76,26 +76,27 @@ export interface ROIReportData {
   minEffectForBreakEvenAlt3?: number;      // Minskad procentandel med hög stress för break-even
   
   // Interventionsbeskrivning
-  interventionDescription?: string;
-  interventionsArray?: string[];           // Behåll original array med interventioner
+  interventionDescription?: string;        // Från FormA (recommendation) eller FormB (beskrivning)
+  interventionsArray?: string[];           // Från FormA.interventions eller FormB.interventions
   interventionCosts?: CostItem[];
   
   // FormG data - detaljerad interventionsdata
   formGData?: FormGData;
   
   // Nuläge, mål och resultat
-  currentSituation?: string;
-  goalsDescription?: string;
-  causeAnalysis?: string;          // Från Form A: Steg 3 - Orsaksanalys
-  recommendation?: string;         // Från Form A: Steg 7 - Rekommendation för beslut
+  currentSituation?: string;               // Från FormA.currentSituation
+  goals?: string;                          // Från FormA.goals (ursprungliga fältet)
+  goalsDescription?: string;               // Från FormB.goals (används för att visa mål i UI)
+  causeAnalysis?: string;                  // Från FormA.causeAnalysis
+  recommendation?: string;                 // Från FormA.recommendation eller FormB.recommendation
   
   // Genomförandeplanering
-  implementationPlan?: string;              // Kommaseparerad sträng
-  implementationPlanArray?: string[];       // Array av implementeringssteg
+  implementationPlan?: string;              // Kommaseparerad sträng från FormB.implementationPlan
+  implementationPlanArray?: string[];       // Array av implementeringssteg från FormB.implementationPlan
   
   // Målgrupp och syfte
-  targetGroup?: string;
-  interventionPurpose?: string;
+  targetGroup?: string;                     // Från FormB.targetGroup
+  interventionPurpose?: string;             // Från FormB.purpose
   
   // Fördelar med interventionen
   benefitAreas?: BenefitItem[];

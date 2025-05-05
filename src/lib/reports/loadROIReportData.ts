@@ -71,11 +71,12 @@ export async function loadROIReportData(userId: string, projectId?: string | nul
       // Orsaksanalys och Risker
       reportData.causeAnalysis = formAData.causeAnalysis;
       
-      // Mål och behov
+      // Mål och behov - läggs till i båda fälten för konsekvent rendering
       reportData.goals = formAData.goals;
+      reportData.goalsDescription = formAData.goals; // Lägg även till i goalsDescription för UI
       
-      // Interventionsbeskrivning (kan vara tom eller saknas)
-      reportData.interventionDescription = formAData.recommendation;
+      // Recommendation
+      reportData.recommendation = formAData.recommendation || '';
       
       // Uppdatera interventionsArray om den finns
       if (formAData.interventions && Array.isArray(formAData.interventions)) {
@@ -110,8 +111,30 @@ export async function loadROIReportData(userId: string, projectId?: string | nul
         if (filteredPlan.length > 0) {
           reportData.implementationPlanArray = [...filteredPlan]; // Spara originalarrayen
         }
-      } 
+      }
       
+      // Lägg till FormB interventions data om den finns
+      if (formBData.interventions && Array.isArray(formBData.interventions)) {
+        const filteredInterventions = formBData.interventions.filter((intervention: string) => !!intervention);
+        if (filteredInterventions.length > 0) {
+          // Om vi inte redan har interventions från FormA, eller arrayen är tom
+          if (!reportData.interventionsArray || reportData.interventionsArray.length === 0) {
+            reportData.interventionsArray = [...filteredInterventions];
+            reportData.interventionDescription = filteredInterventions.join(', ');
+          }
+        }
+      }
+      
+      // Lägg till goalsDescription från FormB om tillgänglig
+      if (formBData.goals) {
+        reportData.goalsDescription = formBData.goals;
+      }
+      
+      // Lägg till recommendation från FormB om den saknas från FormA
+      if (formBData.recommendation && (!reportData.recommendation || reportData.recommendation.trim() === '')) {
+        reportData.recommendation = formBData.recommendation;
+      }
+
       // Lägg till kostnadsdata
       if (formBData.costs && Array.isArray(formBData.costs)) {
         const validCosts = formBData.costs
@@ -299,7 +322,6 @@ export async function loadROIReportDataForProject(userId: string, projectId: str
       console.log(`Form A data hittades för projekt ${projectId}`);
       const formAData = formASnapshot.val();
       reportData.currentSituation = formAData.currentSituation || '';
-      reportData.goalsDescription = formAData.goals || '';
       reportData.causeAnalysis = formAData.causeAnalysis || '';
       reportData.recommendation = formAData.recommendation || '';
       
@@ -307,6 +329,12 @@ export async function loadROIReportDataForProject(userId: string, projectId: str
       reportData.stressPercentage = formAData.stressLevel || 0;
       reportData.productionLossValue = formAData.productionLoss || 0;
       reportData.sickLeaveValue = formAData.sickLeaveCost || 0;
+      
+      // Spara goals/målbeskrivning från FormA i båda fälten för konsekvent rendering
+      if (formAData.goals) {
+        reportData.goals = formAData.goals;
+        reportData.goalsDescription = formAData.goals; // Lägg till för att användas i UI
+      }
       
       // Om vi har en array med interventioner, skapa en sammanhängande text
       if (formAData.interventions && Array.isArray(formAData.interventions) && formAData.interventions.length > 0) {
@@ -346,6 +374,28 @@ export async function loadROIReportDataForProject(userId: string, projectId: str
         }
       }
       
+      // Lägg till FormB interventions data om den finns
+      if (formBData.interventions && Array.isArray(formBData.interventions)) {
+        const filteredInterventions = formBData.interventions.filter((intervention: string) => !!intervention);
+        if (filteredInterventions.length > 0) {
+          // Om vi inte redan har interventions från FormA, eller arrayen är tom
+          if (!reportData.interventionsArray || reportData.interventionsArray.length === 0) {
+            reportData.interventionsArray = [...filteredInterventions];
+            reportData.interventionDescription = filteredInterventions.join(', ');
+          }
+        }
+      }
+      
+      // Lägg till goalsDescription från FormB
+      if (formBData.goals) {
+        reportData.goalsDescription = formBData.goals;
+      }
+      
+      // Lägg till recommendation från FormB om den saknas från FormA
+      if (formBData.recommendation && (!reportData.recommendation || reportData.recommendation.trim() === '')) {
+        reportData.recommendation = formBData.recommendation;
+      }
+
       // Lägg till kostnadsdata
       if (formBData.costs && Array.isArray(formBData.costs)) {
         const validCosts = formBData.costs
