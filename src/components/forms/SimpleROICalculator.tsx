@@ -92,16 +92,16 @@ const formatNumber = (value: number) => {
 const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculatorProps>(function SimpleROICalculator(props, ref) {
   const { } = useAuth();
   const [formData, setFormData] = useState<SimpleROIData>({
-    // Inga förfyllda värden
+    // Förfyllda standardvärden som matchar FormD
     num_employees: undefined,
     avg_monthly_salary: undefined,
-    social_fees: undefined,
-    personnel_costs: undefined,
+    social_fees: 42, // 42% standardvärde för sociala avgifter
+    personnel_costs: 30, // 30% standardvärde för personalkringkostnader
     stress_level: undefined,
-    production_loss: undefined,
-    workdays_per_year: undefined,
-    short_term_absence: undefined,
-    long_term_absence: undefined,
+    production_loss: 9, // 9% standardvärde för produktionsbortfall enligt Myndigheten för arbetsmiljökunskap
+    workdays_per_year: 220, // 220 dagar standard
+    short_term_absence: 2.5, // 2.5% standardvärde för kort sjukfrånvaro
+    long_term_absence: 3, // 3% standardvärde för lång sjukfrånvaro
     intervention_cost: undefined,
     expected_reduction: undefined
   });
