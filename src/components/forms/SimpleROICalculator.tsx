@@ -1,8 +1,11 @@
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Calculator, ArrowRight, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateSimpleROIPDF } from '@/utils/pdfGenerator';
+import { PDFPreviewDialog } from '@/components/ui/pdf-preview-dialog';
+import { Input } from '@/components/ui/input';
 
 interface SimpleROIData {
   num_employees: number | undefined;
@@ -109,6 +112,8 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
   const [calculationDone, setCalculationDone] = useState(false);
   const [results, setResults] = useState<SimpleROIResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string>('Företag AB');
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Vi behöver inte längre sparfunktionalitet, men behåller ref för framtida behov
   useImperativeHandle(ref, () => ({
@@ -218,6 +223,12 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
     }
   };
 
+  const handleExportPDF = () => {
+    if (!results) return;
+    
+    generateSimpleROIPDF(formData, results, companyName);
+  };
+
   return (
     <div className="space-y-8">
       <div className="space-y-6">
@@ -230,6 +241,28 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
         <div className="grid gap-6 md:grid-cols-2">
           {/* Vänster kolumn - Formulär */}
           <div className="form-card p-6 space-y-6">
+            <SectionHeader 
+              title="Företagsinformation" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
+            />
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1">
+                Företagsnamn
+                <InfoLabel text="Ange namnet på företaget eller organisationen för rapporten." />
+              </label>
+              <Input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Ange företagsnamn"
+              />
+            </div>
+            
+            <SectionHeader 
+              title="Personaldata" 
+              icon={<Calculator className="h-5 w-5 text-primary" />}
+            />
+            
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-1">
@@ -401,7 +434,10 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
           </div>
           
           {/* Höger kolumn - Resultat */}
-          <div className={`form-card p-6 space-y-6 ${!calculationDone ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div 
+            ref={resultsRef}
+            className={`form-card p-6 space-y-6 ${!calculationDone ? 'opacity-50 pointer-events-none' : ''}`}
+          >
             <SectionHeader 
               title="Resultat av ROI-beräkning" 
               icon={<Calculator className="h-5 w-5 text-primary" />}
@@ -534,6 +570,14 @@ const SimpleROICalculator = forwardRef<SimpleROICalculatorRef, SimpleROICalculat
                     <p className="mt-2">Den ekonomiska nyttan beräknas genom den förväntade minskningen av andelen personal med hög stressnivå, vilket i sin tur minskar både produktionsbortfall och sjukfrånvaro.</p>
                     <p className="mt-2">Tänk på att många hälsofrämjande insatser har långsiktiga effekter som inte fångas i denna beräkning, som förbättrad arbetsmiljö, ökad trivsel och starkare arbetsgivarvarumärke.</p>
                   </div>
+                </div>
+                
+                <div className="flex justify-end mt-4">
+                  <PDFPreviewDialog
+                    title={`ROI-kalkyl för ${companyName}`}
+                    exportFunction={handleExportPDF}
+                    exportLabel="Exportera som PDF"
+                  />
                 </div>
               </div>
             )}

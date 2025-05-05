@@ -2,21 +2,26 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, style, ...props }: React.ComponentProps<"input">) {
-  return (
-    <input
-      type={type}
-      data-slot="input"
-      className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary/20 selection:text-foreground bg-white dark:bg-[#393E47] dark:text-[#F5F5F5] border-input border dark:border-[#494E59] flex h-9 w-full min-w-0 rounded-md px-3 py-1 text-base shadow-xs outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:opacity-50 read-only:select-text md:text-sm",
-        "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-        className
-      )}
-      style={{ userSelect: 'text', ...style }}
-      {...props}
-    />
-  )
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  // Temporär kommentar för att undvika linter-varning
 }
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
 
 export { Input }

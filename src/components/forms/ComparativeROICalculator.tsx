@@ -1,8 +1,11 @@
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
 import { Calculator, ArrowRight, Info, Plus, Trash2, BarChart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateComparativeROIPDF } from '@/utils/pdfGenerator';
+import { PDFPreviewDialog } from '@/components/ui/pdf-preview-dialog';
+import { Input } from '@/components/ui/input';
 
 interface Intervention {
   id: string;
@@ -130,6 +133,8 @@ const ComparativeROICalculator = forwardRef<ComparativeROICalculatorRef, Compara
     const [calculationDone, setCalculationDone] = useState(false);
     const [results, setResults] = useState<ComparativeROIResults | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [companyName, setCompanyName] = useState<string>('Företag AB');
+    const resultsRef = useRef<HTMLDivElement>(null);
     
     // Behåll ref för framtida behov
     useImperativeHandle(ref, () => ({
@@ -310,6 +315,12 @@ const ComparativeROICalculator = forwardRef<ComparativeROICalculatorRef, Compara
       }
     };
     
+    const handleExportPDF = () => {
+      if (!results) return;
+      
+      generateComparativeROIPDF(formData, results, companyName);
+    };
+    
     return (
       <div className="space-y-8">
         <div className="space-y-6">
@@ -327,6 +338,23 @@ const ComparativeROICalculator = forwardRef<ComparativeROICalculatorRef, Compara
           <div className="grid gap-6 md:grid-cols-2">
             {/* Vänster kolumn - Formulär */}
             <div className="form-card p-6 space-y-6">
+              <SectionHeader 
+                title="Företagsinformation" 
+                icon={<Calculator className="h-5 w-5 text-primary" />}
+              />
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  Företagsnamn
+                  <InfoLabel text="Ange namnet på företaget eller organisationen för rapporten." />
+                </label>
+                <Input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Ange företagsnamn"
+                />
+              </div>
+              
               <SectionHeader 
                 title="Organisationens basdata" 
                 icon={<Calculator className="h-5 w-5 text-primary" />}
@@ -546,7 +574,10 @@ const ComparativeROICalculator = forwardRef<ComparativeROICalculatorRef, Compara
             </div>
             
             {/* Höger kolumn - Resultat */}
-            <div className={`form-card p-6 space-y-6 ${!calculationDone ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div 
+              ref={resultsRef}
+              className={`form-card p-6 space-y-6 ${!calculationDone ? 'opacity-50 pointer-events-none' : ''}`}
+            >
               <SectionHeader 
                 title="Jämförelse av insatser" 
                 icon={<BarChart className="h-5 w-5 text-primary" />}
@@ -730,6 +761,14 @@ const ComparativeROICalculator = forwardRef<ComparativeROICalculatorRef, Compara
                     <p>Insatserna är rangordnade efter deras avkastning på investering (ROI). Insatsen med högst ROI ger mest ekonomisk nytta i förhållande till kostnaden.</p>
                     <p className="mt-2">Den ekonomiska nyttan beräknas genom den förväntade minskningen av andelen personal med hög stressnivå, vilket i sin tur minskar både produktionsbortfall och sjukfrånvaro.</p>
                     <p className="mt-2">Tänk på att utöver ekonomisk nytta kan andra faktorer som genomförbarhet, tidsperspektiv och anpassning till organisationens behov vara viktiga i valet av insats.</p>
+                  </div>
+                  
+                  <div className="flex justify-end mt-4">
+                    <PDFPreviewDialog
+                      title={`Jämförande ROI-kalkyl för ${companyName}`}
+                      exportFunction={handleExportPDF}
+                      exportLabel="Exportera som PDF"
+                    />
                   </div>
                 </div>
               )}
