@@ -38,20 +38,8 @@ const formInfos: { id: string; displayId: string; title: string; description: st
     description: 'Totala Insatskostnader' 
   },
   { 
-    id: 'H', 
-    displayId: '6',
-    title: 'Formulär H', 
-    description: 'Externa Kostnader' 
-  },
-  { 
-    id: 'I', 
-    displayId: '7',
-    title: 'Formulär I', 
-    description: 'Interna Kostnader' 
-  },
-  { 
     id: 'J', 
-    displayId: '8',
+    displayId: '6',
     title: 'Formulär J', 
     description: 'Return on investment' 
   }

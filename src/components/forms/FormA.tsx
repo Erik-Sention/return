@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ClipboardList, Building, LineChart, BrainCircuit, Target, ArrowRight, Calculator, FileText } from 'lucide-react';
+import { Save, Info, LineChart, BrainCircuit, ArrowRight, Calculator, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
@@ -11,15 +10,11 @@ import { FadeIn } from '@/components/ui/fade-in';
 interface FormAData {
   organizationName: string;
   contactPerson: string;
-  businessDefinition: string;
   currentSituation: string;
   stressLevel: number | undefined;
   productionLoss: number | undefined;
   sickLeaveCost: number | undefined;
   causeAnalysis: string;
-  goals: string;
-  interventions: string[];
-  recommendation: string;
 }
 
 // Interface för FormC-data som behövs för att hämta värden
@@ -53,16 +48,30 @@ const InfoLabel = ({ text }: { text: string }) => (
 // Lägg till SectionHeader för tydligare struktur
 const SectionHeader = ({ 
   title, 
-  icon 
+  icon,
+  subtitle
 }: { 
   title: string; 
-  icon: React.ReactNode 
+  icon: React.ReactNode;
+  subtitle?: string;
 }) => (
-  <div className="flex items-center gap-2 mb-4">
-    <div className="bg-primary/10 p-2 rounded-full">
-      {icon}
+  <div className="mb-4">
+    <div className="flex items-center gap-2">
+      <div className="bg-primary/10 p-2 rounded-full">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold">{title}</h3>
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+      </div>
     </div>
-    <h3 className="text-lg font-semibold">{title}</h3>
+  </div>
+);
+
+// Lägg till FormCard-komponenten
+const FormCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-white dark:bg-slate-900 p-5 rounded-lg border border-border shadow-sm ${className || ''}`}>
+    {children}
   </div>
 );
 
@@ -144,15 +153,11 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
   const [formData, setFormData] = useState<FormAData>({
     organizationName: '',
     contactPerson: '',
-    businessDefinition: '',
     currentSituation: '',
     stressLevel: undefined,
     productionLoss: undefined,
     sickLeaveCost: undefined,
     causeAnalysis: '',
-    goals: '',
-    interventions: [''],
-    recommendation: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -489,29 +494,12 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
             </div>
           )}
           
-          <div className="form-card">
-            <SectionHeader 
-              title="Steg 1 – Definition av verksamheten" 
-              icon={<Building className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv verksamhetens huvudsakliga uppgifter och mål" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.businessDefinition}
-                onChange={(e) => handleChange('businessDefinition', e.target.value)}
-                placeholder="Beskriv verksamheten..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
           {/* A4 */}
-          <div className="form-card">
+          <FormCard>
             <SectionHeader 
-              title="Steg 2 – Nulägesbeskrivning, psykisk hälsa" 
+              title="Steg 1 – Nulägesbeskrivning, psykisk hälsa" 
               icon={<BrainCircuit className="h-5 w-5 text-primary" />}
+              subtitle="Beskriv den aktuella situationen gällande psykisk hälsa"
             />
 
             <div className="space-y-4">
@@ -555,17 +543,18 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                 </div>
               </div>
             </div>
-          </div>
+          </FormCard>
 
           {/* A5 */}
-          <div className="form-card">
+          <FormCard className="mt-6">
             <SectionHeader 
-              title="Steg 3 – Orsaksanalys och riskbedömning" 
+              title="Steg 2 – Orsaksanalys och riskbedömning" 
               icon={<LineChart className="h-5 w-5 text-primary" />}
+              subtitle="Identifiera orsaker till problem och bedöm risker"
             />
             
             <div className="space-y-2">
-              <InfoLabel text="Identifiera orsaker till problem och bedöm risker" />
+              <InfoLabel text="Beskriv orsaker och risker..." />
               <textarea
                 className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
                 value={formData.causeAnalysis}
@@ -574,77 +563,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
                 style={{ userSelect: 'text' }}
               />
             </div>
-          </div>
-
-          {/* A6 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Steg 4 – Målformulering och Behovsanalys" 
-              icon={<Target className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Formulera tydliga mål baserade på identifierade behov" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.goals}
-                onChange={(e) => handleChange('goals', e.target.value)}
-                placeholder="Beskriv mål och behov..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* A7 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Steg 5 – Val av lämpliga insatser" 
-              icon={<ClipboardList className="h-5 w-5 text-primary" />}
-            />
-            
-            {formData.interventions.map((intervention, index) => (
-              <div key={index} className="flex gap-2 mb-3">
-                <Input
-                  value={intervention}
-                  onChange={(e) => {
-                    const newInterventions = [...formData.interventions];
-                    newInterventions[index] = e.target.value;
-                    handleChange('interventions', newInterventions);
-                  }}
-                  placeholder={`Insats ${index + 1}`}
-                  className="bg-background/50"
-                />
-                {index === formData.interventions.length - 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleChange('interventions', [...formData.interventions, ''])}
-                  >
-                    +
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* A9 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Steg 7 – Rekommendation för beslut" 
-              icon={<ClipboardList className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.recommendation}
-                onChange={(e) => handleChange('recommendation', e.target.value)}
-                placeholder="Ange rekommendation..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
+          </FormCard>
           
           <div className="flex justify-between mt-8">
             <div></div> {/* Tom div för att behålla layoututrymmet */}

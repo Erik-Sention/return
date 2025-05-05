@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, ArrowDown as ArrowDownIcon, Calculator as CalculatorIcon, FileText, Download } from 'lucide-react';
+import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -22,35 +22,6 @@ const FormInfo = () => (
   </div>
 );
 
-// Uppdatera hjälpfunktion för att översätta formulärbokstäver till siffror
-const getFormNumber = (formId: string): string => {
-  const formMap: Record<string, string> = {
-    'D': '1',
-    'C': '2',
-    'A': '3',
-    'B': '4',
-    'G': '5',
-    'H': '6',
-    'I': '7',
-    'J': '8'
-  };
-  return formMap[formId] || formId;
-};
-
-// Enkel Textarea-komponent
-const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  function Textarea({ className, style, ...props }, ref) {
-    return (
-      <textarea
-        className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-        style={{ userSelect: 'text', cursor: 'text', ...style }}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
-
 // Typer för insatser och kostnader
 interface InterventionCost {
   id: string;
@@ -62,7 +33,6 @@ interface InterventionCost {
 interface Intervention {
   id: string;
   name: string;
-  description: string;
   costs: InterventionCost[];
   totalExternalCost: number;
   totalInternalCost: number;
@@ -75,53 +45,6 @@ interface FormGData {
   totalInterventionCost: number;
   totalExternalCost: number;
   totalInternalCost: number;
-}
-
-// Typer för Form H data
-interface FormHCostItem {
-  id: string;
-  interventionName: string;
-  subInterventionName: string;
-  costType: string;
-  amount: number | null;
-}
-
-interface FormHIntervention {
-  id: string;
-  name: string;
-  comment: string;
-  costItems: FormHCostItem[];
-  totalCost: number;
-}
-
-interface FormHData {
-  interventions: FormHIntervention[];
-}
-
-// Typer för Form I data
-interface FormICostCategory {
-  minutesSpent: number | null;
-  divisor: number;
-  hoursSpent: number;
-  employeeCount: number | null;
-  totalHours: number;
-  hourlyCost: number | null;
-  totalCost: number;
-}
-
-interface FormIInternalCost {
-  id: string;
-  interventionName: string; 
-  subInterventionName: string;
-  staff: FormICostCategory;
-  managers: FormICostCategory;
-  administration: FormICostCategory;
-  totalHours: number;
-  totalCost: number;
-}
-
-interface FormIData {
-  internalCosts: FormIInternalCost[];
 }
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -375,17 +298,6 @@ const InterventionCard = ({
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-medium">Beskrivning</label>
-          <InfoLabel text="Beskriv insatsen och dess syfte" />
-          <Textarea
-            value={intervention.description}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...intervention, description: e.target.value })}
-            placeholder="Beskriv insatsen"
-            className="bg-white dark:bg-slate-800 min-h-24"
-          />
-        </div>
-        
-        <div className="space-y-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium">Kostnader</label>
             <Button 
@@ -400,22 +312,16 @@ const InterventionCard = ({
             </Button>
           </div>
           
-          {costs.length === 0 ? (
-            <div className="text-sm text-muted-foreground p-3 border border-dashed border-muted-foreground/20 rounded-md text-center">
-              Lägg till en eller flera delinsatser för denna insats
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {costs.map((cost) => (
-                <CostRow
-                  key={cost.id}
-                  cost={cost}
-                  onChange={updateCost}
-                  onRemove={() => removeCost(cost.id)}
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-1">
+            {costs.map((cost) => (
+              <CostRow
+                key={cost.id}
+                cost={cost}
+                onChange={updateCost}
+                onRemove={() => removeCost(cost.id)}
+              />
+            ))}
+          </div>
         </div>
         
         <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t">
@@ -437,42 +343,6 @@ const InterventionCard = ({
           />
         </div>
       </div>
-    </div>
-  );
-};
-
-// Lägg till FetchValueButton-komponenten för att hämta insatser från formulär
-const FetchValueButton = ({ 
-  onClick, 
-  disabled,
-  message,
-  source = 'H'
-}: { 
-  onClick: () => void;
-  disabled?: boolean;
-  message?: string | null;
-  source?: 'H' | 'I';
-}) => {
-  // Använd getFormNumber för att konvertera bokstaven till nummerbeteckning
-  const formNumber = getFormNumber(source);
-
-  return (
-    <div className="space-y-1 mt-2">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onClick}
-        disabled={disabled}
-        className={`gap-2 w-full ${message ? 'border-blue-400 dark:border-blue-500' : ''}`}
-      >
-        <Download className="h-4 w-4" />
-        Hämta data från Formulär {formNumber}
-      </Button>
-      {message && (
-        <div className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">
-          {message}
-        </div>
-      )}
     </div>
   );
 };
@@ -508,29 +378,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fetchMessageFromH, setFetchMessageFromH] = useState<string | null>(null);
-  const [fetchMessageFromI, setFetchMessageFromI] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Skapa en memoized-dependency för att spåra kostnadsändringar
-  const interventionCostDependency = useMemo(() => {
-    // Säkerställ att interventions finns innan vi gör något
-    if (!safeFormData.interventions || safeFormData.interventions.length === 0) {
-      return '';
-    }
-    
-    try {
-      return safeFormData.interventions
-        .map(i => i.costs && i.costs.length > 0 ? 
-          i.costs.map(c => `${c.id}:${c.externalCost}:${c.internalCost}`).join('|') 
-          : i.id
-        )
-        .join('||');
-    } catch (error) {
-      console.error('Error generating cost dependency:', error);
-      return '';  // Returnera en tom sträng vid fel istället för att krascha
-    }
-  }, [safeFormData.interventions]);
 
   const [isContentReady, setIsContentReady] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -574,7 +422,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
   // Beräkna automatiska värden när relevanta kostnader ändras
   useEffect(() => {
     // Undvik att köra denna effekt om vi inte har en kostnadsdependency eller inga insatser
-    if (!interventionCostDependency || safeFormData.interventions.length === 0) {
+    if (!safeFormData.interventions || safeFormData.interventions.length === 0) {
       return;
     }
 
@@ -651,7 +499,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       console.error('Error calculating costs:', error);
       // Vid fel, gör ingenting istället för att krascha
     }
-  }, [interventionCostDependency, safeFormData.interventions]);
+  }, [safeFormData.interventions]);
 
   // Setup autosave whenever formData changes
   useEffect(() => {
@@ -694,13 +542,18 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Lägga till en ny insats
+  // Lägga till en ny insats med en tom delinsats direkt
   const addIntervention = () => {
+    const newCostId = generateId();
     const newIntervention: Intervention = {
       id: generateId(),
       name: '',
-      description: '',
-      costs: [],
+      costs: [{
+        id: newCostId,
+        name: '',
+        externalCost: null,
+        internalCost: null
+      }],
       totalExternalCost: 0,
       totalInternalCost: 0,
       totalCost: 0
@@ -776,7 +629,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           return {
             id: intervention.id,
             name: intervention.name || '',
-            description: intervention.description || '',
             costs,
             totalExternalCost: intervention.totalExternalCost || 0,
             totalInternalCost: intervention.totalInternalCost || 0,
@@ -832,404 +684,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
       setIsSaving(false);
     }
   };
-
-  // Rensa fetchMessage efter en viss tid
-  useEffect(() => {
-    if (fetchMessageFromH) {
-      const timer = setTimeout(() => {
-        setFetchMessageFromH(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageFromH]);
-
-  // Funktion för att hämta insats från formulär H
-  const fetchInterventionFromFormH = async () => {
-    if (!currentUser?.uid) {
-      setFetchMessageFromH('Du måste vara inloggad för att hämta data');
-      return;
-    }
-
-    try {
-      setFetchMessageFromH('Hämtar data...');
-      
-      // Hämta data från Form H
-      const formHData = await loadFormData<FormHData>(currentUser.uid, 'H', projectId);
-      
-      if (!formHData || !formHData.interventions || formHData.interventions.length === 0) {
-        setFetchMessageFromH('Inga insatser hittades i Formulär H.');
-        return;
-      }
-
-      // Samla alla delinsatser grupperade per insats
-      const interventionGroups: Map<string, { 
-        insatsName: string, 
-        delinsatser: Array<{ name: string, externalCost: number | null }>
-      }> = new Map();
-      
-      // Samla alla delinsatser grupperade per insats
-      formHData.interventions.forEach(intervention => {
-        if (intervention.costItems && intervention.costItems.length > 0) {
-          const delinsatser = intervention.costItems.map(item => ({
-            name: item.subInterventionName,
-            // Avrunda externa kostnader till heltal
-            externalCost: item.amount !== null ? Math.round(item.amount) : null
-          }));
-          
-          interventionGroups.set(intervention.name, {
-            insatsName: intervention.name,
-            delinsatser: delinsatser
-          });
-        }
-      });
-      
-      // Samla information om insatser och delinsatser i G
-      const existingInterventions = new Map<string, Map<string, InterventionCost>>();
-      safeFormData.interventions.forEach(intervention => {
-        const costMap = new Map<string, InterventionCost>();
-        intervention.costs.forEach(cost => {
-          costMap.set(cost.name, cost);
-        });
-        existingInterventions.set(intervention.name, costMap);
-      });
-      
-      let added = 0;
-      let updated = 0;
-      const interventionsToUpdate: Intervention[] = [];
-      
-      // Gå igenom alla insatser från H som behöver hanteras
-      for (const [insatsName, insatsData] of interventionGroups) {
-        const targetIntervention = safeFormData.interventions.find(
-          intervention => intervention.name === insatsName
-        );
-        
-        const existingCosts = existingInterventions.get(insatsName) || new Map<string, InterventionCost>();
-        
-        // Hitta delinsatser som behöver läggas till eller uppdateras
-        const delinsatserToAdd: Array<{ name: string, externalCost: number | null }> = [];
-        const delinsatserToUpdate: Array<{ name: string, externalCost: number | null, id: string }> = [];
-        
-        insatsData.delinsatser.forEach(delinsats => {
-          const existingCost = existingCosts.get(delinsats.name);
-          if (!existingCost) {
-            // Delinsatsen finns inte, lägg till
-            delinsatserToAdd.push(delinsats);
-          } else if (existingCost.externalCost !== delinsats.externalCost) {
-            // Delinsatsen finns men kostnaden har ändrats
-            delinsatserToUpdate.push({...delinsats, id: existingCost.id});
-          }
-        });
-        
-        if (delinsatserToAdd.length > 0 || delinsatserToUpdate.length > 0) {
-          if (!targetIntervention) {
-            // Skapa ny insats om den inte finns
-            const newIntervention: Intervention = {
-              id: generateId(),
-              name: insatsName,
-              description: '',
-              costs: [],
-              totalExternalCost: 0,
-              totalInternalCost: 0,
-              totalCost: 0
-            };
-            
-            // Lägg till alla nya delinsatser
-            const newCosts = delinsatserToAdd.map(delinsats => ({
-              id: generateId(),
-              name: delinsats.name,
-              externalCost: delinsats.externalCost,
-              internalCost: null
-            }));
-            
-            newIntervention.costs = newCosts;
-            interventionsToUpdate.push(newIntervention);
-            added += delinsatserToAdd.length;
-          } else {
-            // Uppdatera befintlig insats
-            const updatedCosts = [...targetIntervention.costs];
-            
-            // Lägg till nya delinsatser
-            if (delinsatserToAdd.length > 0) {
-              const newCosts = delinsatserToAdd.map(delinsats => ({
-                id: generateId(),
-                name: delinsats.name,
-                externalCost: delinsats.externalCost,
-                internalCost: null
-              }));
-              updatedCosts.push(...newCosts);
-              added += delinsatserToAdd.length;
-            }
-            
-            // Uppdatera befintliga delinsatser
-            if (delinsatserToUpdate.length > 0) {
-              delinsatserToUpdate.forEach(delinsats => {
-                const index = updatedCosts.findIndex(cost => cost.id === delinsats.id);
-                if (index !== -1) {
-                  updatedCosts[index] = {
-                    ...updatedCosts[index],
-                    externalCost: delinsats.externalCost
-                  };
-                }
-              });
-              updated += delinsatserToUpdate.length;
-            }
-            
-            interventionsToUpdate.push({
-              ...targetIntervention,
-              costs: updatedCosts
-            });
-          }
-        }
-      }
-      
-      // Uppdatera alla insatser i ett svep
-      if (interventionsToUpdate.length > 0) {
-        const currentInterventions = [...safeFormData.interventions];
-        const updatedInterventions: Intervention[] = [];
-        
-        // Gå igenom de befintliga insatserna
-        currentInterventions.forEach(intervention => {
-          const updatedVersion = interventionsToUpdate.find(updated => updated.id === intervention.id);
-          if (updatedVersion) {
-            updatedInterventions.push(updatedVersion);
-          } else {
-            updatedInterventions.push(intervention);
-          }
-        });
-        
-        // Lägg till helt nya insatser
-        interventionsToUpdate.forEach(newIntervention => {
-          if (!currentInterventions.some(existing => existing.id === newIntervention.id)) {
-            updatedInterventions.push(newIntervention);
-          }
-        });
-        
-        setFormData(prev => ({
-          ...prev,
-          interventions: updatedInterventions
-        }));
-        
-        // Visa ett informativt meddelande
-        if (added > 0 && updated > 0) {
-          setFetchMessageFromH(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 6.`);
-        } else if (added > 0) {
-          setFetchMessageFromH(`${added} nya delinsatser tillagda från Formulär 6.`);
-        } else if (updated > 0) {
-          setFetchMessageFromH(`${updated} befintliga delinsatser uppdaterade från Formulär 6.`);
-        } else {
-          setFetchMessageFromH('Inga ändringar behövdes, allt är redan uppdaterat.');
-        }
-      } else {
-        setFetchMessageFromH('Alla insatser från Formulär 6 har redan hämtats.');
-      }
-    } catch (error) {
-      setFetchMessageFromH(`Ett fel uppstod: ${error}`);
-      console.error('Error fetching data from Form H:', error);
-    }
-  };
-
-  // Funktion för att hämta insats från formulär I
-  const fetchInterventionFromFormI = async () => {
-    if (!currentUser?.uid) {
-      setFetchMessageFromI('Du måste vara inloggad för att hämta data');
-      return;
-    }
-
-    try {
-      setFetchMessageFromI('Hämtar data...');
-      
-      // Hämta data från Form I
-      const formIData = await loadFormData<FormIData>(currentUser.uid, 'I', projectId);
-      
-      if (!formIData || !formIData.internalCosts || formIData.internalCosts.length === 0) {
-        setFetchMessageFromI('Inga insatser hittades i Formulär 7.');
-        return;
-      }
-
-      // Gruppera delinsatser efter insatsnamn från I
-      const interventionGroups: Map<string, { 
-        insatsName: string, 
-        delinsatser: Array<{ name: string, internalCost: number | null }>
-      }> = new Map();
-      
-      // Samla alla delinsatser grupperade per insats
-      formIData.internalCosts.forEach(internalCost => {
-        const delinsatsName = internalCost.subInterventionName;
-        // Avrunda totalCost till heltal
-        const totalCost = Math.round(internalCost.totalCost);
-        
-        if (!interventionGroups.has(internalCost.interventionName)) {
-          interventionGroups.set(internalCost.interventionName, {
-            insatsName: internalCost.interventionName,
-            delinsatser: []
-          });
-        }
-        
-        const group = interventionGroups.get(internalCost.interventionName);
-        if (group) {
-          group.delinsatser.push({
-            name: delinsatsName,
-            internalCost: totalCost
-          });
-        }
-      });
-      
-      // Samla information om insatser och delinsatser i G
-      const existingInterventions = new Map<string, Map<string, InterventionCost>>();
-      safeFormData.interventions.forEach(intervention => {
-        const costMap = new Map<string, InterventionCost>();
-        intervention.costs.forEach(cost => {
-          costMap.set(cost.name, cost);
-        });
-        existingInterventions.set(intervention.name, costMap);
-      });
-      
-      let added = 0;
-      let updated = 0;
-      const interventionsToUpdate: Intervention[] = [];
-      
-      // Gå igenom alla insatser från I som behöver hanteras
-      for (const [insatsName, insatsData] of interventionGroups) {
-        const targetIntervention = safeFormData.interventions.find(
-          intervention => intervention.name === insatsName
-        );
-        
-        const existingCosts = existingInterventions.get(insatsName) || new Map<string, InterventionCost>();
-        
-        // Hitta delinsatser som behöver läggas till eller uppdateras
-        const delinsatserToAdd: Array<{ name: string, internalCost: number | null }> = [];
-        const delinsatserToUpdate: Array<{ name: string, internalCost: number | null, id: string }> = [];
-        
-        insatsData.delinsatser.forEach(delinsats => {
-          const existingCost = existingCosts.get(delinsats.name);
-          if (!existingCost) {
-            // Delinsatsen finns inte, lägg till
-            delinsatserToAdd.push(delinsats);
-          } else if (existingCost.internalCost !== delinsats.internalCost) {
-            // Delinsatsen finns men kostnaden har ändrats
-            delinsatserToUpdate.push({...delinsats, id: existingCost.id});
-          }
-        });
-        
-        if (delinsatserToAdd.length > 0 || delinsatserToUpdate.length > 0) {
-          if (!targetIntervention) {
-            // Skapa ny insats om den inte finns
-            const newIntervention: Intervention = {
-              id: generateId(),
-              name: insatsName,
-              description: '',
-              costs: [],
-              totalExternalCost: 0,
-              totalInternalCost: 0,
-              totalCost: 0
-            };
-            
-            // Lägg till alla nya delinsatser
-            const newCosts = delinsatserToAdd.map(delinsats => ({
-              id: generateId(),
-              name: delinsats.name,
-              externalCost: null,
-              internalCost: delinsats.internalCost
-            }));
-            
-            newIntervention.costs = newCosts;
-            interventionsToUpdate.push(newIntervention);
-            added += delinsatserToAdd.length;
-          } else {
-            // Uppdatera befintlig insats
-            const updatedCosts = [...targetIntervention.costs];
-            
-            // Lägg till nya delinsatser
-            if (delinsatserToAdd.length > 0) {
-              const newCosts = delinsatserToAdd.map(delinsats => ({
-                id: generateId(),
-                name: delinsats.name,
-                externalCost: null,
-                internalCost: delinsats.internalCost
-              }));
-              updatedCosts.push(...newCosts);
-              added += delinsatserToAdd.length;
-            }
-            
-            // Uppdatera befintliga delinsatser
-            if (delinsatserToUpdate.length > 0) {
-              delinsatserToUpdate.forEach(delinsats => {
-                const index = updatedCosts.findIndex(cost => cost.id === delinsats.id);
-                if (index !== -1) {
-                  updatedCosts[index] = {
-                    ...updatedCosts[index],
-                    internalCost: delinsats.internalCost
-                  };
-                }
-              });
-              updated += delinsatserToUpdate.length;
-            }
-            
-            interventionsToUpdate.push({
-              ...targetIntervention,
-              costs: updatedCosts
-            });
-          }
-        }
-      }
-      
-      // Uppdatera alla insatser i ett svep
-      if (interventionsToUpdate.length > 0) {
-        const currentInterventions = [...safeFormData.interventions];
-        const updatedInterventions: Intervention[] = [];
-        
-        // Gå igenom de befintliga insatserna
-        currentInterventions.forEach(intervention => {
-          const updatedVersion = interventionsToUpdate.find(updated => updated.id === intervention.id);
-          if (updatedVersion) {
-            updatedInterventions.push(updatedVersion);
-          } else {
-            updatedInterventions.push(intervention);
-          }
-        });
-        
-        // Lägg till helt nya insatser
-        interventionsToUpdate.forEach(newIntervention => {
-          if (!currentInterventions.some(existing => existing.id === newIntervention.id)) {
-            updatedInterventions.push(newIntervention);
-          }
-        });
-        
-        setFormData(prev => ({
-          ...prev,
-          interventions: updatedInterventions
-        }));
-        
-        // Visa ett informativt meddelande
-        if (added > 0 && updated > 0) {
-          setFetchMessageFromI(`${added} nya delinsatser tillagda och ${updated} befintliga uppdaterade från Formulär 7.`);
-        } else if (added > 0) {
-          setFetchMessageFromI(`${added} nya delinsatser tillagda från Formulär 7.`);
-        } else if (updated > 0) {
-          setFetchMessageFromI(`${updated} befintliga delinsatser uppdaterade från Formulär 7.`);
-        } else {
-          setFetchMessageFromI('Inga ändringar behövdes, allt är redan uppdaterat.');
-        }
-      } else {
-        setFetchMessageFromI('Alla insatser från Formulär 7 har redan hämtats.');
-      }
-    } catch (error) {
-      setFetchMessageFromI(`Ett fel uppstod: ${error}`);
-      console.error('Error fetching data from Form I:', error);
-    }
-  };
-
-  // Rensa fetchMessageFormI efter en viss tid
-  useEffect(() => {
-    if (fetchMessageFromI) {
-      const timer = setTimeout(() => {
-        setFetchMessageFromI(null);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [fetchMessageFromI]);
 
   return (
     <div className="space-y-6">
@@ -1311,18 +765,6 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
                 icon={<Coins className="h-5 w-5 text-primary" />}
               />
               <div className="flex items-center gap-2">
-                <FetchValueButton 
-                  onClick={fetchInterventionFromFormH}
-                  disabled={!currentUser?.uid}
-                  message={fetchMessageFromH}
-                  source="H"
-                />
-                <FetchValueButton 
-                  onClick={fetchInterventionFromFormI}
-                  disabled={!currentUser?.uid}
-                  message={fetchMessageFromI}
-                  source="I"
-                />
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -1338,29 +780,9 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
             {(!safeFormData.interventions || safeFormData.interventions.length === 0) ? (
               <div className="text-center p-8 border border-dashed border-primary/20 rounded-md">
                 <p className="text-muted-foreground mb-4">
-                  Det finns inga insatser att visa. Lägg till en insats för att komma igång eller hämta från Formulär 6 eller 7.
+                  Det finns inga insatser att visa. Lägg till en insats för att komma igång.
                 </p>
                 <div className="flex justify-center gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="gap-1"
-                    onClick={fetchInterventionFromFormH}
-                    disabled={!currentUser?.uid}
-                  >
-                    <ArrowDownIcon className="h-4 w-4" />
-                    Hämta från Formulär 6
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="gap-1"
-                    onClick={fetchInterventionFromFormI}
-                    disabled={!currentUser?.uid}
-                  >
-                    <ArrowDownIcon className="h-4 w-4" />
-                    Hämta från Formulär 7
-                  </Button>
                   <Button 
                     type="button" 
                     variant="default" 

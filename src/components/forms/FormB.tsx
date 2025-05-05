@@ -1,27 +1,21 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Target, FileText, Calendar, Users, Lightbulb, ListChecks } from 'lucide-react';
+import { Save, Info, Target, FileText, Users, Lightbulb, ListChecks, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
-import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
-import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
-import { SharedFields } from '@/lib/firebase/sharedFields';
 import { OrganizationHeader } from '@/components/ui/organization-header';
 import { FadeIn } from '@/components/ui/fade-in';
 
 interface FormBData {
   organizationName: string;
   contactPerson: string;
-  initiativeName: string;
-  initiativeDescription: string;
   purpose: string;
-  supportForGoals: string;
-  alternativeApproaches: string;
   goals: string;
   targetGroup: string;
-  expectedEffect: string;
   implementationPlan: string[];
+  interventions: string[];
+  recommendation: string;
 }
 
 // Definiera en typ för vad som ska exponeras via ref
@@ -40,16 +34,28 @@ const InfoLabel = ({ text }: { text: string }) => (
 // Lägg till SectionHeader för tydligare struktur
 const SectionHeader = ({ 
   title, 
-  icon 
+  icon,
+  subtitle
 }: { 
   title: string; 
-  icon: React.ReactNode 
+  icon: React.ReactNode;
+  subtitle: string;
 }) => (
   <div className="flex items-center gap-2 mb-4">
     <div className="bg-primary/10 p-2 rounded-full">
       {icon}
     </div>
-    <h3 className="text-lg font-semibold">{title}</h3>
+    <div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    </div>
+  </div>
+);
+
+// Lägg till nya CSS-klasser i komponentens början
+const FormCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-white dark:bg-slate-900 p-5 rounded-lg border border-border shadow-sm ${className || ''}`}>
+    {children}
   </div>
 );
 
@@ -79,15 +85,12 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
   const [formData, setFormData] = useState<FormBData>({
     organizationName: '',
     contactPerson: '',
-    initiativeName: '',
-    initiativeDescription: '',
     purpose: '',
-    supportForGoals: '',
-    alternativeApproaches: '',
     goals: '',
     targetGroup: '',
-    expectedEffect: '',
-    implementationPlan: ['']
+    implementationPlan: [''],
+    interventions: [''],
+    recommendation: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -113,10 +116,21 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
           const data = await loadFormData<FormBData>(currentUser.uid, FORM_TYPE, projectId);
           if (data) {
             console.log('Loaded form data:', data);
-            // Ensure implementationPlan is always an array
+            // Ensure implementationPlan and interventions are always arrays
             if (!data.implementationPlan || !Array.isArray(data.implementationPlan) || data.implementationPlan.length === 0) {
               data.implementationPlan = [''];
             }
+            
+            // Säkerställ att interventions alltid är en array
+            if (!data.interventions || !Array.isArray(data.interventions)) {
+              data.interventions = [''];
+            }
+            
+            // Säkerställ att recommendation alltid är en sträng
+            if (data.recommendation === undefined || data.recommendation === null) {
+              data.recommendation = '';
+            }
+            
             setFormData(data);
           }
         } catch (error) {
@@ -226,9 +240,13 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
       }
     });
     
-    // Säkerställ att implementationPlan alltid är en array
+    // Säkerställ att implementationPlan och interventions alltid är arrays
     if (!preparedData.implementationPlan || !Array.isArray(preparedData.implementationPlan)) {
       preparedData.implementationPlan = [''];
+    }
+    
+    if (!preparedData.interventions || !Array.isArray(preparedData.interventions)) {
+      preparedData.interventions = [''];
     }
     
     return preparedData;
@@ -310,227 +328,191 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
             </div>
           )}
           
-          {/* B3 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Insats" 
-              icon={<FileText className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Insatsnamn</label>
-              <InfoLabel text="Ange namnet på den insats som ska analyseras" />
-              <Input
-                value={formData.initiativeName}
-                onChange={(e) => handleChange('initiativeName', e.target.value)}
-                placeholder="Ange insatsens namn"
-                className="bg-background/50"
-              />
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-                projectId={projectId}
-              />
-            </div>
-          </div>
-
-          {/* B4 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Vilka insatser avses?" 
-              icon={<Target className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv insatsen och de delinsatser den eventuellt består av så tydligt som möjligt" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.initiativeDescription}
-                onChange={(e) => handleChange('initiativeDescription', e.target.value)}
-                placeholder="Beskriv insatserna..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B5 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Syfte med insatserna" 
-              icon={<Lightbulb className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.purpose}
-                onChange={(e) => handleChange('purpose', e.target.value)}
-                placeholder="Beskriv syftet..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B6 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Stöd för verksamhetens övergripande mål" 
-              icon={<Target className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv vilka verksamhetsmål som stöds av den definierade insatsen samt ev på vilket sätt de övergripande mål stöds" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.supportForGoals}
-                onChange={(e) => handleChange('supportForGoals', e.target.value)}
-                placeholder="Beskriv vilka verksamhetsmål som stöds..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B7 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Alternativa ansatser" 
-              icon={<Lightbulb className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv de alternativ som analyserats, och motivera vald ansats" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.alternativeApproaches}
-                onChange={(e) => handleChange('alternativeApproaches', e.target.value)}
-                placeholder="Beskriv alternativa ansatser..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B8 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Mål med insatserna" 
-              icon={<Target className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.goals}
-                onChange={(e) => handleChange('goals', e.target.value)}
-                placeholder="Beskriv målen..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B9 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Målgrupp" 
-              icon={<Users className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.targetGroup}
-                onChange={(e) => handleChange('targetGroup', e.target.value)}
-                placeholder="Beskriv målgruppen..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B10 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="När nås förväntad effekt av insatsen?" 
-              icon={<Calendar className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv när effekten av insatsen kan nås – tidshorisont, kan vara olika effekt vid olika tidshorisonter" />
-              <textarea
-                className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
-                value={formData.expectedEffect}
-                onChange={(e) => handleChange('expectedEffect', e.target.value)}
-                placeholder="Beskriv tidshorisont för förväntad effekt..."
-                style={{ userSelect: 'text' }}
-              />
-            </div>
-          </div>
-
-          {/* B11 */}
-          <div className="form-card">
-            <SectionHeader 
-              title="Genomförandeplan" 
-              icon={<ListChecks className="h-5 w-5 text-primary" />}
-            />
-            
-            <div className="space-y-2">
-              <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
-              {formData.implementationPlan && Array.isArray(formData.implementationPlan) && formData.implementationPlan.length > 0 ? (
-                formData.implementationPlan.map((step, index) => (
+          {/* Implementera tvåkolumnslayout liknande FormD.tsx */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Vänsterkolumn */}
+            <div className="space-y-6">
+              {/* Steg 4 - Val av lämpliga insatser (från FormA) - flyttad först */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 1 – Val av lämpliga insatser" 
+                  icon={<ClipboardList className="h-5 w-5 text-primary" />}
+                  subtitle="Lista specifika insatser som ska genomföras"
+                />
+                
+                {(formData.interventions || []).map((intervention, index) => (
                   <div key={index} className="flex gap-2 mb-3">
                     <Input
-                      value={step}
+                      value={intervention}
                       onChange={(e) => {
-                        const newPlan = [...formData.implementationPlan];
-                        newPlan[index] = e.target.value;
-                        handleChange('implementationPlan', newPlan);
+                        const newInterventions = [...(formData.interventions || [])];
+                        newInterventions[index] = e.target.value;
+                        handleChange('interventions', newInterventions);
                       }}
-                      placeholder={`Steg ${index + 1}`}
+                      placeholder={`Insats ${index + 1}`}
                       className="bg-background/50"
                     />
-                    {index === formData.implementationPlan.length - 1 && (
+                    {index === (formData.interventions || []).length - 1 && (
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={() => handleChange('implementationPlan', [...formData.implementationPlan, ''])}
+                        onClick={() => {
+                          const newInterventions = [...(formData.interventions || []), ''];
+                          handleChange('interventions', newInterventions);
+                        }}
                       >
                         +
                       </Button>
                     )}
                   </div>
-                ))
-              ) : (
-                <div className="flex gap-2 mb-3">
-                  <Input
-                    value={fallbackStep}
-                    onChange={(e) => {
-                      setFallbackStep(e.target.value);
-                      handleChange('implementationPlan', [e.target.value]);
-                    }}
-                    placeholder="Steg 1"
-                    className="bg-background/50"
+                ))}
+              </FormCard>
+
+              {/* B5 - Syfte */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 2 – Syfte med insatserna" 
+                  icon={<Lightbulb className="h-5 w-5 text-primary" />}
+                  subtitle="Förklara varför insatsen är viktig för organisationen"
+                />
+                
+                <div className="space-y-2">
+                  <InfoLabel text="Beskriv vad insatsen skall leda till för organisationen, verksamheten och/eller personalen" />
+                  <textarea
+                    className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                    value={formData.purpose}
+                    onChange={(e) => handleChange('purpose', e.target.value)}
+                    placeholder="Beskriv syftet..."
+                    style={{ userSelect: 'text' }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setFallbackStep('');
-                      handleChange('implementationPlan', ['']);
-                    }}
-                  >
-                    +
-                  </Button>
                 </div>
-              )}
+              </FormCard>
+
+              {/* Steg 3 - Målformulering och Behovsanalys (från FormA) */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 3 – Målformulering och Behovsanalys" 
+                  icon={<Target className="h-5 w-5 text-primary" />}
+                  subtitle="Sätt tydliga mål baserade på identifierade behov"
+                />
+                
+                <div className="space-y-2">
+                  <InfoLabel text="Formulera tydliga mål baserade på identifierade behov" />
+                  <textarea
+                    className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                    value={formData.goals}
+                    onChange={(e) => handleChange('goals', e.target.value)}
+                    placeholder="Beskriv mål och behov..."
+                    style={{ userSelect: 'text' }}
+                  />
+                </div>
+              </FormCard>
+            </div>
+
+            {/* Högerkolumn */}
+            <div className="space-y-6">
+              {/* B9 - Målgrupp */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 4 – Målgrupp" 
+                  icon={<Users className="h-5 w-5 text-primary" />}
+                  subtitle="Definiera vilka som ska nås av insatsen"
+                />
+                
+                <div className="space-y-2">
+                  <InfoLabel text="Beskriv vilka som skall nås av insatsen samt på vilket sätt de nås" />
+                  <textarea
+                    className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                    value={formData.targetGroup}
+                    onChange={(e) => handleChange('targetGroup', e.target.value)}
+                    placeholder="Beskriv målgruppen..."
+                    style={{ userSelect: 'text' }}
+                  />
+                </div>
+              </FormCard>
+
+              {/* Steg 6 - Rekommendation för beslut (från FormA) */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 5 – Rekommendation för beslut" 
+                  icon={<ClipboardList className="h-5 w-5 text-primary" />}
+                  subtitle="Ge en slutlig rekommendation baserad på analys"
+                />
+                
+                <div className="space-y-2">
+                  <InfoLabel text="Ange rekommendation för beslutsfattande" />
+                  <textarea
+                    className="w-full min-h-[100px] p-2 rounded-md border bg-background/50"
+                    value={formData.recommendation}
+                    onChange={(e) => handleChange('recommendation', e.target.value)}
+                    placeholder="Ange rekommendation..."
+                    style={{ userSelect: 'text' }}
+                  />
+                </div>
+              </FormCard>
+              
+              {/* B11 - Genomförandeplan (flyttad till högerkolumnen) */}
+              <FormCard>
+                <SectionHeader 
+                  title="Steg 6 – Genomförandeplan" 
+                  icon={<ListChecks className="h-5 w-5 text-primary" />}
+                  subtitle="Specificera hur insatsen ska implementeras"
+                />
+                
+                <div className="space-y-2">
+                  <InfoLabel text="Beskriv hur insatsen skall genomföras; aktiviteter, tidplan, ansvar" />
+                  {(formData.implementationPlan || []).length > 0 ? (
+                    (formData.implementationPlan || []).map((step, index) => (
+                      <div key={index} className="flex gap-2 mb-3">
+                        <Input
+                          value={step}
+                          onChange={(e) => {
+                            const newPlan = [...(formData.implementationPlan || [])];
+                            newPlan[index] = e.target.value;
+                            handleChange('implementationPlan', newPlan);
+                          }}
+                          placeholder={`Steg ${index + 1}`}
+                          className="bg-background/50"
+                        />
+                        {index === (formData.implementationPlan || []).length - 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleChange('implementationPlan', [...(formData.implementationPlan || []), ''])}
+                          >
+                            +
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        value={fallbackStep}
+                        onChange={(e) => {
+                          setFallbackStep(e.target.value);
+                          handleChange('implementationPlan', [e.target.value]);
+                        }}
+                        placeholder="Steg 1"
+                        className="bg-background/50"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setFallbackStep('');
+                          handleChange('implementationPlan', ['']);
+                        }}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </FormCard>
             </div>
           </div>
           

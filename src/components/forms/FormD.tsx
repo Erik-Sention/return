@@ -8,9 +8,6 @@ import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
 import { formatCurrency } from '@/lib/utils/format';
 import { Input } from '@/components/ui/input';
 import { FadeIn } from '@/components/ui/fade-in';
-import { SharedFieldsButton } from '@/components/ui/shared-fields-button';
-import { updateFormWithSharedFields } from '@/lib/utils/updateFormFields';
-import { SharedFields } from '@/lib/firebase/sharedFields';
 
 interface FormDData {
   organizationName: string;
@@ -443,9 +440,9 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
                 <label className="text-sm font-medium">Tidsperiod (startdatum)</label>
                 <InfoLabel text="Ange startdatum i formatet ÅÅÅÅ-MM-DD (visas i alla formulär)" />
                 <Input
+                  type="date"
                   value={formData.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
-                  placeholder="ÅÅÅÅ-MM-DD"
                   className="bg-white dark:bg-slate-800 font-medium"
                 />
               </div>
@@ -454,23 +451,12 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
                 <label className="text-sm font-medium">Tidsperiod (slutdatum)</label>
                 <InfoLabel text="Ange slutdatum i formatet ÅÅÅÅ-MM-DD (visas i alla formulär)" />
                 <Input
+                  type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
-                  placeholder="ÅÅÅÅ-MM-DD"
                   className="bg-white dark:bg-slate-800 font-medium"
                 />
               </div>
-            </div>
-            
-            <div className="mt-4">
-              <SharedFieldsButton 
-                userId={currentUser?.uid}
-                onFieldsLoaded={(fields: SharedFields) => {
-                  setFormData(prevData => updateFormWithSharedFields(prevData, fields, { includeTimePeriod: true }));
-                }}
-                disabled={!currentUser?.uid}
-                projectId={projectId}
-              />
             </div>
           </div>
 
