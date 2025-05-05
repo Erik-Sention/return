@@ -301,6 +301,47 @@ export default function ROIProjectsPage() {
           </Button>
         </div>
       )}
+
+      {/* Översikt sektion placerad längst ner på sidan */}
+      <div className="mt-12 p-6 bg-card rounded-lg shadow-md border border-border">
+        <h2 className="text-xl font-semibold mb-4">ROI-projekt</h2>
+        
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="flex items-start gap-3">
+            <div className="bg-emerald-500/10 p-2 rounded-lg">
+              <span className="font-bold text-emerald-500">1</span>
+            </div>
+            <div>
+              <h3 className="font-medium">Skapa ROI-projekt</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Börja med att skapa ett nytt ROI-projekt för att organisera dina beräkningar. Klicka på &quot;Nytt projekt&quot; och fyll i namn och beskrivning för din nya ROI-beräkning
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="bg-emerald-500/10 p-2 rounded-lg">
+              <span className="font-bold text-emerald-500">2</span>
+            </div>
+            <div>
+              <h3 className="font-medium">Mata in data</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Klicka på Öppna Kalkylator och börja fyll i information och se resultat uppdateras i realtid
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="bg-emerald-500/10 p-2 rounded-lg">
+              <span className="font-bold text-emerald-500">3</span>
+            </div>
+            <div>
+              <h3 className="font-medium">Generera rapporter</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Klicka på Visa rapport för att skapa exekutiva eller detaljerade rapporter för delning med beslutsfattare
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 

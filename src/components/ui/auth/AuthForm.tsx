@@ -86,15 +86,10 @@ export default function AuthForm() {
         </Button>
       </form>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-muted"></div>
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">
-            eller
-          </span>
-        </div>
+      <div className="flex items-center my-6">
+        <div className="flex-grow h-px bg-muted"></div>
+        <div className="px-4 text-xs text-muted-foreground uppercase font-medium">ELLER</div>
+        <div className="flex-grow h-px bg-muted"></div>
       </div>
 
       <Button 
