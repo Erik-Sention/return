@@ -132,29 +132,29 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     startDate: '',
     endDate: '',
     averageMonthlySalary: undefined,
-    socialFeesPercentage: undefined,
+    socialFeesPercentage: 42,
     averageSocialFeesPerMonth: 0,
     numberOfEmployees: undefined,
-    numberOfMonths: undefined,
+    numberOfMonths: 12,
     totalSalaryCosts: 0,
-    personnelOverheadPercentage: undefined,
+    personnelOverheadPercentage: 30,
     totalPersonnelOverhead: 0,
     totalPersonnelCosts: 0,
-    scheduledWorkHoursPerYear: undefined,
+    scheduledWorkHoursPerYear: 1760,
     personnelCostPerHour: 0,
-    scheduledWorkDaysPerYear: undefined,
-    shortSickLeaveCostPercentage: undefined,
+    scheduledWorkDaysPerYear: 220,
+    shortSickLeaveCostPercentage: 10,
     shortSickLeaveCostPerDay: 0,
-    shortSickLeavePercentage: undefined,
+    shortSickLeavePercentage: 2.5,
     totalShortSickDays: 0,
     totalShortSickLeaveCosts: 0,
-    shortSickLeaveMentalHealthPercentage: undefined,
-    longSickLeaveCostPercentage: undefined,
+    shortSickLeaveMentalHealthPercentage: 6,
+    longSickLeaveCostPercentage: 1,
     longSickLeaveCostPerDay: 0,
-    longSickLeavePercentage: undefined,
+    longSickLeavePercentage: 3,
     totalLongSickDays: 0,
     totalLongSickLeaveCosts: 0,
-    longSickLeaveMentalHealthPercentage: undefined
+    longSickLeaveMentalHealthPercentage: 40
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -286,10 +286,13 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     }
 
     if (currentUser?.uid) {
+      // Förbereda data för autosparande för att undvika Firebase-fel med undefined
+      const safeFormData = prepareDataForSave(formData);
+      
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
-        formData,
+        safeFormData,
         setIsSaving,
         setSaveMessage,
         projectId
@@ -333,21 +336,33 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
   };
 
   // Hjälpfunktion för att förbereda data innan sparande - ta bort alla undefined
-  const prepareDataForSave = (data: FormDData): FormDData => {
-    const preparedData = { ...data };
+  const prepareDataForSave = (data: FormDData): Record<string, string | number | null> => {
+    const preparedData: Record<string, string | number | null> = {};
     
-    // Ersätt undefined med null för alla numeriska fält, men behåll strängar som strängar
-    Object.keys(preparedData).forEach(key => {
+    // Säkerställ att alla fält har giltiga värden för Firebase
+    Object.keys(data).forEach(key => {
       const typedKey = key as keyof FormDData;
-      // Behåll alltid string-värden för organisationsinfo och datumfält
+      const value = data[typedKey];
+      
+      // Strängar ska alltid vara strängar, aldrig null
       if (typedKey === 'organizationName' || typedKey === 'contactPerson' || 
           typedKey === 'startDate' || typedKey === 'endDate') {
-        // Säkerställ att dessa alltid är strängar, aldrig null
-        (preparedData as Record<keyof FormDData, string | number | null>)[typedKey] = preparedData[typedKey] || '';
+        preparedData[key] = (value as string) || '';
       } 
-      // För numeriska fält, konvertera undefined till null
-      else if (typeof preparedData[typedKey] === 'undefined') {
-        (preparedData as Record<keyof FormDData, string | number | null>)[typedKey] = null;
+      // Konvertera undefined och NaN till null för numeriska värden
+      else if (value === undefined || (typeof value === 'number' && isNaN(value))) {
+        preparedData[key] = null;
+      }
+      // Behåll alla andra värden som de är
+      else {
+        preparedData[key] = value as string | number;
+      }
+    });
+    
+    // Extra validering för att säkerställa att inga undefined förekommer
+    Object.keys(preparedData).forEach(key => {
+      if (preparedData[key] === undefined) {
+        preparedData[key] = null;
       }
     });
     
@@ -386,7 +401,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
       await saveFormData(currentUser.uid, FORM_TYPE, dataToSave, projectId);
       
       // Uppdatera gemensamma fält för användaren
-      await updateSharedFieldsFromCurrentForm(currentUser.uid, dataToSave as unknown as Record<string, unknown>, projectId);
+      await updateSharedFieldsFromCurrentForm(currentUser.uid, dataToSave, projectId);
       
       setSaveMessage('Formuläret har sparats!');
       setTimeout(() => setSaveMessage(null), 3000);

@@ -32,7 +32,10 @@ export const saveFormData = async <T>(
     const formRef = ref(database, formPath);
     console.log('Form reference path:', formPath);
     
-    await set(formRef, data);
+    // Rekursivt ersätt alla undefined med null för att undvika Firebase-fel
+    const sanitizedData = sanitizeDataForFirebase(data);
+    
+    await set(formRef, sanitizedData);
     console.log(`Form ${formType} data saved successfully`);
     
     // Also update the last updated timestamp
@@ -50,6 +53,43 @@ export const saveFormData = async <T>(
     return Promise.reject(error);
   }
 };
+
+/**
+ * Rekursivt sanitera data för Firebase genom att ersätta undefined med null
+ * och hantera nested objekt och arrayer
+ */
+export function sanitizeDataForFirebase<T>(data: T): unknown {
+  if (data === undefined) {
+    return null;
+  }
+  
+  if (data === null) {
+    return null;
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeDataForFirebase(item));
+  }
+  
+  if (typeof data === 'object' && data !== null) {
+    const sanitizedObject: Record<string, unknown> = {};
+    
+    Object.keys(data as object).forEach(key => {
+      const value = (data as Record<string, unknown>)[key];
+      sanitizedObject[key] = sanitizeDataForFirebase(value);
+    });
+    
+    return sanitizedObject;
+  }
+  
+  // Hantera NaN för numeriska värden
+  if (typeof data === 'number' && isNaN(data)) {
+    return null;
+  }
+  
+  // Returerna primitiva värden som de är
+  return data;
+}
 
 /**
  * Loads form data from Firebase Realtime Database
@@ -123,7 +163,11 @@ export const setupFormAutosave = <T>(
     try {
       console.log(`Autosaving form ${formType}${projectId ? ` for project ${projectId}` : ''}...`);
       setIsSaving(true);
-      await saveFormData(userId, formType, data, projectId);
+      
+      // Sanitera data innan sparande
+      const sanitizedData = sanitizeDataForFirebase(data);
+      
+      await saveFormData(userId, formType, sanitizedData, projectId);
       console.log(`Autosave successful for form ${formType}`);
       setSaveMessage('Autosparat');
       setTimeout(() => setSaveMessage(null), 2000);

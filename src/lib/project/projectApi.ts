@@ -1,5 +1,6 @@
 import { database } from '@/lib/firebase/config';
 import { ref, set, get, push, remove, update } from 'firebase/database';
+import { sanitizeDataForFirebase } from '@/lib/firebase/formData';
 
 export interface RoiProject {
   id: string;
@@ -153,8 +154,11 @@ export async function saveProjectFormData(
   formName: string, 
   formData: FormData
 ): Promise<void> {
+  // Sanitera data innan sparande
+  const sanitizedData = sanitizeDataForFirebase(formData);
+  
   const formRef = ref(database, `users/${userId}/projectForms/${projectId}/${formName}`);
-  await set(formRef, formData);
+  await set(formRef, sanitizedData);
   
   // Uppdatera projektets updatedAt
   const projectRef = ref(database, `users/${userId}/projects/${projectId}`);
