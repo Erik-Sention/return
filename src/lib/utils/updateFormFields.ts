@@ -52,4 +52,35 @@ export function updateFormWithSharedFields<T extends {
   }
   
   return updatedData;
+}
+
+/**
+ * Uppdaterar ett enskilt fält i ett formulär och sparar direkt till Firebase
+ * @param userId - Användarens ID
+ * @param formType - Formulärtyp (A, B, C, ...)
+ * @param field - Fältnamn som ska uppdateras
+ * @param value - Nytt värde för fältet
+ * @param projectId - (valfritt) projekt-ID
+ */
+export async function updateFormFieldValue({
+  userId,
+  formType,
+  field,
+  value,
+  projectId
+}: {
+  userId: string;
+  formType: string;
+  field: string;
+  value: unknown;
+  projectId?: string | null;
+}): Promise<void> {
+  // Ladda nuvarande data
+  const { loadFormData, saveFormData } = await import('@/lib/firebase/formData');
+  // TODO: Förbättra typningen genom att använda rätt typ för varje formulär
+  const data = await loadFormData<unknown>(userId, formType, projectId);
+  // Uppdatera fältet
+  const updatedData = { ...(data as object), [field]: value };
+  // Spara tillbaka
+  await saveFormData(userId, formType, updatedData, projectId);
 } 

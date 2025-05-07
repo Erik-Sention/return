@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { database } from '@/lib/firebase/config';
 import { ref, get, child } from 'firebase/database';
 import { getProject } from '@/lib/project/projectApi';
+import { updateFormFieldValue } from '@/lib/utils/updateFormFields';
 
 // Hjälpfunktion för att generera slutsats
 function generateConclusion(data: ROIReportData | null): string {
@@ -101,6 +102,18 @@ export default function ExekutivSammanfattningPage() {
   const [projectName, setProjectName] = useState<string>('');
   
   const projectId = searchParams?.get('projectId');
+
+  // Sparstatus för redigerbara fält
+  const [saveStatus, setSaveStatus] = useState<{ [key: string]: string }>({});
+  // Lokalt state för redigerbara fält
+  const [editableFields, setEditableFields] = useState({
+    currentSituation: '',
+    causeAnalysis: '',
+    interventionPurpose: '',
+    goalsDescription: '',
+    targetGroup: '',
+    recommendation: ''
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -200,6 +213,20 @@ export default function ExekutivSammanfattningPage() {
     }
   }, [currentUser, mounted, projectId]);
 
+  // Initiera lokalt state från reportData när det laddas
+  useEffect(() => {
+    if (reportData) {
+      setEditableFields({
+        currentSituation: reportData.currentSituation || '',
+        causeAnalysis: reportData.causeAnalysis || '',
+        interventionPurpose: reportData.interventionPurpose || '',
+        goalsDescription: reportData.goalsDescription || '',
+        targetGroup: reportData.targetGroup || '',
+        recommendation: reportData.recommendation || ''
+      });
+    }
+  }, [reportData]);
+
   // Funktion för att hantera PDF-export
   const handleExportPdf = async () => {
     if (!reportData || !currentUser) return;
@@ -257,6 +284,25 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
     }
     
     return { organizationName, contactPerson, timePeriod };
+  };
+
+  // Hjälpfunktion för att spara ett fält
+  const handleFieldSave = async (formType: string, field: string, value: string) => {
+    if (!currentUser) return;
+    setSaveStatus(prev => ({ ...prev, [field]: 'Sparar...' }));
+    try {
+      await updateFormFieldValue({
+        userId: currentUser.uid,
+        formType,
+        field,
+        value,
+        projectId
+      });
+      setSaveStatus(prev => ({ ...prev, [field]: 'Sparat!' }));
+      setTimeout(() => setSaveStatus(prev => ({ ...prev, [field]: '' })), 2000);
+    } catch {
+      setSaveStatus(prev => ({ ...prev, [field]: 'Fel vid sparning!' }));
+    }
   };
 
   if (!mounted || loading) {
@@ -588,8 +634,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.currentSituation || 'Ingen information om nuläget.'}</p>
-                
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.currentSituation}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, currentSituation: e.target.value }));
+                    handleFieldSave('A', 'currentSituation', e.target.value);
+                  }}
+                  placeholder="Beskriv nuläget..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.currentSituation}</div>
                 {(reportData.stressPercentage || reportData.productionLossValue || reportData.sickLeaveValue) && (
                   <div className="mt-4 space-y-3">
                     {reportData.stressPercentage !== undefined && (
@@ -624,7 +678,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.causeAnalysis || 'Ingen orsaksanalys specificerad.'}</p>
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.causeAnalysis}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, causeAnalysis: e.target.value }));
+                    handleFieldSave('A', 'causeAnalysis', e.target.value);
+                  }}
+                  placeholder="Beskriv orsaksanalys..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.causeAnalysis}</div>
               </div>
             </ChartCard>
           </div>
@@ -637,7 +700,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.interventionPurpose || 'Inget syfte specificerat.'}</p>
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.interventionPurpose}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, interventionPurpose: e.target.value }));
+                    handleFieldSave('B', 'purpose', e.target.value);
+                  }}
+                  placeholder="Beskriv syftet med insatsen..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.interventionPurpose}</div>
               </div>
             </ChartCard>
             
@@ -648,7 +720,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.goalsDescription || 'Ingen information om målsättningen.'}</p>
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.goalsDescription}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, goalsDescription: e.target.value }));
+                    handleFieldSave('B', 'goals', e.target.value);
+                  }}
+                  placeholder="Beskriv målsättningen..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.goalsDescription}</div>
               </div>
             </ChartCard>
           </div>
@@ -661,7 +742,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.targetGroup || 'Ingen målgrupp specificerad.'}</p>
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.targetGroup}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, targetGroup: e.target.value }));
+                    handleFieldSave('B', 'targetGroup', e.target.value);
+                  }}
+                  placeholder="Beskriv målgruppen..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.targetGroup}</div>
               </div>
             </ChartCard>
             
@@ -743,7 +833,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                <p>{reportData.recommendation || 'Ingen rekommendation specificerad.'}</p>
+                <textarea
+                  className="w-full min-h-[80px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                  value={editableFields.recommendation}
+                  onChange={e => {
+                    setEditableFields(f => ({ ...f, recommendation: e.target.value }));
+                    handleFieldSave('B', 'recommendation', e.target.value);
+                  }}
+                  placeholder="Ange rekommendation..."
+                />
+                <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.recommendation}</div>
               </div>
             </ChartCard>
           </div>
