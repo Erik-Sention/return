@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon, Brain } from 'lucide-react';
+import { Info, ArrowRight, Calculator, PieChart, Calculator as CalculatorIcon, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { OrganizationHeader } from '@/components/ui/organization-header';
@@ -196,6 +196,7 @@ const FormC = forwardRef<FormCRef, FormCProps>(function FormC(props, ref) {
     totalCostMentalHealth: 0
   });
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

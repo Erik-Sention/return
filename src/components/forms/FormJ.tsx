@@ -875,7 +875,7 @@ const FormJ = forwardRef<FormJRef, FormJProps>(function FormJ(props, ref) {
               <div className="bg-primary/10 p-2 rounded-full">
                 <FileText className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold">8 – Return on investment</h2>
+              <h2 className="text-2xl font-bold">6 – Return on investment</h2>
             </div>
           </div>
           

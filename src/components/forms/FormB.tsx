@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Target, FileText, Users, Lightbulb, ListChecks, ClipboardList } from 'lucide-react';
+import { Info, Target, FileText, Users, Lightbulb, ListChecks, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { OrganizationHeader } from '@/components/ui/organization-header';
@@ -92,6 +92,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
     interventions: [''],
     recommendation: ''
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
-import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, Calendar, Calculator as CalculatorIcon } from 'lucide-react';
+import { Info, Calculator, Coins, Calendar, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
@@ -157,6 +156,7 @@ const FormD = forwardRef<FormDRef, FormDProps>(function FormD(props, ref) {
     longSickLeaveMentalHealthPercentage: 40
   });
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

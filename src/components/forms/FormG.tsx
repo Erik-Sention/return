@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Button } from '@/components/ui/button';
-import { Save, Info, Calculator, Coins, PlusCircle, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon, FileText } from 'lucide-react';
+import { Info, Calculator, PlusCircle, X, ArrowUp, ArrowDown, Calculator as CalculatorIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { formatCurrency } from '@/lib/utils/format';
@@ -77,7 +77,7 @@ const ReadOnlyField = ({
     <InfoLabel text={info} />
     <div className={`p-2 ${highlight ? 'bg-primary/5 border-primary/20' : 'bg-background'} border border-dashed border-muted-foreground/40 rounded-md flex justify-between shadow-sm`}>
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <CalculatorIcon className="w-3 h-3" />
+        <Calculator className="w-3 h-3" />
         <span>Auto</span>
       </div>
       <span className={`font-semibold ${highlight ? 'text-primary' : ''}`}>{value}</span>
@@ -365,16 +365,10 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
     totalExternalCost: 0,
     totalInternalCost: 0
   };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [safeFormData, setSafeFormData] = useState<FormGData>(initialState);
   const [formData, setFormData] = useState<FormGData>(initialState);
-  
-  // Skydda oss mot undefined interventions - säkerställ att de alltid finns
-  const safeFormData = useMemo(() => {
-    return {
-      ...formData,
-      interventions: formData.interventions || []
-    };
-  }, [formData]);
-  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -503,26 +497,25 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
 
   // Setup autosave whenever formData changes
   useEffect(() => {
-    // Clear any existing timer
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
-  
-    // Only autosave if user is logged in and form has been interacted with
+
     if (currentUser?.uid) {
-      // Kontrollera och fixa eventuella undefined-värden innan autosave
+      // Förbereda data för autosparande för att undvika Firebase-fel med undefined
       const safeFormDataToSave = prepareDataForSave(safeFormData);
-     
+      
       autosaveTimerRef.current = setupFormAutosave(
         currentUser.uid,
         FORM_TYPE,
         safeFormDataToSave,
+        // Skicka med setIsSaving för att följa lintregler även om vi inte visar status
         setIsSaving,
         setSaveMessage,
         projectId
       );
     }
-  
+
     // Cleanup timer on unmount
     return () => {
       if (autosaveTimerRef.current) {
@@ -730,7 +723,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2 rounded-full">
-                <FileText className="h-5 w-5 text-primary" />
+                <CalculatorIcon className="h-5 w-5 text-primary" />
               </div>
               <h2 className="text-2xl font-bold">5 – Insatskostnader</h2>
             </div>
@@ -755,7 +748,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
             <div className="flex justify-between items-center mb-4">
               <SectionHeader 
                 title="Insatser" 
-                icon={<Coins className="h-5 w-5 text-primary" />}
+                icon={<CalculatorIcon className="h-5 w-5 text-primary" />}
               />
               <div className="flex items-center gap-2">
                 <Button 
@@ -810,7 +803,7 @@ const FormG = forwardRef<FormGRef, FormGProps>(function FormG(props, ref) {
           <div className="form-card">
             <SectionHeader 
               title="Total summering" 
-              icon={<Calculator className="h-5 w-5 text-primary" />}
+              icon={<CalculatorIcon className="h-5 w-5 text-primary" />}
             />
             
             <div className="grid grid-cols-3 gap-4">

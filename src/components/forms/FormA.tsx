@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Save, Info, LineChart, BrainCircuit, ArrowRight, Calculator, FileText } from 'lucide-react';
+import { Info, LineChart, BrainCircuit, ArrowRight, Calculator, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveFormData, loadFormData, setupFormAutosave } from '@/lib/firebase/formData';
 import { updateSharedFieldsFromCurrentForm } from '@/lib/firebase/sharedFields';
@@ -159,6 +159,7 @@ const FormA = forwardRef<FormARef, FormAProps>(function FormA(props, ref) {
     sickLeaveCost: undefined,
     causeAnalysis: '',
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

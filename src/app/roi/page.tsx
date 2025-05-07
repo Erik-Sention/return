@@ -259,7 +259,8 @@ export default function ROIPage() {
                 // Spara aktuellt formulär innan vi navigerar
                 await handleSaveCurrentForm();
                 
-                const forms = 'DCABGHIJ'.split('');
+                // Använda tidslinjesekvensen istället för den gamla sekvensen
+                const forms = ['D', 'C', 'A', 'B', 'G', 'J'];
                 const currentIndex = forms.indexOf(currentForm);
                 setCurrentForm(forms[currentIndex - 1]);
               }}
@@ -278,9 +279,7 @@ export default function ROIPage() {
                   'A': '3',
                   'B': '4',
                   'G': '5',
-                  'H': '6',
-                  'I': '7',
-                  'J': '8'
+                  'J': '6'
                 };
                 return formMap[currentForm] || currentForm;
               })()}
@@ -304,7 +303,8 @@ export default function ROIPage() {
                   // Spara aktuellt formulär innan vi navigerar
                   await handleSaveCurrentForm();
                   
-                  const forms = 'DCABGHIJ'.split('');
+                  // Använda tidslinjesekvensen istället för den gamla sekvensen
+                  const forms = ['D', 'C', 'A', 'B', 'G', 'J'];
                   const currentIndex = forms.indexOf(currentForm);
                   setCurrentForm(forms[currentIndex + 1]);
                 }}
