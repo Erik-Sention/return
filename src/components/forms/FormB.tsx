@@ -311,14 +311,7 @@ const FormB = forwardRef<FormBRef, FormBProps>(function FormB(props, ref) {
                   {saveMessage}
                 </span>
               )}
-              <Button 
-                onClick={handleSave} 
-                className="gap-2"
-                disabled={isSaving}
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? 'Sparar...' : 'Spara formulär'}
-              </Button>
+              
             </div>
           </div>
           

@@ -88,8 +88,14 @@ export default function ROIPage() {
     }
   }, [currentUser, loading, router]);
 
-  const handleFormChange = (form: string) => {
+  const handleFormChange = async (form: string) => {
+    // Spara aktuellt formulär innan vi byter
+    await handleSaveCurrentForm(); 
+    
+    // Byt till nytt formulär
     setCurrentForm(form);
+    
+    // Markera aktuellt formulär som slutfört om det inte redan är det
     if (!completedForms.includes(currentForm)) {
       setCompletedForms([...completedForms, currentForm]);
     }
@@ -190,7 +196,9 @@ export default function ROIPage() {
         <div className="form-card">
           {currentForm === 'A' && <FormA 
             ref={formARef} 
-            onNavigateToForm={(formName) => {
+            onNavigateToForm={async (formName) => {
+              // Spara aktuellt formulär innan vi navigerar
+              await handleSaveCurrentForm();
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
@@ -202,7 +210,9 @@ export default function ROIPage() {
           />}
           {currentForm === 'C' && <FormC 
             ref={formCRef} 
-            onNavigateToForm={(formName) => {
+            onNavigateToForm={async (formName) => {
+              // Spara aktuellt formulär innan vi navigerar
+              await handleSaveCurrentForm();
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
@@ -210,7 +220,9 @@ export default function ROIPage() {
           />}
           {currentForm === 'D' && <FormD 
             ref={formDRef}
-            onNavigateToForm={(formName: string) => {
+            onNavigateToForm={async (formName: string) => {
+              // Spara aktuellt formulär innan vi navigerar
+              await handleSaveCurrentForm();
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
@@ -230,7 +242,9 @@ export default function ROIPage() {
           />}
           {currentForm === 'J' && <FormJ 
             ref={formJRef} 
-            onNavigateToForm={(formName) => {
+            onNavigateToForm={async (formName) => {
+              // Spara aktuellt formulär innan vi navigerar
+              await handleSaveCurrentForm();
               // Navigera till det specifika formuläret
               setCurrentForm(formName);
             }}
@@ -241,7 +255,10 @@ export default function ROIPage() {
         <div className="flex justify-between">
           {currentForm !== 'D' && (
             <Button 
-              onClick={() => {
+              onClick={async () => {
+                // Spara aktuellt formulär innan vi navigerar
+                await handleSaveCurrentForm();
+                
                 const forms = 'DCABGHIJ'.split('');
                 const currentIndex = forms.indexOf(currentForm);
                 setCurrentForm(forms[currentIndex - 1]);
@@ -283,7 +300,10 @@ export default function ROIPage() {
             
             {currentForm !== 'J' && (
               <Button 
-                onClick={() => {
+                onClick={async () => {
+                  // Spara aktuellt formulär innan vi navigerar
+                  await handleSaveCurrentForm();
+                  
                   const forms = 'DCABGHIJ'.split('');
                   const currentIndex = forms.indexOf(currentForm);
                   setCurrentForm(forms[currentIndex + 1]);

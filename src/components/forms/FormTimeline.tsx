@@ -3,7 +3,7 @@ import { CheckCircle2, Circle } from 'lucide-react';
 interface FormTimelineProps {
   currentForm: string;
   completedForms: string[];
-  onFormChange?: (form: string) => void;
+  onFormChange?: (form: string) => void | Promise<void>;
 }
 
 const formInfos: { id: string; displayId: string; title: string; description: string }[] = [
@@ -47,6 +47,13 @@ const formInfos: { id: string; displayId: string; title: string; description: st
 
 
 export default function FormTimeline({ currentForm, completedForms, onFormChange }: FormTimelineProps) {
+  // Hantera klick på tidslinjen - hanterar både synkrona och asynkrona callbacks
+  const handleFormClick = async (formId: string) => {
+    if (onFormChange) {
+      await onFormChange(formId);
+    }
+  };
+
   return (
     <div className="w-full pb-8">
       <h3 className="text-lg font-medium mb-4">Förlopp för ROI-beräkning</h3>
@@ -55,7 +62,7 @@ export default function FormTimeline({ currentForm, completedForms, onFormChange
           <div 
             key={form.id} 
             className="flex flex-col items-center cursor-pointer group relative" 
-            onClick={() => onFormChange && onFormChange(form.id)}
+            onClick={() => handleFormClick(form.id)}
           >
             <div className="relative">
               {/* Line connector */}
