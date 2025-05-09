@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChartCard } from '@/components/ui/chart-card';
 import { StatItem } from '@/components/ui/stat-item';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Activity, CreditCard, Percent, Clock, Target, Package, LineChart, AlertTriangle, CheckCircle, Users, Calendar, ChevronLeft, FileText, TrendingDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { loadROIReportData, loadROIReportDataForProject, formatCurrency, formatPercent, formatMonths, ROIReportData } from '@/lib/reports/reportUtils';
 import { printToPdf } from '@/lib/reports/pdfExport';
@@ -62,11 +62,32 @@ function generateConclusion(data: ROIReportData | null): string {
       }
     }
     
+    // Beräkna procentuell minskning av stressnivå
+    const currentStress = data.stressPercentage || 0;
+    const reducedStressPercentage = data.reducedStressPercentage || 0;
+    const newStressLevel = currentStress * (1 - reducedStressPercentage / 100);
+    
+    // Beräkna årlig besparing
+    const yearlyBenefit = data.totalBenefit || 0;
+    
+    // Beräkna ackumulerad besparing över 3 år
+    const threeyearBenefit = yearlyBenefit * 3;
+    
+    // Beräkna nettoresultat (vinst efter investering)
+    const threeyearNetBenefit = threeyearBenefit - data.totalCost;
+    
     // Skapa en detaljerad slutsats
     return `Analysen visar en ${strengthText} avkastning på ${roiText} för investeringen på ${costText}. 
 Det innebär att varje investerad krona genererar ${data.roi/100 + 1} kronor i värde. 
-Det totala värdet av interventionen uppskattas till ${benefitText}.
+Det totala värdet av interventionen uppskattas till ${benefitText} per år.
 ${paybackAnalysis}
+
+Om den förväntade effekten uppnås, skulle organisationen:
+• Minska andelen medarbetare med hög stressnivå från ${formatPercent(currentStress)} till ${formatPercent(newStressLevel)}
+• Generera en årlig besparing på ${formatCurrency(yearlyBenefit)} i minskade kostnader för psykisk ohälsa
+• Över en treårsperiod ackumulera en total besparing på ${formatCurrency(threeyearBenefit)}
+• Efter att investeringskostnaden är avräknad ge en nettovinst på ${formatCurrency(threeyearNetBenefit)} över tre år
+
 Baserat på denna analys rekommenderas investeringen som en ekonomiskt fördelaktig åtgärd.`;
   } 
   // Om ROI är 0 eller negativ
@@ -112,7 +133,9 @@ export default function ExekutivSammanfattningPage() {
     interventionPurpose: '',
     goalsDescription: '',
     targetGroup: '',
-    recommendation: ''
+    recommendation: '',
+    interventionDescription: '',
+    implementationPlan: ''
   });
 
   useEffect(() => {
@@ -222,7 +245,9 @@ export default function ExekutivSammanfattningPage() {
         interventionPurpose: reportData.interventionPurpose || '',
         goalsDescription: reportData.goalsDescription || '',
         targetGroup: reportData.targetGroup || '',
-        recommendation: reportData.recommendation || ''
+        recommendation: reportData.recommendation || '',
+        interventionDescription: reportData.interventionDescription || '',
+        implementationPlan: reportData.implementationPlan || ''
       });
     }
   }, [reportData]);
@@ -249,13 +274,24 @@ export default function ExekutivSammanfattningPage() {
 
 Med den förväntade minskningen av stressnivån på ${formatPercent(reportData?.reducedStressPercentageAlt2 || 0)} och den totala kostnaden för psykisk ohälsa på ${formatCurrency(reportData?.totalMentalHealthCostAlt2 || 0)} kr per år, blir den maximala kostnaden för insatsen ${formatCurrency(reportData?.totalCostAlt2 || 0)} kr.
 
-Detta representerar den högsta investering som kan göras med given effekt för att fortfarande nå break-even (ROI = 0%). All investering över detta belopp skulle ge en negativ avkastning, medan en lägre investering skulle ge en positiv ROI.`;
+Detta representerar den högsta investering som kan göras med given effekt för att fortfarande nå break-even (ROI = 0%). All investering över detta belopp skulle ge en negativ avkastning, medan en lägre investering skulle ge en positiv ROI.
+
+Om en investering på detta belopp görs och de förväntade effekterna uppnås, skulle organisationen:
+• Minska andelen medarbetare med hög stress från ${formatPercent(reportData?.stressPercentage || 0)} till ${formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.reducedStressPercentageAlt2 || 0) / 100))}
+• Spara ${formatCurrency((reportData?.totalMentalHealthCostAlt2 || 0) * (reportData?.reducedStressPercentageAlt2 || 0) / 100)} per år i minskade kostnader för psykisk ohälsa
+• Om insatskostnaderna förblir konstanta över 3 år och effekten bibehålls, skulle den ackumulerade besparingen uppgå till ${formatCurrency(((reportData?.totalMentalHealthCostAlt2 || 0) * (reportData?.reducedStressPercentageAlt2 || 0) / 100) * 3)} över treårsperioden`;
       case "min-effekt":
         return `Minsta effekt för break-even
 
 Med nuvarande investering på ${formatCurrency(reportData?.totalCostAlt3 || 0)} kr och den totala kostnaden för psykisk ohälsa på ${formatCurrency(reportData?.totalMentalHealthCostAlt3 || 0)} kr per år, måste stressnivån minska med minst ${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} för att nå break-even (ROI = 0%).
 
-Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta procenttal skulle ge en positiv avkastning.`;
+Detta är den minimala effekt som krävs för att investeringen ska täcka sina kostnader. All effekt utöver detta procenttal skulle ge en positiv avkastning.
+
+Om denna minimala effekt uppnås, skulle organisationen:
+• Minska andelen medarbetare med hög stress från ${formatPercent(reportData?.stressPercentage || 0)} till ${formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.minEffectForBreakEvenAlt3 || 0) / 100))}
+• Spara exakt ${formatCurrency(reportData?.totalCostAlt3 || 0)} per år i minskade kostnader, vilket motsvarar investeringskostnaden
+• Om större effekt än ${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} uppnås, exempelvis ${formatPercent((reportData?.minEffectForBreakEvenAlt3 || 0) * 1.5)}, skulle den årliga besparingen öka till ${formatCurrency((reportData?.totalCostAlt3 || 0) * 1.5)} per år
+• Vid en konstant effekt över 3 år skulle den ackumulerade besparingen vid minimieffekten uppgå till ${formatCurrency((reportData?.totalCostAlt3 || 0) * 3)}`;
       default:
         return generateConclusion(reportData);
     }
@@ -475,7 +511,7 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               </TabsList>
               
               <TabsContent value="roi" className="mt-4">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-5">
                   <ChartCard 
                     title="Total kostnad"
                     icon={<CreditCard className="h-5 w-5" />}
@@ -527,9 +563,124 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                       variant="orange"
                     />
                   </ChartCard>
+
+                  <ChartCard 
+                    title="Stressnivå före"
+                    icon={<AlertTriangle className="h-5 w-5" />}
+                    variant="orange"
+                  >
+                    <StatItem 
+                      label="Andel med hög stress"
+                      value={formatPercent(reportData?.stressPercentage || 0)}
+                      description="Innan intervention"
+                      variant="orange"
+                    />
+                  </ChartCard>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                </p>
+                
+                <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-5 mt-6">
+                  <ChartCard 
+                    title="Stressnivå efter"
+                    icon={<TrendingDown className="h-5 w-5" />}
+                    variant="green"
+                  >
+                    <StatItem 
+                      label="Förväntad andel med hög stress"
+                      value={formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.reducedStressPercentage || 0) / 100))}
+                      description={`Efter intervention (${formatPercent(reportData?.reducedStressPercentage || 0)} relativ minskning)`}
+                      variant="green"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Total ohälsokostnad"
+                    icon={<Activity className="h-5 w-5" />}
+                    variant="blue"
+                  >
+                    <StatItem 
+                      label="Kostnad per år"
+                      value={formatCurrency(reportData?.totalMentalHealthCost || 0)}
+                      description="Psykisk ohälsa före intervention"
+                      variant="blue"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Nettovinst (3 år)"
+                    icon={<Activity className="h-5 w-5" />}
+                    variant="purple"
+                  >
+                    <StatItem 
+                      label="Total nettovinst"
+                      value={formatCurrency(((reportData?.totalBenefit || 0) * 3) - (reportData?.totalCost || 0))}
+                      description="Efter avräknad investering"
+                      variant="purple"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Max kostnad"
+                    icon={<CreditCard className="h-5 w-5" />}
+                    variant="blue"
+                  >
+                    <StatItem 
+                      label="Break-even kostnad"
+                      value={formatCurrency(reportData?.totalCostAlt2 || 0)}
+                      description="För noll-avkastning"
+                      variant="blue"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Minsta effekt"
+                    icon={<TrendingDown className="h-5 w-5" />}
+                    variant="orange"
+                  >
+                    <StatItem 
+                      label="Break-even effekt"
+                      value={reportData?.minEffectForBreakEvenAlt3 !== undefined ? formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0) : "N/A"}
+                      description="Relativ minskning för noll-avkastning"
+                      variant="orange"
+                    />
+                  </ChartCard>
+                </div>
+                
+                <div className="bg-muted/30 rounded-lg p-4 mt-4 border border-border">
+                  <h4 className="text-sm font-medium mb-2">ROI-beräkningens grund:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Beräkningen visar avkastningen på en investering på {formatCurrency(reportData?.totalCost || 0)} genom att minska andelen medarbetare 
+                    med hög stressnivå från {formatPercent(reportData?.stressPercentage || 0)} till {formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.reducedStressPercentage || 0) / 100))}. 
+                    Detta motsvarar en relativ minskning med {formatPercent(reportData?.reducedStressPercentage || 0)} av den ursprungliga stressnivån.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <h5 className="text-xs font-medium mb-1">Ekonomiska fördelar:</h5>
+                      <ul className="text-sm text-muted-foreground list-disc pl-5 text-xs">
+                        <li>Minskat produktionsbortfall: {formatCurrency((reportData?.productionLossValue || 0) * (reportData?.reducedStressPercentage || 0) / 100)}/år</li>
+                        <li>Minskad sjukfrånvaro: {formatCurrency((reportData?.sickLeaveValue || 0) * (reportData?.reducedStressPercentage || 0) / 100)}/år</li>
+                        <li>Total årlig besparing: {formatCurrency(reportData?.totalBenefit || 0)}</li>
+                        <li>Total besparing över 3 år: {formatCurrency((reportData?.totalBenefit || 0) * 3)}</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-medium mb-1">ROI-formel:</h5>
+                      <p className="text-xs text-muted-foreground">
+                        ROI = (Ekonomisk nytta - Investering) / Investering × 100%
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        = ({formatCurrency(reportData?.totalBenefit || 0)} - {formatCurrency(reportData?.totalCost || 0)}) / {formatCurrency(reportData?.totalCost || 0)} × 100% = {formatPercent(reportData?.roi || 0)}
+                      </p>
+                      <h5 className="text-xs font-medium mb-1 mt-2">Beräkning av stressminskning:</h5>
+                      <p className="text-xs text-muted-foreground">
+                        Ny stressnivå = Nuvarande stressnivå × (1 - Minskad stressnivå / 100)
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        = {formatPercent(reportData?.stressPercentage || 0)} × (1 - {formatPercent(reportData?.reducedStressPercentage || 0)} / 100) = {formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.reducedStressPercentage || 0) / 100))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
               
               <TabsContent value="max-kostnad" className="mt-4">
@@ -568,11 +719,53 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                     <StatItem 
                       label="Minskad andel med stresssymptom"
                       value={formatPercent(reportData?.reducedStressPercentageAlt2 || 0)}
-                      description="Förväntad minskning"
+                      description="Relativ minskning av stressnivån"
                       variant="purple"
                     />
                   </ChartCard>
                 </div>
+                
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+                  <ChartCard 
+                    title="Stressnivå före"
+                    icon={<AlertTriangle className="h-5 w-5" />}
+                    variant="orange"
+                  >
+                    <StatItem 
+                      label="Andel med hög stress"
+                      value={formatPercent(reportData?.stressPercentage || 0)}
+                      description="Innan intervention"
+                      variant="orange"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Stressnivå efter"
+                    icon={<TrendingDown className="h-5 w-5" />}
+                    variant="green"
+                  >
+                    <StatItem 
+                      label="Förväntad andel med hög stress"
+                      value={formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.reducedStressPercentageAlt2 || 0) / 100))}
+                      description={`Efter intervention (${formatPercent(reportData?.reducedStressPercentageAlt2 || 0)} relativ minskning)`}
+                      variant="green"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Besparingar"
+                    icon={<Activity className="h-5 w-5" />}
+                    variant="blue"
+                  >
+                    <StatItem 
+                      label="Besparing (3 år)"
+                      value={formatCurrency(((reportData?.totalMentalHealthCostAlt2 || 0) * (reportData?.reducedStressPercentageAlt2 || 0) / 100) * 3)}
+                      description="Vid konstant effekt"
+                      variant="blue"
+                    />
+                  </ChartCard>
+                </div>
+                
                 <p className="text-sm text-muted-foreground mt-2">
                   Beräkning av maximal kostnad för att nå break-even (ROI = 0%)
                 </p>
@@ -614,11 +807,53 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
                     <StatItem 
                       label="Minsta effekt för break-even"
                       value={reportData?.minEffectForBreakEvenAlt3 !== undefined ? formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0) : "N/A"}
-                      description="Minskad andel med stresssymptom"
+                      description="Relativ minskning av stressnivån som krävs"
                       variant="purple"
                     />
                   </ChartCard>
                 </div>
+                
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+                  <ChartCard 
+                    title="Stressnivå före"
+                    icon={<AlertTriangle className="h-5 w-5" />}
+                    variant="orange"
+                  >
+                    <StatItem 
+                      label="Andel med hög stress"
+                      value={formatPercent(reportData?.stressPercentage || 0)}
+                      description="Innan intervention"
+                      variant="orange"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Stressnivå efter"
+                    icon={<TrendingDown className="h-5 w-5" />}
+                    variant="green"
+                  >
+                    <StatItem 
+                      label="Förväntad andel med hög stress"
+                      value={formatPercent((reportData?.stressPercentage || 0) * (1 - (reportData?.minEffectForBreakEvenAlt3 || 0) / 100))}
+                      description={`Vid minimieffekt (${formatPercent(reportData?.minEffectForBreakEvenAlt3 || 0)} relativ minskning)`}
+                      variant="green"
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard 
+                    title="Ökad effekt"
+                    icon={<Activity className="h-5 w-5" />}
+                    variant="blue"
+                  >
+                    <StatItem 
+                      label="Vid 50% högre effekt"
+                      value={formatCurrency((reportData?.totalCostAlt3 || 0) * 1.5)}
+                      description="Årlig besparing"
+                      variant="blue"
+                    />
+                  </ChartCard>
+                </div>
+                
                 <p className="text-sm text-muted-foreground mt-2">
                   Beräkning av minsta effekt som krävs för att nå break-even (ROI = 0%)
                 </p>
@@ -759,25 +994,58 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               title="Intervention"
               icon={<Package className="h-5 w-5" />}
               variant="purple"
+              className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                {(!reportData.interventionDescription && !reportData.interventionsArray) || 
-                  (reportData.interventionDescription?.trim() === '' && (!reportData.interventionsArray || reportData.interventionsArray.length === 0)) ? (
-                  <p>Ingen beskrivning av interventionen.</p>
+                {editableFields.interventionDescription ? (
+                  <div>
+                    <textarea
+                      className="w-full min-h-[160px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                      value={editableFields.interventionDescription}
+                      onChange={e => {
+                        setEditableFields(f => ({ ...f, interventionDescription: e.target.value }));
+                      }}
+                      placeholder="Beskriv interventionen. Använd nya rader för punktlistor."
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button 
+                        onClick={() => {
+                          handleFieldSave('B', 'interventionDescription', editableFields.interventionDescription);
+                        }}
+                        className="px-2 py-1 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-600 dark:text-green-400 text-xs rounded"
+                      >
+                        Spara
+                      </button>
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.interventionDescription}</div>
+                  </div>
                 ) : (
-                  <ol className="list-decimal pl-4 space-y-1">
-                    {reportData.interventionsArray ? 
-                      // Om vi har den ursprungliga arrayen, använd den
-                      reportData.interventionsArray.map((intervention, index) => (
-                        <li key={index} className="text-sm">{intervention}</li>
-                      ))
-                      : 
-                      // Annars, försök dela upp kommaseparerad sträng
-                      reportData.interventionDescription?.split(',').map((intervention, index) => (
-                        <li key={index} className="text-sm">{intervention.trim()}</li>
-                      ))
-                    }
-                  </ol>
+                  <div>
+                    {reportData.interventionDescription ? (
+                      <div>
+                        <div className="whitespace-pre-line mb-2">{reportData.interventionDescription}</div>
+                        <button 
+                          onClick={() => setEditableFields(f => ({ 
+                            ...f, 
+                            interventionDescription: reportData.interventionDescription || '' 
+                          }))}
+                          className="px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded"
+                        >
+                          Redigera
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-muted-foreground">Ingen beskrivning av interventionen.</p>
+                        <button 
+                          onClick={() => setEditableFields(f => ({ ...f, interventionDescription: '' }))}
+                          className="mt-2 px-2 py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded"
+                        >
+                          Lägg till beskrivning
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
                 
                 {reportData.interventionCosts && reportData.interventionCosts.length > 0 && (
@@ -805,23 +1073,63 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
               className="h-full"
             >
               <div className="prose dark:prose-invert max-w-none">
-                {(!reportData.implementationPlan && !reportData.implementationPlanArray) || 
-                  (reportData.implementationPlan?.trim() === '' && (!reportData.implementationPlanArray || reportData.implementationPlanArray.length === 0)) ? (
-                  <p>Ingen genomförandeplan specificerad.</p>
+                {editableFields.implementationPlan ? (
+                  <div>
+                    <textarea
+                      className="w-full min-h-[160px] p-2 rounded-md border border-primary text-base text-black dark:text-white bg-white dark:bg-slate-900"
+                      value={editableFields.implementationPlan}
+                      onChange={e => {
+                        setEditableFields(f => ({ ...f, implementationPlan: e.target.value }));
+                      }}
+                      placeholder="Beskriv genomförandeplanen. Använd nya rader för punktlistor."
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button 
+                        onClick={() => {
+                          handleFieldSave('B', 'implementationPlan', editableFields.implementationPlan);
+                        }}
+                        className="px-3 py-1.5 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-green-600 dark:text-green-400 text-xs rounded font-medium flex items-center gap-1"
+                      >
+                        <CheckCircle className="h-3 w-3" /> Spara
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditableFields(f => ({ ...f, implementationPlan: '' }));
+                        }}
+                        className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded font-medium"
+                      >
+                        Avbryt
+                      </button>
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: '#1a202c' }}>{saveStatus.implementationPlan}</div>
+                  </div>
                 ) : (
-                  <ol className="list-decimal pl-4 space-y-1">
-                    {reportData.implementationPlanArray ? 
-                      // Om vi har den ursprungliga arrayen, använd den
-                      reportData.implementationPlanArray.map((step, index) => (
-                        <li key={index} className="text-sm">{step}</li>
-                      ))
-                      : 
-                      // Annars, försök dela upp kommaseparerad sträng
-                      reportData.implementationPlan?.split(',').map((step, index) => (
-                        <li key={index} className="text-sm">{step.trim()}</li>
-                      ))
-                    }
-                  </ol>
+                  <div>
+                    {reportData.implementationPlan ? (
+                      <div>
+                        <div className="whitespace-pre-line mb-2 p-2 rounded-md bg-muted/30 border border-border">{reportData.implementationPlan}</div>
+                        <button 
+                          onClick={() => setEditableFields(f => ({ 
+                            ...f, 
+                            implementationPlan: reportData.implementationPlan || '' 
+                          }))}
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded font-medium flex items-center gap-1 mt-2"
+                        >
+                          <ArrowRight className="h-3 w-3" /> Redigera
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-muted-foreground">Ingen genomförandeplan specificerad.</p>
+                        <button 
+                          onClick={() => setEditableFields(f => ({ ...f, implementationPlan: '' }))}
+                          className="mt-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-xs rounded font-medium flex items-center gap-1"
+                        >
+                          <ArrowRight className="h-3 w-3" /> Lägg till genomförandeplan
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </ChartCard>
@@ -855,9 +1163,16 @@ Detta är den minimala effekt som krävs för att investeringen ska täcka sina 
             
             <div className="flex justify-end mt-6">
               <div className="text-sm text-muted-foreground text-right">
-                <p>Rapport genererad: {new Date().toLocaleDateString('sv-SE')}</p>
-                <p>ROI-kalkylator v1.0</p>
+                <p>Rapport genererad av Sention: {new Date().toLocaleDateString('sv-SE')}</p>
+                <p>Sention ROI-kalkylator v1.0</p>
               </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-6 mb-8">
+            <div className="text-sm text-muted-foreground text-right">
+              <p>Rapport genererad av Sention: {new Date().toLocaleDateString('sv-SE')}</p>
+              <p>Sention ROI-kalkylator v1.0</p>
             </div>
           </div>
         </>
